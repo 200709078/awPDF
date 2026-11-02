@@ -11,7 +11,7 @@ görünümü döndürme, tam ekran, koyu tema, sayfa önizleme paneli, metin se�
 yazdırma, paylaşma (Android), 200 MB uyarısı.
 
 **Yayın (2026-11-02, kullanıcı):** web sürümü `madematik.com/awPDF/` adresine yüklendi. Sürüm paketi henüz
-yok; Android imzası için `ANDROID_KEY_PASSWORD` düzeltilmeli.
+yayımlanmadı; Linux, Windows ve imzalı Android paketleri GitHub Actions'ta derleniyor (imza doğrulandı).
 
 Kalanlar:
 
