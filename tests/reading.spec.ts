@@ -590,3 +590,61 @@ test.describe('son dosyalar', () => {
     await expect(page.locator('#recentFiles')).toBeHidden();
   });
 });
+
+test.describe('içindekiler', () => {
+  const outline = [
+    { title: 'Baslangic', page: 0 },
+    { title: 'Birinci Bölüm', page: 1, items: [{ title: 'Alt Konu', page: 3 }] },
+    { title: 'Açık Bölüm', page: 2, open: true, items: [{ title: 'Görünen Alt', page: 4 }] },
+    { title: 'Kaynak', url: 'https://madematik.com/' },
+  ];
+  const tab = (page: Page) => page.locator('#sidePanelOutlineTab');
+
+  test('yan panelde sekmedir; başlığa basınca o sayfaya gider', async ({ page }) => {
+    await openPdf(page, makePdf({ pages: 5, outline }));
+    await page.locator('#tool-sidePanel').click();
+    await expect(page.locator('.thumbnail').first()).toBeVisible();
+    await tab(page).click();
+    await expect(page.locator('.thumbnail').first()).toBeHidden();
+    await expect(tab(page)).toHaveAttribute('aria-selected', 'true');
+    await page.locator('.outline__title', { hasText: 'Birinci Bölüm' }).click();
+    await expect(status(page)).toHaveText('2 / 5');
+  });
+
+  test('alt başlıklar PDF\'in istediği gibi kapalı ya da açık gelir, açılıp kapanır', async ({ page }) => {
+    await openPdf(page, makePdf({ pages: 5, outline }));
+    await page.locator('#tool-sidePanel').click();
+    await tab(page).click();
+    await expect(page.locator('.outline__title', { hasText: 'Alt Konu' })).toBeHidden();
+    await expect(page.locator('.outline__title', { hasText: 'Görünen Alt' })).toBeVisible();
+    await page.locator('.outline__fold').first().click();
+    await page.locator('.outline__title', { hasText: 'Alt Konu' }).click();
+    await expect(status(page)).toHaveText('4 / 5');
+  });
+
+  test('dış bağlantılı başlık onay sorar', async ({ page }) => {
+    await openPdf(page, makePdf({ pages: 5, outline }));
+    await page.locator('#tool-sidePanel').click();
+    await tab(page).click();
+    await page.locator('.outline__title', { hasText: 'Kaynak' }).click();
+    await expect(page.locator('#externalLinkDialog')).toBeVisible();
+  });
+
+  test('içindekileri olmayan belgede sekme yoktur, sonraki belgede sayfalara döner', async ({ page }) => {
+    await openPdf(page, makePdf({ pages: 5, outline }));
+    await page.locator('#tool-sidePanel').click();
+    await tab(page).click();
+    await openPdf(page, makePdf({ pages: 2 }), 'ikinci.pdf');
+    await expect(page.locator('#sidePanelTabs')).toBeHidden();
+    await expect(page.locator('.thumbnail').first()).toBeVisible();
+  });
+
+  test('dar ekranda seçim paneli kapatır', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 780 });
+    await openPdf(page, makePdf({ pages: 5, outline }));
+    await page.locator('#tool-sidePanel').click();
+    await tab(page).click();
+    await page.locator('.outline__title', { hasText: 'Baslangic' }).click();
+    await expect(page.locator('#sidePanel')).toBeHidden();
+  });
+});

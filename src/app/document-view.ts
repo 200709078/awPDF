@@ -15,6 +15,8 @@ const REFIT_DELAY_MS = 100
 /** While a pinch goes on the page is only stretched; it is drawn sharp this long after it stops. */
 const GESTURE_REDRAW_DELAY_MS = 300
 
+export type OutlineItem = Awaited<ReturnType<PDFDocumentProxy['getOutline']>>[number]
+
 export type SearchProgress =
   | { state: 'searching' }
   | { state: 'notFound' }
@@ -192,6 +194,10 @@ export class DocumentView {
 
   goTo(page: number): void {
     this.viewer.currentPageNumber = page
+  }
+
+  goToDestination(destination: NonNullable<OutlineItem['dest']>): void {
+    void this.links.goToDestination(destination)
   }
 
   /** pdf.js steps a whole row when both of its pages are in view. */

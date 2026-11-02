@@ -8,7 +8,7 @@ const NARROW_LAYOUT_QUERY = '(max-width: 700px)'
 export class SidePanel {
   private readonly listeners = new Set<() => void>()
 
-  constructor(readonly element: HTMLElement) {}
+  constructor(private readonly element: HTMLElement) {}
 
   get isOpen(): boolean {
     return !this.element.hidden

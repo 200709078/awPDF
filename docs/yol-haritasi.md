@@ -16,7 +16,6 @@ Windows ve imzalı Android paketleri GitHub Releases'te yayımlandı (imza doğr
 Kalanlar:
 
 - **Açma:** parolalı PDF
-- **Gezinme:** içindekiler (yan panelde sekme olarak)
 - **Diğer:** masaüstünde sekmeler
 - **Tahta:** ekran klavyesi (drAW'daki kopya alınabilir), sunum modu
 

@@ -331,7 +331,7 @@ test('uzun belgede yalnız görünen küçük resimler çizilir, uzaklaşanlar b
   const early = await drawnThumbnails(page);
   expect(early.length).toBeLessThan(20);
 
-  await page.locator('#sidePanel').evaluate(panel => { panel.scrollTop = panel.scrollHeight; });
+  await page.locator('#thumbnailList').evaluate(panel => { panel.scrollTop = panel.scrollHeight; });
   await expect.poll(() => drawnThumbnails(page)).toContain(400);
   await expect.poll(async () => (await drawnThumbnails(page)).includes(1)).toBe(false);
   expect((await drawnThumbnails(page)).length).toBeLessThan(20);

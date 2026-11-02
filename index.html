@@ -24,7 +24,14 @@
 		<button id="searchClose" class="secondary-button" type="button" aria-label="Aramayı kapat" title="Aramayı kapat">✕</button>
 	</div>
 	<main id="workspace" class="workspace">
-		<aside id="sidePanel" class="side-panel" aria-label="Sayfalar" hidden></aside>
+		<aside id="sidePanel" class="side-panel" aria-label="Sayfa paneli" hidden>
+			<div id="sidePanelTabs" class="side-panel__tabs" role="tablist" hidden>
+				<button id="sidePanelPagesTab" type="button" role="tab" aria-selected="true">Sayfalar</button>
+				<button id="sidePanelOutlineTab" type="button" role="tab" aria-selected="false">İçindekiler</button>
+			</div>
+			<div id="thumbnailList" class="side-panel__list"></div>
+			<div id="outlineList" class="side-panel__list outline" hidden></div>
+		</aside>
 		<div class="document-area">
 			<div id="viewerContainer" class="viewer-container" tabindex="0" hidden>
 				<div id="viewer" class="pdfViewer"></div>

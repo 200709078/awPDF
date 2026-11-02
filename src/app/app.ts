@@ -7,6 +7,7 @@ import { currentPlatform } from '../platform/platform'
 import { TOOLS } from '../tools'
 import type { ToolContext } from '../tools/tool'
 import { confirmExternalLink, confirmLargeFile, showToast } from '../ui/messages'
+import { OutlineList } from '../ui/outline'
 import { RecentList } from '../ui/recent-list'
 import { SearchBar } from '../ui/search-bar'
 import { SidePanel } from '../ui/side-panel'
@@ -92,8 +93,13 @@ export function startApp(): void {
   }
 
   const toolbarMenu = mountToolbar(document.querySelector('#toolbar')!, TOOLS, context)
-  new ThumbnailList(sidePanel.element, view, sidePanel, page => {
+  new ThumbnailList(document.querySelector('#thumbnailList')!, view, sidePanel, page => {
     view.goTo(page)
+    sidePanel.closeIfOverlay()
+  })
+  new OutlineList(document.querySelector('#outlineList')!, view, ({ dest, url }) => {
+    if (dest) view.goToDestination(dest)
+    else if (url) void openLink(url)
     sidePanel.closeIfOverlay()
   })
   container.addEventListener('pointerdown', () => sidePanel.closeIfOverlay())
