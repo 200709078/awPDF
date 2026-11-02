@@ -1,5 +1,5 @@
 import { pdfFileFromBlob, type PdfFile } from '../core/pdf-file'
-import { browserPlatform, onPickedFile } from './browser'
+import { browserPlatform, onPickedFile, showFileInput } from './browser'
 import type { Platform } from './platform'
 
 function pdfFileFromDisk(files: DesktopFiles, { id, name, size, source }: DesktopOpenedFile): PdfFile {
@@ -21,6 +21,11 @@ export function desktopPlatform(controls: DesktopWindowControls, files: DesktopF
   void controls.isFullscreen().then(show).catch(() => undefined)
   return {
     ...browserPlatform(),
+    pickFile: showFileInput,
+    reopen: async source => {
+      const file = await files.reopen(source)
+      return file && pdfFileFromDisk(files, file)
+    },
     onFile: listener => {
       files.onOpened(file => listener(pdfFileFromDisk(files, file)))
       onPickedFile(file => {

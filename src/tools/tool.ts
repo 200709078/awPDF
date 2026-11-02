@@ -12,6 +12,7 @@ export interface ToolContext {
   readonly theme: Theme
   readonly platform: Platform
   pickFile(): void
+  showRecentFiles(): void
   print(): void
 }
 

@@ -1,4 +1,5 @@
-import { pdfFileFromBlob } from '../core/pdf-file'
+import { pdfFileFromBlob, type PdfFile } from '../core/pdf-file'
+import { findHandle, keepHandle } from './file-handles'
 import type { Platform } from './platform'
 
 const DROPPING_CLASS = 'is-dropping'
@@ -31,11 +32,44 @@ export function onPickedFile(listener: (file: File) => void): void {
   })
 }
 
+export function showFileInput(): void {
+  document.querySelector<HTMLInputElement>('#pdfInput')!.click()
+}
+
+const PDF_PICKER_TYPES = [{ description: 'PDF', accept: { 'application/pdf': ['.pdf'] } }]
+
+async function pdfFileFromHandle(handle: FileSystemFileHandle): Promise<PdfFile> {
+  const file = await handle.getFile()
+  const source = `${file.name}/${file.size}/${file.lastModified}`
+  await keepHandle(source, handle)
+  return { ...pdfFileFromBlob(file), source }
+}
+
 export function browserPlatform(): Platform {
-  const input = document.querySelector<HTMLInputElement>('#pdfInput')!
+  const listeners = new Set<(file: PdfFile) => void>()
   return {
-    pickFile: () => input.click(),
-    onFile: listener => onPickedFile(file => listener(pdfFileFromBlob(file))),
+    // Only the picker's handle can lead back to a file later; not every browser has it.
+    pickFile: () => {
+      if (!window.showOpenFilePicker) {
+        showFileInput()
+        return
+      }
+      window.showOpenFilePicker({ types: PDF_PICKER_TYPES }).then(async ([handle]) => {
+        const file = await pdfFileFromHandle(handle)
+        for (const listener of listeners) listener(file)
+      }).catch((error: unknown) => {
+        if ((error as DOMException).name !== 'AbortError') console.error(error)
+      })
+    },
+    reopen: async source => {
+      const handle = await findHandle(source)
+      if (!handle || await handle.requestPermission({ mode: 'read' }) !== 'granted') return null
+      return pdfFileFromHandle(handle)
+    },
+    onFile: listener => {
+      listeners.add(listener)
+      onPickedFile(file => listener(pdfFileFromBlob(file)))
+    },
     openExternal: url => { window.open(url, '_blank', 'noopener,noreferrer') },
     print: () => window.print(),
     get isFullscreen() {

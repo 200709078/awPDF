@@ -31,6 +31,13 @@ export const shareTool: Tool = {
   },
 }
 
+export const recentTool: Tool = {
+  id: 'recent',
+  label: 'Son Dosyalar',
+  icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  run: ({ showRecentFiles }) => showRecentFiles(),
+}
+
 /** Has no button of its own: the page number in the toolbar opens it. */
 export const goToPageTool: Tool = {
   id: 'goToPage',

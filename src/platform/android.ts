@@ -9,6 +9,8 @@ interface OpenedFile {
   id: number
   name: string
   size: number
+  /** Present when Android lets the app come back to the file later. */
+  source?: string
 }
 
 /** The Android app's own plugin (android/…/AwPdfNativePlugin.java). */
@@ -17,6 +19,8 @@ interface AwPdfNative {
   addListener(event: 'backButton', listener: () => void): Promise<PluginListenerHandle>
   /** Puts the app behind the others; the open document is still there on coming back. */
   leaveApp(): Promise<void>
+  pickFile(): Promise<void>
+  reopenFile(options: { source: string }): Promise<OpenedFile>
   readFile(options: { id: number; begin: number; end: number }): Promise<{ data: string }>
   print(options: { name: string }): Promise<void>
   setFullscreen(options: { enabled: boolean }): Promise<void>
@@ -30,10 +34,11 @@ const native = registerPlugin<AwPdfNative>('AwPdfNative')
 /** A multiple of 3: the chunks' base64 joins up without padding in the middle of the file. */
 const SHARE_CHUNK_BYTES = 3 * 256 * 1024
 
-function pdfFileFromNative({ id, name, size }: OpenedFile): PdfFile {
+function pdfFileFromNative({ id, name, size, source }: OpenedFile): PdfFile {
   return {
     name,
     size,
+    source,
     read: async (begin, end) => fromBase64((await native.readFile({ id, begin, end })).data),
   }
 }
@@ -53,8 +58,12 @@ export function androidPlatform(): Platform {
   const browser = browserPlatform()
   return {
     ...browser,
+    pickFile: () => { void native.pickFile().catch(console.error) },
+    reopen: async source => {
+      const file = await native.reopenFile({ source })
+      return file.size > 0 ? pdfFileFromNative(file) : null
+    },
     onFile: listener => {
-      browser.onFile(listener)
       void native.addListener('fileOpened', file => listener(pdfFileFromNative(file)))
     },
     // The WebView hands a page it may not open itself over to the system.

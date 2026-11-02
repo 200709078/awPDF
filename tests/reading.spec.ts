@@ -523,3 +523,70 @@ test.describe('sürükle-bırak', () => {
     await expect(page.locator('body')).not.toHaveClass(/is-dropping/);
   });
 });
+
+test.describe('son dosyalar', () => {
+  const pick = (page: Page) => page.evaluate(async () => {
+    const folder = await navigator.storage.getDirectory();
+    const handle = await folder.getFileHandle('kayitli.pdf');
+    Object.assign(window, { showOpenFilePicker: async () => [handle] });
+    document.querySelector<HTMLElement>('#tool-open')!.click();
+  });
+  const onDisk = (page: Page, pdf: Buffer) => page.evaluate(async bytes => {
+    const folder = await navigator.storage.getDirectory();
+    const writer = await (await folder.getFileHandle('kayitli.pdf', { create: true })).createWritable();
+    await writer.write(new Uint8Array(bytes));
+    await writer.close();
+  }, [...pdf]);
+
+  test('belge kalınan sayfadan açılır, liste ekrana gelir', async ({ page }) => {
+    await page.locator('#pdfInput').setInputFiles({ name: 'deneme.pdf', mimeType: 'application/pdf', buffer: makePdf({ pages: 5 }) });
+    await expect(status(page)).toHaveText('1 / 5');
+    await page.locator('#tool-nextPage').click();
+    await page.locator('#tool-nextPage').click();
+    await expect(status(page)).toHaveText('3 / 5');
+
+    await page.reload();
+    await expect(page.locator('#recentFiles .recent-file')).toContainText('Sayfa 3');
+    await page.locator('#pdfInput').setInputFiles({ name: 'baska-ad.pdf', mimeType: 'application/pdf', buffer: makePdf({ pages: 5 }) });
+    await expect(status(page)).toHaveText('3 / 5');
+    await expect(page.locator('#toast')).toHaveText('Kaldığınız yer: sayfa 3');
+    await expect(page.locator('.page[data-page-number="3"] .textLayer')).toContainText('sayfa 3');
+  });
+
+  test('tarayıcı dosyayı tutabiliyorsa listeden tek dokunuşla açılır', async ({ page }) => {
+    await onDisk(page, makePdf());
+    await pick(page);
+    await expect(status(page)).toHaveText('1 / 3');
+    await page.reload();
+    await page.locator('#recentFiles .recent-file').click();
+    await expect(status(page)).toHaveText('1 / 3');
+    await expect(page).toHaveTitle(/^kayitli\.pdf/);
+  });
+
+  test('yeri bilinmeyen dosya yeniden seçilir, sayfası kaybolmaz', async ({ page }) => {
+    await page.locator('#pdfInput').setInputFiles({ name: 'deneme.pdf', mimeType: 'application/pdf', buffer: makePdf() });
+    await expect(status(page)).toHaveText('1 / 3');
+    await page.reload();
+    await page.evaluate(() => { delete (window as { showOpenFilePicker?: unknown }).showOpenFilePicker; });
+    const chooser = page.waitForEvent('filechooser');
+    await page.locator('#recentFiles .recent-file').click();
+    await expect(page.locator('#toast')).toHaveText('Dosyanın yeri bilinmiyor, lütfen yeniden seçin.');
+    await (await chooser).setFiles({ name: 'deneme.pdf', mimeType: 'application/pdf', buffer: makePdf() });
+    await expect(status(page)).toHaveText('1 / 3');
+  });
+
+  test('araç çubuğundan açılır, liste temizlenebilir', async ({ page }) => {
+    await page.locator('#tool-recent').click();
+    await expect(page.locator('#recentDialogEmpty')).toBeVisible();
+    await page.locator('#recentDialog button[value="close"]').click();
+    await page.locator('#pdfInput').setInputFiles({ name: 'deneme.pdf', mimeType: 'application/pdf', buffer: makePdf() });
+    await expect(status(page)).toHaveText('1 / 3');
+    await page.locator('#tool-recent').click();
+    await expect(page.locator('#recentDialog .recent-file')).toHaveCount(1);
+    await page.locator('#recentDialog .recent-clear').click();
+    await expect(page.locator('#recentDialog .recent-file')).toHaveCount(0);
+    await expect(page.locator('#recentDialogEmpty')).toBeVisible();
+    await page.reload();
+    await expect(page.locator('#recentFiles')).toBeHidden();
+  });
+});

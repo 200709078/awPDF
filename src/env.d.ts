@@ -28,7 +28,13 @@ interface DesktopFiles {
   reopen(source: string): Promise<DesktopOpenedFile | null>
 }
 
+interface FileSystemFileHandle {
+  requestPermission(options: { mode: 'read' }): Promise<PermissionState>
+}
+
 interface Window {
+  /** Chromium browsers on computers only. */
+  showOpenFilePicker?(options: { types: { description: string; accept: Record<string, string[]> }[] }): Promise<FileSystemFileHandle[]>
   awPDFDesktop?: {
     windowControls?: DesktopWindowControls
     files?: DesktopFiles

@@ -31,6 +31,18 @@ test('açılamayan dosya uyarı verir, uygulama çalışmaya devam eder', async 
   await expect(page.locator('#emptyOpen')).toBeVisible();
 });
 
+test('dosya seçici Android\'inkidir, seçilen dosya son dosyalardan yeniden açılır', async ({ page }) => {
+  const pdf = await start(page);
+  await page.locator('#emptyOpen').click();
+  expect(await calls(page)).toContain('pickFile');
+  await send(page, 'fileOpened', { id: 1, name: 'gelen.pdf', size: pdf.length, source: 'content://belge/1' });
+  await expect(page.locator('#pageStatus')).toHaveText('1 / 3');
+  await page.reload();
+  await page.locator('#recentFiles .recent-file').click();
+  await expect(page.locator('#pageStatus')).toHaveText('1 / 3');
+  expect(await calls(page)).toContain('reopenFile');
+});
+
 test.describe('geri düğmesi', () => {
   test('açık olanı üstten alta kapatır, en son uygulamadan çıkar', async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 640 });

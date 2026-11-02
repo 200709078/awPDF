@@ -13,6 +13,8 @@ export interface Platform {
   /** Shows the file picker; a chosen file arrives through `onFile`. */
   pickFile(): void
   onFile(listener: (file: PdfFile) => void): void
+  /** Opens a file again by its `source`; null when it is gone or may no longer be read. */
+  reopen?(source: string): Promise<PdfFile | null>
   /** Hands a link to the system's browser or mail app. */
   openExternal(url: string): void
   /** Prints what the `@media print` styles show. */

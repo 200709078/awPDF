@@ -1,5 +1,6 @@
 package com.madematik.awpdf;
 
+import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
@@ -12,6 +13,7 @@ import android.provider.OpenableColumns;
 import android.util.Base64;
 import android.view.Window;
 import androidx.activity.OnBackPressedCallback;
+import androidx.activity.result.ActivityResult;
 import androidx.core.content.FileProvider;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -20,6 +22,7 @@ import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import java.io.File;
 import java.io.FileInputStream;
@@ -69,11 +72,39 @@ public class AwPdfNativePlugin extends Plugin {
     protected void handleOnNewIntent(Intent intent) {
         Uri uri = intent.getData();
         if (!Intent.ACTION_VIEW.equals(intent.getAction()) || uri == null) return;
-        getBridge().execute(() -> openFile(uri));
+        getBridge().execute(() -> sendFile(uri));
+    }
+
+    /** Android's own picker: unlike the WebView's, it allows coming back to the file later. */
+    @PluginMethod
+    public void pickFile(PluginCall call) {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("application/pdf");
+        startActivityForResult(call, intent, "filePicked");
+    }
+
+    @ActivityCallback
+    private void filePicked(PluginCall call, ActivityResult result) {
+        Intent data = result.getData();
+        if (result.getResultCode() == Activity.RESULT_OK && data != null && data.getData() != null) {
+            Uri uri = data.getData();
+            getBridge().execute(() -> sendFile(uri));
+        }
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void reopenFile(PluginCall call) {
+        call.resolve(openFile(Uri.parse(call.getString("source", ""))));
     }
 
     /** Retained until the page listens, since a tap can start the app before the page loads. */
-    private void openFile(Uri uri) {
+    private void sendFile(Uri uri) {
+        notifyListeners("fileOpened", openFile(uri), true);
+    }
+
+    private JSObject openFile(Uri uri) {
         closeOpenedFile();
         JSObject file = new JSObject();
         file.put("id", ++openedId);
@@ -82,11 +113,22 @@ public class AwPdfNativePlugin extends Plugin {
             ParcelFileDescriptor descriptor = seekableDescriptor(uri);
             file.put("size", descriptor.getStatSize());
             openedFile = new ParcelFileDescriptor.AutoCloseInputStream(descriptor);
+            if (keepAccess(uri)) file.put("source", uri.toString());
         } catch (IOException | SecurityException | IllegalArgumentException error) {
             // An empty file: the page reports it the way it reports any PDF it cannot open.
             file.put("size", 0);
         }
-        notifyListeners("fileOpened", file, true);
+        return file;
+    }
+
+    /** Files from the picker can be kept; many apps' "open with" grants last only this visit. */
+    private boolean keepAccess(Uri uri) {
+        try {
+            getContext().getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            return true;
+        } catch (SecurityException refused) {
+            return false;
+        }
     }
 
     private void closeOpenedFile() {

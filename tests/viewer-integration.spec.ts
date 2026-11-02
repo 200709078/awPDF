@@ -166,6 +166,7 @@ test('pencere daralınca sayfa genişliğe sığar, seçilen yakınlaştırma ko
   await page.setViewportSize({ width: 500, height: 800 });
   await expect.poll(width).toBeLessThan(500);
 
+  await page.locator('#toolbarMenuButton').click();
   await page.locator('#tool-zoomIn').click();
   await expect.poll(width).toBeGreaterThan(500);
   const zoomed = await width();

@@ -8,7 +8,7 @@ export async function pretendAndroid(page: Page, files: Record<number, number[]>
   await page.addInitScript(contents => {
     const listeners: Record<string, (data: unknown) => void> = {};
     const calls: string[] = [];
-    const methods = ['print', 'setFullscreen', 'appendShareFile', 'shareFile', 'readFile', 'leaveApp', 'removeListener'];
+    const methods = ['print', 'setFullscreen', 'appendShareFile', 'shareFile', 'pickFile', 'reopenFile', 'readFile', 'leaveApp', 'removeListener'];
     Object.assign(window, {
       androidBridge: { postMessage: () => undefined },
       androidCalls: calls,
@@ -20,6 +20,7 @@ export async function pretendAndroid(page: Page, files: Record<number, number[]>
         }],
         nativePromise: async (_plugin: string, method: string, options: { id: number; begin: number; end: number }) => {
           calls.push(method);
+          if (method === 'reopenFile') return { id: 1, name: 'gelen.pdf', size: contents[1]?.length ?? 0, source: 'content://belge/1' };
           if (method !== 'readFile') return undefined;
           const part = (contents[options.id] ?? []).slice(options.begin, options.end);
           return { data: btoa(String.fromCharCode(...part)) };

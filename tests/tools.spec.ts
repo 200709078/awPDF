@@ -3,6 +3,7 @@ import { LARGE_FILE_WARNING_BYTES, formatMegabytes, needsLargeFileWarning } from
 import { isOpenableLink } from '../src/core/links';
 import { foldTurkish } from '../src/core/turkish-search';
 import { fromBase64, toBase64 } from '../src/core/base64';
+import { RecentFiles } from '../src/core/recent-files';
 import { TOOLS } from '../src/tools';
 
 test('her aracın kimliği tektir', () => {
@@ -35,6 +36,36 @@ test('dosya parçası Android köprüsünden bozulmadan geçer', () => {
   const bytes = Uint8Array.from({ length: 200_000 }, (_, index) => (index * 31) % 256);
   expect(fromBase64(toBase64(bytes))).toEqual(bytes);
   expect(fromBase64('')).toEqual(new Uint8Array());
+});
+
+test.describe('son dosyalar', () => {
+  const memory = () => {
+    const values = new Map<string, string>();
+    return { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => { values.set(key, value); } };
+  };
+
+  test('son açılan başa gelir, liste sınırlıdır, sayfa ve yer korunur', () => {
+    const recent = new RecentFiles(memory());
+    for (let index = 0; index < 25; index += 1) recent.remember(`belge${index}`, `${index}.pdf`, undefined);
+    expect(recent.list).toHaveLength(20);
+    expect(recent.list[0].name).toBe('24.pdf');
+    recent.setPage('belge10', 7);
+    recent.remember('belge10', 'yeni-ad.pdf', undefined);
+    expect(recent.list[0]).toMatchObject({ fingerprint: 'belge10', name: 'yeni-ad.pdf', page: 7 });
+    expect(recent.pageOf('tanınmayan')).toBe(1);
+  });
+
+  test('kayıt yeniden yüklenir; bozuk kayıt ve dolu depo uygulamayı durdurmaz', () => {
+    const store = memory();
+    const first = new RecentFiles(store);
+    first.remember('belge', 'a.pdf', 'yer');
+    expect(new RecentFiles(store).list[0]).toMatchObject({ name: 'a.pdf', source: 'yer' });
+    store.setItem('awPDF.recent', '{bozuk');
+    expect(new RecentFiles(store).list).toEqual([]);
+    const full = new RecentFiles({ getItem: () => null, setItem: () => { throw new Error('dolu'); } });
+    full.remember('belge', 'a.pdf', undefined);
+    expect(full.list).toHaveLength(1);
+  });
 });
 
 test('yalnız web ve e-posta bağlantıları uygulamadan çıkar', () => {

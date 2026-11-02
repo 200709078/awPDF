@@ -33,6 +33,11 @@
 				<img src="./img/app-icon.png" width="128" height="128" alt="">
 				<h1>awPDF</h1>
 				<button id="emptyOpen" class="primary-button" type="button">PDF Aç</button>
+				<div id="recentFiles" class="recent-files" hidden>
+					<h2>Son Dosyalar</h2>
+					<div id="recentFilesList" class="recent-files__list"></div>
+					<button class="secondary-button recent-clear" type="button">Listeyi Temizle</button>
+				</div>
 			</section>
 		</div>
 	</main>
@@ -65,6 +70,15 @@
 		<form method="dialog" class="dialog__actions">
 			<button value="open" class="primary-button">Aç</button>
 			<button value="cancel" class="secondary-button">Vazgeç</button>
+		</form>
+	</dialog>
+	<dialog id="recentDialog" class="dialog">
+		<h2>Son Dosyalar</h2>
+		<p id="recentDialogEmpty">Henüz açılmış bir dosya yok.</p>
+		<div id="recentDialogList" class="recent-files__list"></div>
+		<form method="dialog" class="dialog__actions">
+			<button value="close" class="primary-button">Kapat</button>
+			<button class="secondary-button recent-clear" type="button">Listeyi Temizle</button>
 		</form>
 	</dialog>
 	<dialog id="printDialog" class="dialog">

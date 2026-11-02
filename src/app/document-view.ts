@@ -60,7 +60,11 @@ export class DocumentView {
   private wantsSinglePage = false
   /** Detaching the finder stops its page-by-page reading of a long book. */
   private finderDetached = false
+  /** The page to show once pdf.js has laid the document out. */
+  private startPage = 1
+  private isSettled = false
   private readonly listeners = new Set<() => void>()
+  private readonly pageListeners = new Set<(page: number) => void>()
   private readonly searchListeners = new Set<(progress: SearchProgress) => void>()
 
   constructor(container: HTMLDivElement, viewerElement: HTMLDivElement, onExternalLink: (url: string) => void) {
@@ -73,6 +77,12 @@ export class DocumentView {
       // pdf.js forgets the layout with each document; the choice carries over to the next one.
       this.applyLayout()
       this.fitWidth()
+      this.goTo(this.startPage)
+      this.isSettled = true
+    })
+    eventBus.on('pagechanging', ({ pageNumber }: { pageNumber: number }) => {
+      if (!this.isSettled) return
+      for (const listener of this.pageListeners) listener(pageNumber)
     })
     for (const event of ['pagesinit', 'pagechanging', 'scalechanging', 'rotationchanging']) {
       eventBus.on(event, () => this.notify())
@@ -157,15 +167,22 @@ export class DocumentView {
     this.listeners.add(listener)
   }
 
+  /** Runs when the reader moves to another page, not while a document is being laid out. */
+  onPageChange(listener: (page: number) => void): void {
+    this.pageListeners.add(listener)
+  }
+
   onSearchProgress(listener: (progress: SearchProgress) => void): void {
     this.searchListeners.add(listener)
   }
 
-  open(document: PDFDocumentProxy, file: PdfFile): void {
+  open(document: PDFDocumentProxy, file: PdfFile, startPage = 1): void {
     void this.document?.loadingTask.destroy()
     this.openFile?.close?.()
     this.document = document
     this.openFile = file
+    this.startPage = Math.min(startPage, document.numPages)
+    this.isSettled = false
     this.links.setDocument(document)
     this.viewer.setDocument(document)
     this.finder.setDocument(document)

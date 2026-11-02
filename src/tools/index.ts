@@ -1,4 +1,4 @@
-import { goToPageTool, printTool, searchTool, shareTool } from './document'
+import { goToPageTool, printTool, recentTool, searchTool, shareTool } from './document'
 import { openTool } from './open'
 import { nextPageTool, previousPageTool, twoPagesTool } from './pages'
 import { sidePanelTool } from './side-panel'
@@ -13,6 +13,7 @@ export const TOOLS: readonly Tool[] = [
   previousPageTool,
   nextPageTool,
   searchTool,
+  recentTool,
   zoomOutTool,
   zoomInTool,
   fitWidthTool,
