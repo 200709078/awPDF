@@ -15,8 +15,8 @@ Windows ve imzalı Android paketleri GitHub Releases'te yayımlandı (imza doğr
 
 Kalanlar:
 
-- **Açma:** sürükle-bırak, "Birlikte aç" (Linux, Windows, Android), son dosyalar, kalınan sayfadan
-  devam, parolalı PDF
+- **Açma:** sürükle-bırak, "Birlikte aç" (Linux, Windows), son dosyalar, kalınan sayfadan devam,
+  parolalı PDF
 - **Gezinme:** içindekiler (yan panelde sekme olarak)
 - **Diğer:** masaüstünde sekmeler, Android geri düğmesi
 - **Telefon:** araç çubuğu dar ekrana sığmıyor, şimdilik yana kayıyor; menüye toplanmalı
@@ -35,7 +35,8 @@ Kalanlar:
 
 - **Android:** büyük dosyayı dosya seçiciden okumak yavaş olabilir; gerekirse yerel okuma eklenir
   (`PdfFile.read`). Yazdırma, paylaşma ve tam ekran yerel eklentiyle yapıldı, derleniyor ama
-  cihazda denenmedi. "Birlikte aç" da küçük bir yerel kod ister.
+  cihazda denenmedi. "Birlikte aç" 2026-11-02'de eklendi (kullanıcı telefonda listede göremedi):
+  PDF'e dokununca ve "Birlikte aç"ta awPDF çıkmalı, dosya uygulama kapalıyken de açıkken de açılmalı.
 - **200 MB eşiği:** tahta ve düşük güçlü tablet testlerinden sonra gözden geçirilir; gerekirse
   platforma göre ayrılır.
 - **Masaüstü yazdırma:** sistem yazdırma penceresi otomatik testle denenemiyor; elle bakılmalı.

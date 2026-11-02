@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { LARGE_FILE_WARNING_BYTES, formatMegabytes, needsLargeFileWarning } from '../src/core/open-policy';
 import { isOpenableLink } from '../src/core/links';
 import { foldTurkish } from '../src/core/turkish-search';
+import { fromBase64, toBase64 } from '../src/core/base64';
 import { TOOLS } from '../src/tools';
 
 test('her aracın kimliği tektir', () => {
@@ -28,6 +29,12 @@ test('Türkçe I harfleri tek harfe iner, uzunluk değişmez', () => {
   const text = 'ISI ısı İZMİR izmir';
   expect(foldTurkish(text)).toBe('iSi isi iZMiR izmir');
   expect(foldTurkish(text).length).toBe(text.length);
+});
+
+test('dosya parçası Android köprüsünden bozulmadan geçer', () => {
+  const bytes = Uint8Array.from({ length: 200_000 }, (_, index) => (index * 31) % 256);
+  expect(fromBase64(toBase64(bytes))).toEqual(bytes);
+  expect(fromBase64('')).toEqual(new Uint8Array());
 });
 
 test('yalnız web ve e-posta bağlantıları uygulamadan çıkar', () => {
