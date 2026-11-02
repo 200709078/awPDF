@@ -6,13 +6,13 @@ import type { Tool } from './tool'
 import { fullscreenTool, rotateTool, singlePageTool, themeTool } from './view'
 import { fitHeightTool, fitPageTool, fitWidthTool, zoomInTool, zoomOutTool } from './zoom'
 
-/** Every tool, in toolbar order. */
+/** Every tool, in toolbar order. The page buttons come early: a narrow screen keeps them as a pair. */
 export const TOOLS: readonly Tool[] = [
   openTool,
   sidePanelTool,
-  searchTool,
   previousPageTool,
   nextPageTool,
+  searchTool,
   zoomOutTool,
   zoomInTool,
   fitWidthTool,

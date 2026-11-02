@@ -47,7 +47,8 @@ test('dar ekranda satır kaymaz, sığmayanlar menüde simge ve adıyla durur', 
   // The order stays: the first tools on the row, the rest in the menu.
   await expect(toolbar(page).locator(':scope > .toolbar__button:visible').first()).toHaveId('tool-open');
   await expect(page.locator('#toolbar > #tool-previousPage')).toBeVisible();
-  await expect(menu(page).locator('#tool-nextPage')).toHaveCount(1);
+  await expect(page.locator('#toolbar > #tool-nextPage')).toBeVisible();
+  await expect(menu(page).locator('#tool-search')).toHaveCount(1);
 
   await expect(menu(page)).toBeHidden();
   await expect(toggle(page)).toHaveAttribute('aria-expanded', 'false');
