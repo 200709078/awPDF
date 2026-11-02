@@ -17,14 +17,17 @@
 <body>
 	<div id="toolbar" class="toolbar" role="toolbar" aria-label="Araçlar"></div>
 	<main id="workspace" class="workspace">
-		<div id="viewerContainer" class="viewer-container" tabindex="0" hidden>
-			<div id="viewer" class="pdfViewer"></div>
+		<aside id="sidePanel" class="side-panel" aria-label="Sayfalar" hidden></aside>
+		<div class="document-area">
+			<div id="viewerContainer" class="viewer-container" tabindex="0" hidden>
+				<div id="viewer" class="pdfViewer"></div>
+			</div>
+			<section id="emptyState" class="empty-state">
+				<img src="./img/app-icon.png" width="128" height="128" alt="">
+				<h1>awPDF</h1>
+				<button id="emptyOpen" class="primary-button" type="button">PDF Aç</button>
+			</section>
 		</div>
-		<section id="emptyState" class="empty-state">
-			<img src="./img/app-icon.png" width="128" height="128" alt="">
-			<h1>awPDF</h1>
-			<button id="emptyOpen" class="primary-button" type="button">PDF Aç</button>
-		</section>
 	</main>
 	<input id="pdfInput" type="file" accept="application/pdf,.pdf" hidden>
 	<dialog id="largeFileDialog" class="dialog">

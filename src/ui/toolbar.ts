@@ -31,11 +31,12 @@ export function mountToolbar(root: HTMLElement, tools: readonly Tool[], context:
     const { isOpen, pageLabel, pageCount } = context.view
     for (const { tool, button } of buttons) {
       button.disabled = !canRun(tool)
-      if (tool.isActive) button.setAttribute('aria-pressed', String(tool.isActive(context.view)))
+      if (tool.isActive) button.setAttribute('aria-pressed', String(tool.isActive(context)))
     }
     status.textContent = isOpen ? `${pageLabel} / ${pageCount}` : ''
   }
   context.view.onChange(update)
+  context.sidePanel.onChange(update)
   update()
 
   window.addEventListener('keydown', event => {

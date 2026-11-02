@@ -23,6 +23,6 @@ export const twoPagesTool: Tool = {
   label: 'İki Sayfa Görünümü',
   icon: '<rect x="3" y="5" width="8" height="14" rx="1"/><rect x="13" y="5" width="8" height="14" rx="1"/>',
   needsDocument: true,
-  isActive: view => view.twoPages,
+  isActive: ({ view }) => view.twoPages,
   run: ({ view }) => view.toggleTwoPages(),
 }

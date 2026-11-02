@@ -5,6 +5,8 @@ import { currentPlatform } from '../platform/platform'
 import { TOOLS } from '../tools'
 import type { ToolContext } from '../tools/tool'
 import { confirmLargeFile, showToast } from '../ui/messages'
+import { SidePanel } from '../ui/side-panel'
+import { ThumbnailList } from '../ui/thumbnails'
 import { mountToolbar } from '../ui/toolbar'
 import { DocumentView } from './document-view'
 
@@ -17,7 +19,8 @@ export function startApp(): void {
   const emptyState = document.querySelector<HTMLElement>('#emptyState')!
   const platform = currentPlatform()
   const view = new DocumentView(container, viewer)
-  const context: ToolContext = { view, pickFile: () => platform.pickFile() }
+  const sidePanel = new SidePanel(document.querySelector('#sidePanel')!)
+  const context: ToolContext = { view, sidePanel, pickFile: () => platform.pickFile() }
   let lastOpen = 0
 
   async function open(file: PdfFile): Promise<void> {
@@ -40,6 +43,11 @@ export function startApp(): void {
   }
 
   mountToolbar(document.querySelector('#toolbar')!, TOOLS, context)
+  new ThumbnailList(sidePanel.element, view, sidePanel, page => {
+    view.goTo(page)
+    sidePanel.closeIfOverlay()
+  })
+  container.addEventListener('pointerdown', () => sidePanel.closeIfOverlay())
   platform.onFile(file => void open(file))
   document.querySelector('#emptyOpen')!.addEventListener('click', context.pickFile)
 }

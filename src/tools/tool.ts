@@ -1,8 +1,10 @@
 import type { DocumentView } from '../app/document-view'
+import type { SidePanel } from '../ui/side-panel'
 
 /** What a tool may use. Tools reach the document and the platform only through this. */
 export interface ToolContext {
   readonly view: DocumentView
+  readonly sidePanel: SidePanel
   pickFile(): void
 }
 
@@ -23,6 +25,6 @@ export interface Tool {
   /** Disabled while this is false, such as on the first page; read whenever the view changes. */
   isAvailable?(view: DocumentView): boolean
   /** Makes the button an on/off switch; it shows as pressed while this is true. */
-  isActive?(view: DocumentView): boolean
+  isActive?(context: ToolContext): boolean
   run(context: ToolContext): void
 }

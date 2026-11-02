@@ -53,12 +53,16 @@ export class DocumentView {
     return this.document?.numPages ?? 0
   }
 
+  get pdf(): PDFDocumentProxy | null {
+    return this.document
+  }
+
   get twoPages(): boolean {
     return this.wantsTwoPages
   }
 
   /** The first and last pages on the current row: pairs are 1-2, 3-4, … */
-  private get row(): { first: number; last: number } {
+  get row(): { first: number; last: number } {
     const { page } = this
     if (!this.twoPages) return { first: page, last: page }
     const first = page % 2 === 1 ? page : page - 1
@@ -89,6 +93,10 @@ export class DocumentView {
     this.links.setDocument(document)
     this.viewer.setDocument(document)
     this.notify()
+  }
+
+  goTo(page: number): void {
+    this.viewer.currentPageNumber = page
   }
 
   /** pdf.js steps a whole row when both of its pages are in view. */

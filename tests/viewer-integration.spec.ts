@@ -251,3 +251,131 @@ test('dış bağlantılar kapalıdır', async ({ page }) => {
   await expect(page.locator('#pageStatus')).toHaveText('1 / 3');
   await expect(page.locator('.annotationLayer a[href^="http"]')).toHaveCount(0);
 });
+
+const drawnThumbnails = (page: Page) => page.locator('.thumbnail canvas').evaluateAll(canvases =>
+  canvases.filter(canvas => (canvas as HTMLCanvasElement).width > 0).map(canvas => Number(canvas.parentElement!.dataset.page)));
+
+test('sayfa paneli düğmesi belge yokken kapalıdır, başlangıçta panel kapalıdır ve hiçbir şey çizilmez', async ({ page }) => {
+  await expect(page.locator('#tool-sidePanel')).toBeDisabled();
+  await openPdf(page, makePdf());
+  await expect(page.locator('#pageStatus')).toHaveText('1 / 3');
+  await expect(page.locator('#tool-sidePanel')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('#sidePanel')).toBeHidden();
+  await expect(page.locator('.thumbnail')).toHaveCount(3);
+  await page.waitForTimeout(300);
+  expect(await drawnThumbnails(page)).toEqual([]);
+});
+
+test('sayfa paneli düğmeyle ve F4 ile açılıp kapanır, açılınca sayfa yeniden sığar', async ({ page }) => {
+  await openPdf(page, makePdf());
+  const firstPage = page.locator('.page[data-page-number="1"]');
+  await expect(firstPage.locator('.textLayer')).toContainText('awPDF');
+  const width = async () => (await firstPage.boundingBox())!.width;
+  const full = await width();
+  const toggle = page.locator('#tool-sidePanel');
+
+  await toggle.click();
+  await expect(page.locator('#sidePanel')).toBeVisible();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  await expect.poll(width).toBeLessThan(full);
+
+  await toggle.click();
+  await expect(page.locator('#sidePanel')).toBeHidden();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await expect.poll(width).toBeCloseTo(full, 0);
+
+  await page.keyboard.press('F4');
+  await expect(page.locator('#sidePanel')).toBeVisible();
+});
+
+test('küçük resim gerçekten çizilir, tıklanınca o sayfaya gider ve geçerli sayfa işaretlenir', async ({ page }) => {
+  await openPdf(page, makePdf());
+  await expect(page.locator('#pageStatus')).toHaveText('1 / 3');
+  await page.locator('#tool-sidePanel').click();
+  const thumbnail = (number: number) => page.locator(`.thumbnail[data-page="${number}"]`);
+  await expect(thumbnail(1)).toHaveClass(/is-current/);
+  await expect.poll(() => thumbnail(1).locator('canvas').evaluate((canvas: HTMLCanvasElement) => {
+    if (!canvas.width) return false;
+    const { data } = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height);
+    return data.some((value, index) => index % 4 !== 3 && value < 128);
+  })).toBe(true);
+
+  await thumbnail(3).click();
+  await expect(page.locator('#pageStatus')).toHaveText('3 / 3');
+  await expect(thumbnail(3)).toHaveClass(/is-current/);
+  await expect(thumbnail(3)).toHaveAttribute('aria-current', 'page');
+  await expect(thumbnail(1)).not.toHaveClass(/is-current/);
+
+  await page.locator('#tool-previousPage').click();
+  await expect(thumbnail(2)).toHaveClass(/is-current/);
+});
+
+test('iki sayfa görünümünde satırın iki küçük resmi de işaretlenir', async ({ page }) => {
+  await openPdf(page, makePdf({ pages: 4 }));
+  await expect(page.locator('#pageStatus')).toHaveText('1 / 4');
+  await page.locator('#tool-sidePanel').click();
+  await page.locator('#tool-twoPages').click();
+  await page.locator('.thumbnail[data-page="4"]').click();
+  await expect(page.locator('#pageStatus')).toHaveText('3-4 / 4');
+  await expect(page.locator('.thumbnail.is-current')).toHaveCount(2);
+  await expect(page.locator('.thumbnail[data-page="3"]')).toHaveClass(/is-current/);
+});
+
+test('uzun belgede yalnız görünen küçük resimler çizilir, uzaklaşanlar bırakılır', async ({ page }) => {
+  await openPdf(page, makePdf({ pages: 400 }));
+  await expect(page.locator('#pageStatus')).toHaveText('1 / 400');
+  await page.locator('#tool-sidePanel').click();
+  await expect.poll(() => drawnThumbnails(page)).toContain(1);
+  await page.waitForTimeout(500);
+  const early = await drawnThumbnails(page);
+  expect(early.length).toBeLessThan(20);
+
+  await page.locator('#sidePanel').evaluate(panel => { panel.scrollTop = panel.scrollHeight; });
+  await expect.poll(() => drawnThumbnails(page)).toContain(400);
+  await expect.poll(async () => (await drawnThumbnails(page)).includes(1)).toBe(false);
+  expect((await drawnThumbnails(page)).length).toBeLessThan(20);
+});
+
+test('geçerli sayfa panelde görünür kalır', async ({ page }) => {
+  await openPdf(page, makePdf({ pages: 60 }));
+  await expect(page.locator('#pageStatus')).toHaveText('1 / 60');
+  await page.locator('#viewerContainer').evaluate(container => { container.scrollTop = container.scrollHeight; });
+  await expect(page.locator('#pageStatus')).toHaveText('60 / 60');
+  await page.locator('#tool-sidePanel').click();
+  await expect(page.locator('.thumbnail[data-page="60"]')).toBeInViewport();
+});
+
+test('yeni belgede küçük resimler yenilenir', async ({ page }) => {
+  await openPdf(page, makePdf({ pages: 3 }));
+  await expect(page.locator('.thumbnail')).toHaveCount(3);
+  await page.locator('#tool-sidePanel').click();
+  await expect.poll(() => drawnThumbnails(page)).toContain(1);
+  await openPdf(page, makePdf({ pages: 5 }), 'ikinci.pdf');
+  await expect(page.locator('.thumbnail')).toHaveCount(5);
+  await expect(page.locator('.thumbnail.is-current')).toHaveCount(1);
+  await expect.poll(() => drawnThumbnails(page)).toContain(1);
+});
+
+test('dar ekranda panel belgenin üstünde açılır, seçim ve belgeye dokunma onu kapatır', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 780 });
+  await openPdf(page, makePdf());
+  const firstPage = page.locator('.page[data-page-number="1"]');
+  await expect(firstPage.locator('.textLayer')).toContainText('awPDF');
+  const width = (await firstPage.boundingBox())!.width;
+  const panel = page.locator('#sidePanel');
+
+  await page.locator('#tool-sidePanel').click();
+  await expect(panel).toBeVisible();
+  await page.waitForTimeout(200);
+  expect((await firstPage.boundingBox())!.width).toBe(width);
+
+  await page.locator('.thumbnail[data-page="2"]').click();
+  await expect(panel).toBeHidden();
+  await expect(page.locator('#pageStatus')).toHaveText('2 / 3');
+  await expect(page.locator('#tool-sidePanel')).toHaveAttribute('aria-pressed', 'false');
+
+  await page.locator('#tool-sidePanel').click();
+  await expect(panel).toBeVisible();
+  await page.mouse.click(370, 400);
+  await expect(panel).toBeHidden();
+});
