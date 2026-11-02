@@ -497,3 +497,29 @@ test.describe('yazdırma ve paylaşma', () => {
     await expect(page.locator('#tool-goToPage')).toHaveCount(0);
   });
 });
+
+test.describe('sürükle-bırak', () => {
+  const dragPdf = (page: Page, type: string, buffer: Buffer | null) => page.evaluate(([event, bytes]) => {
+    const dataTransfer = new DataTransfer();
+    if (bytes) dataTransfer.items.add(new File([new Uint8Array(bytes as number[])], 'birakilan.pdf', { type: 'application/pdf' }));
+    else dataTransfer.setData('text/plain', 'yazı');
+    const dragEvent = new DragEvent(event as string, { dataTransfer, bubbles: true, cancelable: true });
+    document.querySelector('#workspace')!.dispatchEvent(dragEvent);
+    return dragEvent.defaultPrevented;
+  }, [type, buffer ? [...buffer] : null]);
+
+  test('bırakılan PDF açılır, sürüklerken alan belli olur', async ({ page }) => {
+    const pdf = makePdf();
+    await dragPdf(page, 'dragover', pdf);
+    await expect(page.locator('body')).toHaveClass(/is-dropping/);
+    await dragPdf(page, 'drop', pdf);
+    await expect(status(page)).toHaveText('1 / 3');
+    await expect(page.locator('body')).not.toHaveClass(/is-dropping/);
+    await expect(page).toHaveTitle(/^birakilan\.pdf/);
+  });
+
+  test('dosya olmayan sürükleme araya girmez', async ({ page }) => {
+    expect(await dragPdf(page, 'dragover', null)).toBe(false);
+    await expect(page.locator('body')).not.toHaveClass(/is-dropping/);
+  });
+});

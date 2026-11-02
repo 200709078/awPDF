@@ -31,6 +31,6 @@ export interface Platform {
 
 export function currentPlatform(): Platform {
   if (Capacitor.getPlatform() === 'android') return androidPlatform()
-  const controls = window.awPDFDesktop?.windowControls
-  return controls ? desktopPlatform(controls) : browserPlatform()
+  const { windowControls, files } = window.awPDFDesktop ?? {}
+  return windowControls && files ? desktopPlatform(windowControls, files) : browserPlatform()
 }

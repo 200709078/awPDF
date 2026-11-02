@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, net, protocol, shell, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { DesktopFiles, type OpenedFile } from './files.js'
 
 const distPath = fileURLToPath(new URL('../dist/', import.meta.url))
 const preloadPath = fileURLToPath(new URL('./preload.cjs', import.meta.url))
@@ -68,6 +69,32 @@ function registerWindowControls(): void {
   ipcMain.handle('window:is-fullscreen', event => senderWindow(event)?.isFullScreen() ?? false)
 }
 
+/** The PDFs on a command line: paths, or `file:` addresses from a file manager's "open with". */
+function pdfPaths(argv: readonly string[], directory: string): string[] {
+  return argv.slice(1)
+    .filter(argument => !argument.startsWith('-'))
+    .map(argument => (argument.startsWith('file:') ? fileURLToPath(argument) : path.resolve(directory, argument)))
+    .filter(argument => /\.pdf$/i.test(argument))
+}
+
+/** Holds the files that arrive while the page is still loading. */
+function fileDelivery(files: DesktopFiles): (paths: readonly string[]) => void {
+  const waiting: OpenedFile[] = []
+  let page: Electron.WebContents | null = null
+  ipcMain.on('files:ready', event => {
+    page = event.sender
+    for (const file of waiting.splice(0)) page.send('files:opened', file)
+  })
+  return paths => {
+    for (const filePath of paths) {
+      files.open(filePath).then(file => {
+        if (page) page.send('files:opened', file)
+        else waiting.push(file)
+      }).catch(console.error)
+    }
+  }
+}
+
 async function createWindow(): Promise<void> {
   const window = new BrowserWindow({
     title: 'awPDF | mADEMatik',
@@ -111,10 +138,24 @@ async function createWindow(): Promise<void> {
   await window.loadURL(devServerUrl || `${SCHEME}://${APP_HOST}/index.html`)
 }
 
-void app.whenReady().then(async () => {
+// One window for all documents: a second start hands its files over and leaves.
+const isFirstInstance = app.requestSingleInstanceLock()
+if (!isFirstInstance) app.quit()
+
+if (isFirstInstance) void app.whenReady().then(async () => {
   app.setAppUserModelId('com.madematik.awpdf')
   registerAppProtocol()
   registerWindowControls()
+  const files = new DesktopFiles()
+  files.register()
+  const deliver = fileDelivery(files)
+  app.on('second-instance', (_event, argv, directory) => {
+    deliver(pdfPaths(argv, directory))
+    const window = BrowserWindow.getAllWindows()[0]
+    if (window?.isMinimized()) window.restore()
+    window?.focus()
+  })
+  deliver(pdfPaths(process.argv, process.cwd()))
   await createWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

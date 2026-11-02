@@ -49,6 +49,15 @@
       "package.json"
     ],
     "asar": true,
+    "fileAssociations": [
+      {
+        "ext": "pdf",
+        "name": "awPDF.Document",
+        "description": "PDF belgesi",
+        "mimeType": "application/pdf",
+        "role": "Viewer"
+      }
+    ],
     "linux": {
       "target": [
         "AppImage",

@@ -7,6 +7,10 @@ export interface PdfFile {
   readonly size: number
   /** Bytes from `begin` up to, not including, `end`. */
   read(begin: number, end: number): Promise<Uint8Array>
+  /** How the platform finds this file again; absent where it cannot. */
+  readonly source?: string
+  /** Lets go of the file when its document closes. */
+  close?(): void
 }
 
 export function pdfFileFromBlob(file: File): PdfFile {

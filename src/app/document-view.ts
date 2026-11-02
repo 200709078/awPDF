@@ -163,6 +163,7 @@ export class DocumentView {
 
   open(document: PDFDocumentProxy, file: PdfFile): void {
     void this.document?.loadingTask.destroy()
+    this.openFile?.close?.()
     this.document = document
     this.openFile = file
     this.links.setDocument(document)

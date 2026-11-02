@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { _electron as electron } from '@playwright/test'
 import { makePdf } from '../tests/helpers/make-pdf.mjs'
@@ -6,11 +9,20 @@ import { makePdf } from '../tests/helpers/make-pdf.mjs'
 const executablePath = process.env.AWPDF_ELECTRON_EXECUTABLE
 const launchEnvironment = { ...process.env, AWPDF_DEV_SERVER_URL: '' }
 delete launchEnvironment.ELECTRON_RUN_AS_NODE
-const application = await electron.launch({
-  ...(executablePath ? { executablePath, args: [] } : { args: ['.'] }),
+const launchArguments = executablePath ? [] : ['.']
+const launch = (...files) => electron.launch({
+  ...(executablePath ? { executablePath } : {}),
+  args: [...launchArguments, ...files],
   env: launchEnvironment,
   timeout: 30_000,
 })
+const folder = mkdtempSync(path.join(tmpdir(), 'awpdf-'))
+const pdfOnDisk = name => {
+  const file = path.join(folder, name)
+  writeFileSync(file, makePdf())
+  return file
+}
+const application = await launch()
 
 try {
   const page = await application.firstWindow()
@@ -33,7 +45,7 @@ try {
   assert.equal(preferences.contextIsolation, true)
   assert.equal(preferences.sandbox, true)
   assert.equal(await page.evaluate(() => typeof window.require), 'undefined')
-  assert.deepEqual(await page.evaluate(() => Object.keys(window.awPDFDesktop ?? {})), ['windowControls'])
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.awPDFDesktop ?? {}).sort()), ['files', 'windowControls'])
 
   // Frameless window: the renderer's title bar replaces the system frame.
   const titlebar = page.locator('#titlebar')
@@ -52,6 +64,19 @@ try {
     if (!canvas?.width) return false
     return canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data.some((value, index) => index % 4 !== 3 && value < 128)
   })
+
+  // A file from the disk is read by the shell; the page gets its name, never its path.
+  await page.locator('#pdfInput').setInputFiles(pdfOnDisk('secilen.pdf'))
+  await page.waitForFunction(() => document.title.startsWith('secilen.pdf'))
+  await page.waitForFunction(() => document.querySelector('.page[data-page-number="1"] .textLayer')?.textContent.includes('awPDF'))
+  assert.equal(await page.evaluate(() => window.awPDFDesktop.files.reopen('/etc/hostname')), null)
+
+  // A second start ("open with" while the app runs) hands its file over and leaves.
+  const electronBinary = executablePath ?? await application.evaluate(() => process.execPath)
+  const second = spawnSync(electronBinary, [...launchArguments, pdfOnDisk('ikinci.pdf')], { env: launchEnvironment, timeout: 20_000 })
+  assert.equal(second.status, 0, 'İkinci başlatma dosyayı devredip çıkmalı')
+  await page.waitForFunction(() => document.title.startsWith('ikinci.pdf'))
+  assert.equal(application.windows().length, 1, 'İkinci başlatma yeni pencere açmamalı')
 
   // Links reach the system only through the window handler, and only of the allowed kinds.
   await application.evaluate(({ shell }) => {
@@ -80,7 +105,18 @@ try {
   const unexpected = errors.filter(error => !error.includes('file:///etc/hostname') && !error.includes('https://example.com/'))
   assert.deepEqual(unexpected, [], 'Electron içinde JavaScript veya varlık yükleme hatası olmamalı')
   await page.screenshot({ path: path.join('test-results', 'electron.png') })
-  console.log('Electron kontrolü geçti: uygulama adresi, başlık çubuğu, PDF açma ve çizim, CSP ve renderer yalıtımı.')
 } finally {
   await application.close()
 }
+
+// "Open with" while the app is closed: the file waits for the page to load.
+const started = await launch(pdfOnDisk('baslangic.pdf'))
+try {
+  const page = await started.firstWindow()
+  await page.waitForFunction(() => document.title.startsWith('baslangic.pdf'))
+  await page.waitForFunction(() => document.querySelector('#pageStatus')?.textContent === '1 / 3')
+} finally {
+  await started.close()
+  rmSync(folder, { recursive: true, force: true })
+}
+console.log('Electron kontrolü geçti: uygulama adresi, başlık çubuğu, PDF açma ve çizim, Birlikte aç, CSP ve renderer yalıtımı.')

@@ -215,6 +215,17 @@ body {
 	min-width: 0;
 }
 
+/* A file held over the window. */
+.is-dropping .document-area::after {
+	position: absolute;
+	inset: 8px;
+	z-index: 5;
+	border: 3px dashed var(--accent);
+	border-radius: 12px;
+	content: "";
+	pointer-events: none;
+}
+
 .side-panel {
 	display: flex;
 	flex: none;

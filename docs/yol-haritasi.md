@@ -15,8 +15,7 @@ Windows ve imzalı Android paketleri GitHub Releases'te yayımlandı (imza doğr
 
 Kalanlar:
 
-- **Açma:** sürükle-bırak, "Birlikte aç" (Linux, Windows), son dosyalar, kalınan sayfadan devam,
-  parolalı PDF
+- **Açma:** son dosyalar, kalınan sayfadan devam, parolalı PDF
 - **Gezinme:** içindekiler (yan panelde sekme olarak)
 - **Diğer:** masaüstünde sekmeler
 - **Tahta:** ekran klavyesi (drAW'daki kopya alınabilir), sunum modu
@@ -37,5 +36,7 @@ Kalanlar:
   (2026-11-02). Geri düğmesi denenmeli.
 - **200 MB eşiği:** tahta ve düşük güçlü tablet testlerinden sonra gözden geçirilir; gerekirse
   platforma göre ayrılır.
+- **Birlikte aç (masaüstü):** Linux ve Windows'ta dosya yöneticisinden denenmeli; Windows varsayılan
+  uygulamayı değiştirmez, kullanıcı "Birlikte aç" listesinden seçer.
 - **Masaüstü yazdırma:** sistem yazdırma penceresi otomatik testle denenemiyor; elle bakılmalı.
 - **Eski tabletler:** en eski WebView'da açılış ve bellek kullanımı.
