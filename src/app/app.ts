@@ -1,12 +1,12 @@
 import { isOpenableLink } from '../core/links'
 import { needsLargeFileWarning } from '../core/open-policy'
-import { loadPdf, PasswordException } from '../core/pdf-document'
+import { loadPdf, OpenCancelled } from '../core/pdf-document'
 import type { PdfFile } from '../core/pdf-file'
 import { deviceStore, RecentFiles, type RecentFile } from '../core/recent-files'
 import { currentPlatform } from '../platform/platform'
 import { TOOLS } from '../tools'
 import type { ToolContext } from '../tools/tool'
-import { confirmExternalLink, confirmLargeFile, showToast } from '../ui/messages'
+import { askPassword, confirmExternalLink, confirmLargeFile, showToast } from '../ui/messages'
 import { OutlineList } from '../ui/outline'
 import { RecentList } from '../ui/recent-list'
 import { SearchBar } from '../ui/search-bar'
@@ -58,7 +58,7 @@ export function startApp(): void {
     const attempt = ++lastOpen
     if (needsLargeFileWarning(file.size) && !await confirmLargeFile(file.name, file.size)) return
     try {
-      const document_ = await loadPdf(file)
+      const document_ = await loadPdf(file, wasWrong => askPassword(file.name, wasWrong))
       if (attempt !== lastOpen) {
         void document_.loadingTask.destroy()
         return
@@ -74,8 +74,10 @@ export function startApp(): void {
       if (startPage > 1) showToast(`Kaldığınız yer: sayfa ${startPage}`)
       document.title = `${file.name} | ${APP_TITLE}`
     } catch (error) {
+      file.close?.()
+      if (error instanceof OpenCancelled) return
       console.error(error)
-      showToast(error instanceof PasswordException ? 'Parolalı PDF\'ler henüz açılamıyor.' : 'Bu PDF açılamadı.')
+      showToast('Bu PDF açılamadı.')
     }
   }
 

@@ -70,6 +70,20 @@
 			</div>
 		</form>
 	</dialog>
+	<dialog id="passwordDialog" class="dialog">
+		<h2>Bu PDF parolalı</h2>
+		<form method="dialog">
+			<label class="dialog__field">
+				<span id="passwordFile"></span>
+				<input id="passwordInput" type="password" autocomplete="off">
+				<span id="passwordWrong" class="dialog__error" role="alert" hidden>Parola yanlış, yeniden deneyin.</span>
+			</label>
+			<div class="dialog__actions">
+				<button value="open" class="primary-button">Aç</button>
+				<button value="cancel" class="secondary-button" formnovalidate>Vazgeç</button>
+			</div>
+		</form>
+	</dialog>
 	<dialog id="externalLinkDialog" class="dialog">
 		<h2>Dış bağlantı</h2>
 		<p>Bu bağlantı uygulamanın dışında açılacak:</p>

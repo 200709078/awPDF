@@ -648,3 +648,55 @@ test.describe('içindekiler', () => {
     await expect(page.locator('#sidePanel')).toBeHidden();
   });
 });
+
+test.describe('parolalı PDF', () => {
+  const secret = makePdf({ pages: 2, password: 'gizli12' });
+  const dialog = (page: Page) => page.locator('#passwordDialog');
+  const choose = (page: Page) => page.locator('#pdfInput').setInputFiles({ name: 'sinav.pdf', mimeType: 'application/pdf', buffer: secret });
+  const answer = async (page: Page, password: string) => {
+    await page.locator('#passwordInput').fill(password);
+    await page.locator('#passwordInput').press('Enter');
+  };
+
+  test('doğru parolayla açılır; içerik okunur, parola hiçbir yerde kalmaz', async ({ page }) => {
+    await choose(page);
+    await expect(dialog(page)).toBeVisible();
+    await expect(dialog(page)).toContainText('sinav.pdf');
+    await expect(page.locator('#passwordWrong')).toBeHidden();
+    await answer(page, 'gizli12');
+    await expect(status(page)).toHaveText('1 / 2');
+    await expect(page.locator('.page[data-page-number="1"] .textLayer')).toContainText('awPDF sayfa 1');
+    await expect(page.locator('#passwordInput')).toHaveValue('');
+    expect(await page.evaluate(() => JSON.stringify({ ...localStorage }))).not.toContain('gizli12');
+  });
+
+  test('yanlış parola yeniden sorulur', async ({ page }) => {
+    await choose(page);
+    await answer(page, 'yanlis');
+    await expect(page.locator('#passwordWrong')).toBeVisible();
+    await expect(page.locator('#passwordInput')).toHaveValue('');
+    await answer(page, 'gizli12');
+    await expect(status(page)).toHaveText('1 / 2');
+    await expect(dialog(page)).toBeHidden();
+  });
+
+  test('vazgeçince uyarı çıkmaz, açık belge yerinde kalır', async ({ page }) => {
+    await openPdf(page, makePdf());
+    await choose(page);
+    await dialog(page).locator('button[value="cancel"]').click();
+    await expect(dialog(page)).toBeHidden();
+    await expect(page.locator('#toast')).toBeHidden();
+    await expect(status(page)).toHaveText('1 / 3');
+  });
+
+  test('yeniden açınca parola yine sorulur, kalınan sayfa korunur', async ({ page }) => {
+    await choose(page);
+    await answer(page, 'gizli12');
+    await page.locator('#tool-nextPage').click();
+    await expect(status(page)).toHaveText('2 / 2');
+    await page.reload();
+    await choose(page);
+    await answer(page, 'gizli12');
+    await expect(status(page)).toHaveText('2 / 2');
+  });
+});

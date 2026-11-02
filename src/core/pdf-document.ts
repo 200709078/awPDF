@@ -1,5 +1,5 @@
 import './pdfjs-global'
-import { getDocument, PasswordException, PDFDataRangeTransport, type PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
+import { getDocument, PasswordResponses, PDFDataRangeTransport, type PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import type { PdfFile } from './pdf-file'
 
 class FileRangeTransport extends PDFDataRangeTransport {
@@ -14,10 +14,14 @@ class FileRangeTransport extends PDFDataRangeTransport {
 
 const assetUrl = (folder: string) => new URL(`pdfjs/${folder}/`, document.baseURI).href
 
-export { PasswordException }
+/** The reader declined to give a password; there is nothing to report. */
+export class OpenCancelled extends Error {}
 
-/** Opens a PDF without reading it whole. A PDF's own scripts and XFA forms never run. */
-export async function loadPdf(file: PdfFile): Promise<PDFDocumentProxy> {
+/**
+ * Opens a PDF without reading it whole. A PDF's own scripts and XFA forms never run. `askPassword`
+ * answers null to give up; the password goes to pdf.js and is kept nowhere else.
+ */
+export async function loadPdf(file: PdfFile, askPassword: (wasWrong: boolean) => Promise<string | null>): Promise<PDFDocumentProxy> {
   let reject: (reason: unknown) => void = () => undefined
   const failed = new Promise<never>((_, fail) => { reject = fail })
   const task = getDocument({
@@ -30,6 +34,12 @@ export async function loadPdf(file: PdfFile): Promise<PDFDocumentProxy> {
     standardFontDataUrl: assetUrl('standard_fonts'),
     wasmUrl: assetUrl('wasm'),
   })
+  task.onPassword = (answer: (password: string) => void, reason: number) => {
+    void askPassword(reason === PasswordResponses.INCORRECT_PASSWORD).then(password => {
+      if (password === null) reject(new OpenCancelled())
+      else answer(password)
+    })
+  }
   try {
     return await Promise.race([task.promise, failed])
   } catch (error) {

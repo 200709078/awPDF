@@ -32,6 +32,19 @@ export function confirmExternalLink(url: string): Promise<boolean> {
   return ask(document.querySelector<HTMLDialogElement>('#externalLinkDialog')!, 'open')
 }
 
+/** The password, or null when cancelled. It leaves the field at once. */
+export async function askPassword(name: string, wasWrong: boolean): Promise<string | null> {
+  const input = document.querySelector<HTMLInputElement>('#passwordInput')!
+  document.querySelector('#passwordFile')!.textContent = name
+  document.querySelector<HTMLElement>('#passwordWrong')!.hidden = !wasWrong
+  const answered = ask(document.querySelector<HTMLDialogElement>('#passwordDialog')!, 'open')
+  input.focus()
+  const confirmed = await answered
+  const password = input.value
+  input.value = ''
+  return confirmed ? password : null
+}
+
 /** The chosen page, or null when cancelled. */
 export async function askPageNumber(page: number, pageCount: number): Promise<number | null> {
   const input = document.querySelector<HTMLInputElement>('#goToPageInput')!
