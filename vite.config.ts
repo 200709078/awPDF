@@ -1,0 +1,39 @@
+import { cpSync } from 'node:fs'
+import { defineConfig, type Plugin } from 'vite'
+
+/** pdf.js reads these at run time; they ship with the app so nothing needs the network. */
+function pdfjsAssets(): Plugin {
+  return {
+    name: 'pdfjs-assets',
+    buildStart() {
+      for (const folder of ['cmaps', 'iccs', 'standard_fonts', 'wasm']) {
+        cpSync(`node_modules/pdfjs-dist/${folder}`, `public/pdfjs/${folder}`, { recursive: true })
+      }
+    },
+  }
+}
+
+export default defineConfig({
+  // The same output runs on a static web server, in Electron and in the Android WebView.
+  base: './',
+  plugins: [pdfjsAssets()],
+  build: {
+    rolldownOptions: {
+      output: {
+        // pdf.js is its own chunk: the browser cache keeps it when only the app code changes.
+        codeSplitting: {
+          groups: [{ name: 'pdfjs', test: /node_modules[\\/]pdfjs-dist/ }],
+        },
+      },
+    },
+  },
+  server: {
+    host: '127.0.0.1',
+    watch: {
+      ignored: ['**/dist-electron/**', '**/release/**', '**/public/pdfjs/**'],
+    },
+  },
+  preview: {
+    host: '127.0.0.1',
+  },
+})

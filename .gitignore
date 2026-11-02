@@ -1,0 +1,41 @@
+# İşletim sistemi
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editör / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# Loglar
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Bağımlılıklar
+node_modules/
+
+# Yerel sunucu artıkları
+.cache/
+dist/
+dist-electron/
+# vite.config.ts node_modules içinden kopyalar
+public/pdfjs/
+release/
+test-results/
+playwright-report/
+*.tsbuildinfo
+
+# Local AI / coding-agent instruction files
+[Aa][Gg][Ee][Nn][Tt][Ss]*.md
+
+# Android imza anahtarı asla depoya girmez (bkz. docs/yol-haritasi.md, Android)
+*.jks
+*.keystore
+*.p12
+
+# FTP yayın bilgileri (scripts/deploy-ftp.mjs) asla depoya girmez
+.env

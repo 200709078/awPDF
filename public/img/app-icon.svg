@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>awPDF</title>
+  <rect width="512" height="512" rx="96" fill="#ffffff"/>
+  <!-- Kıvrık köşeli sayfa -->
+  <g stroke="#1f2937" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M96 44H336L416 124V468H96Z" fill="#f8fafc"/>
+    <path d="M336 44V124H416" fill="#dbe4f0"/>
+  </g>
+  <!-- Metin satırları, çok hafif -->
+  <path d="M132 384H380M132 424H300" stroke="#c3cfdf" stroke-width="14" stroke-linecap="round"/>
+  <!-- A: üç doğru parçası; W: dört doğru parçası -->
+  <g stroke-width="17" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M128 336L176 160L224 336M145 276H207" stroke="#2563eb"/>
+    <path d="M240 160L268 336L304 216L340 336L384 160" stroke="#e11d48"/>
+  </g>
+</svg>

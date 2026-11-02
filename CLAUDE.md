@@ -1,0 +1,77 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+awPDF is a PDF viewer in the spirit of Adobe Reader (pdf.js, TypeScript + Vite) shipped as a web app, an Electron desktop app (Linux AppImage/deb, Windows NSIS) and an Android app (Capacitor, APK). More PDF tools will be added later. It is meant for class smart boards (Pardus ETAP) as well as phones and PCs. The UI, test names, docs (README, `docs/yol-haritasi.md`) and messages are in **Turkish** — keep new user-facing strings and docs in Turkish.
+
+Status: skeleton. A PDF opens and can be read, paged and zoomed on all three targets. The rest of the first version and everything after it is in `docs/yol-haritasi.md`; record new requests there with a date and do not implement any item until the user explicitly asks.
+
+## Decisions (2026-11-02, the user's)
+
+- **Stack:** the drAW family's: TypeScript + Vite, Electron, Capacitor. **Engine:** pdf.js (`pdfjs-dist`), its `PDFViewer` components with our own UI; never its ready-made `viewer.html`.
+- **Platforms:** Linux, Windows, Android, and the web at `madematik.com/awPDF/`. iOS waits (it needs a Mac and a paid Apple account).
+- **Repository:** own public repository `github.com/200709078/awPDF`, MIT. **App ID** `com.madematik.awpdf` is permanent (Play Store).
+- **Release files:** `.github/workflows/release.yml` and `scripts/release-assets.mjs` stay byte-identical with drAW, drAW2D and drAW3D. Android uses the family's shared signing key.
+- **Class smart boards from the start:** touch comes first (large targets), then an on-screen keyboard and a presentation mode (roadmap).
+- **Tabs:** tabs on desktop; a single document on Android.
+- **Large files:** above 200 MB, on every platform, the user is warned and may still open the file (`core/open-policy.ts`). **Nothing is ever refused**, and there is no page limit: page count is known only after opening and says little about the load. Per-platform values may come later if tests call for them. The real protection is inside the app: partial reading, drawing only visible pages, on-demand cancellable search, a per-page pixel limit.
+- **The first version never changes a PDF.** When editing tools come, the default is "Save as"; the original is never overwritten silently.
+- **Local only:** a PDF never leaves the device and the app needs no network. No analytics, no remote fonts.
+- **Goal limit:** editing a PDF's existing text like a word processor is not a goal.
+
+## Commands
+
+Node >= 22.13 (`.nvmrc`: 22).
+
+```bash
+npm ci
+npm run dev              # Vite dev server
+npm run typecheck        # tsc for src/ and for electron/ (tsconfig.electron.json)
+npm run build            # typecheck + compile electron shell + vite build → dist/, dist-electron/
+npm run deploy           # build + upload dist/ to public_html/public/awPDF over FTP (scripts/deploy-ftp.mjs, .env); add `-- --dry-run` to only list changes. Live site: the user runs it, never run it unasked
+npm test                 # Playwright (Chromium); starts Vite dev server on 127.0.0.1:4175
+TEST_PREVIEW=1 npm test  # same tests against built dist/ via vite preview (run build first, stop dev server)
+npx playwright test tests/tools.spec.ts                   # single file
+npx playwright test -g "büyük dosya"                      # single test by title
+npm run electron:dev     # Electron against the Vite dev server
+npm run test:electron    # build, then open the app and a PDF in Electron (needs a graphical session)
+npx electron-builder --dir && AWPDF_ELECTRON_EXECUTABLE=$PWD/release/linux-unpacked/awpdf node scripts/test-electron.mjs   # the same check on the packaged app (asar)
+npm run dist:linux | dist:win
+npm run android:sync     # build + copy dist/ into android/ (Capacitor)
+npm run android:apk      # release APK; signed when ANDROID_KEYSTORE, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD are set
+bash scripts/icons.sh    # regenerate every icon from public/img/app-icon.svg (Inkscape + ImageMagick)
+```
+
+Playwright uses `/usr/bin/chromium` if present, otherwise `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`, otherwise its own Chromium. Port 4175 keeps these tests from colliding with drAW2D and drAW3D (both 4173), so they may run at the same time.
+
+## Architecture
+
+- `src/main.ts` mounts the desktop title bar and calls `startApp`; `src/app/app.ts` is the composition root connecting the platform, the document view and the tools, and owns the open flow (large file warning, load, errors).
+- **Platform layer** (`src/platform/`): `Platform` is everything that differs between Electron, Android and the web; the rest of the app talks only to it. Files arrive through `onFile`, not as the picker's return value, because the system's "open with" and drag and drop deliver files too. All three targets use `browser.ts` for now; a desktop and an Android implementation come with "open with" (roadmap).
+- **Partial reading** (`src/core/`): `PdfFile` (`name`, `size`, `read(begin, end)`) is how every platform hands over a file. `pdf-document.ts` feeds it to pdf.js through a `PDFDataRangeTransport` with `disableAutoFetch` and `disableStream`, so a file is never read whole (`tests/viewer-integration.spec.ts` "büyük dosya bütünüyle okunmaz" measures this). `enableXfa` is off and the viewer gets no scripting manager, so a PDF's own scripts never run.
+- **pdf.js import order:** `pdf_viewer.mjs` reads `globalThis.pdfjsLib` while loading, so `core/pdfjs-global.ts` must be imported first. The **legacy** build is deliberate: it also runs in the older WebViews of school tablets. The version is pinned; read its changelog before bumping (6.x removed `PDFDocumentProxy.destroy` and `isEvalSupported`).
+- **pdf.js assets:** `cmaps`, `iccs`, `standard_fonts`, `wasm` are copied from `node_modules` into `public/pdfjs/` by the plugin in `vite.config.ts` (gitignored) and so ship with every build. `public/.htaccess` gives `.mjs` a JavaScript type, without which the web host would break the worker.
+- **Tools** (`src/tools/`): a `Tool` declares its label, icon, shortcuts and `run(context)`; `tools/index.ts` is the single list, and `ui/toolbar.ts` builds the buttons (ID `tool-<id>`) and the shortcuts from it. A new feature is a new file there, plus panels when they are needed; the core stays untouched. Tools reach the document and the platform only through `ToolContext`.
+- `src/app/document-view.ts`: wraps `PDFViewer`, `EventBus` and `PDFLinkService`. pdf.js draws only visible pages and keeps its own per-page pixel limit (lower on phones), so we set none. Fit-width is reapplied when the container resizes; a zoom the user chose is kept. Links to the outside are off (`externalLinkEnabled = false`) until they ask for confirmation (roadmap).
+- `electron/main.ts`: shell only. Production loads `awpdf://app/` (a privileged custom scheme, served from `dist/` with a CSP), **not `file://` as the siblings do**: documents are untrusted, and this way a page can neither read the disk nor reach the network. `nodeIntegration: false`, `contextIsolation`, `sandbox`; navigation and new windows are denied. The window is frameless: `electron/preload.cts` (compiled to `dist-electron/preload.cjs`) exposes only `window.awPDFDesktop.windowControls`, and `src/ui/title-bar.ts` draws the bar only when that API exists.
+- `android/`: the Capacitor 8 project, taken from drAW2D (committed; `android/app/src/main/assets/public` is generated by `cap sync`). `app/build.gradle` reads `versionName` from `package.json` and `versionCode = major·10000 + minor·100 + patch` (minor, patch < 100), and signs release builds from the `ANDROID_KEYSTORE*` environment. `MainActivity` fixes the WebView `textZoom` at 100. `<input type=file>` is the picker for now; no intent filters yet. The signing key never enters the repository.
+- Icons: the source is `public/img/app-icon.svg` (the family style: a blue A and a red W, here on a page with a folded corner); `scripts/icons.sh` generates the rest.
+- Stylesheets are linked from `index.html`, not imported in TS, so the first paint is styled. Vite `base: './'`.
+
+## Releases
+
+GitHub Releases is the only place packages are published. Same as the siblings:
+
+- **Build:** `.github/workflows/release.yml` builds Linux on `ubuntu-latest`, Windows on `windows-latest` and the signed APK (secrets `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`; missing secrets fail the job, so nothing is published). Never cross-build Windows from Linux and never upload release assets by hand.
+- **Version:** `package.json` is the single source. New release: `npm version patch`, then `git push --follow-tags`; ask the user first. The workflow fails if the tag differs from `package.json`.
+- **Build only, nothing published:** `gh workflow run release.yml -f yayinla=false`.
+- **Asset names have no version:** `awPDF-linux-amd64.deb`, `awPDF-linux-x86_64.AppImage`, `awPDF-win-x64.exe`, `awPDF-android.apk`.
+- **Shared files:** the workflow and `scripts/release-assets.mjs` are identical copies in drAW, drAW2D, drAW3D and awPDF — change all four together. Change release notes in the script, not on GitHub.
+- **Trigger quirk:** push a new or changed workflow file before the tag.
+- **Metadata:** license MIT (same text in all four repos), deb `Section: education`, `.desktop` categories `Office;Viewer;Education`.
+
+## Tests
+
+Playwright specs in `tests/`: `tools.spec.ts` imports `src/` modules directly; `viewer-integration.spec.ts` drives the UI through `#pdfInput`. `tests/helpers/make-pdf.mjs` writes real PDFs in memory, so no binary fixtures are committed; `scripts/test-electron.mjs` uses it too. Android cannot be run here (no device or emulator): `assembleDebug` is the check, the app itself must be tried on a device.
+
+`dist/`, `dist-electron/`, `release/`, `public/pdfjs/` are build outputs and not committed.

@@ -1,0 +1,2 @@
+# pdf.js'in işçisi .mjs dosyasıdır; tarayıcı bunu yalnız JavaScript türüyle çalıştırır.
+AddType text/javascript .mjs

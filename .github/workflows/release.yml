@@ -1,0 +1,183 @@
+# Linux (.deb, AppImage), Windows (.exe) ve android/ klasörü olan projelerde Android (.apk)
+# paketlerini üretip GitHub sürümüne yükler. Uygulama adı ve sürüm package.json'dan okunur.
+# drAW, drAW2D, drAW3D ve awPDF aynı dosyayı kullanır; android/ klasörü olmayan projede Android işi atlanır.
+# Android APK'sı şu secret'larla imzalanır: ANDROID_KEYSTORE_BASE64 (anahtar dosyasının
+# base64'ü), ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD.
+# - "v0.0.4" gibi bir etiket gönderilince o sürüm oluşturulur (package.json sürümüyle aynı olmalı).
+# - Actions sekmesindeki "Run workflow" düğmesi, package.json'daki sürümün paketlerini yeniden
+#   üretip mevcut sürümdeki dosyaların yerine koyar (sürüm yoksa oluşturur).
+# - "yayinla" kapalı çalıştırılırsa yalnızca paketler üretilir (Windows makinesi gerekmeden .exe):
+#     gh workflow run release.yml -f yayinla=false
+#     gh run download --name paket-Windows -D release
+name: Sürüm paketleri
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      yayinla:
+        description: "Paketleri GitHub sürümüne yükle"
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Paketle (${{ matrix.name }})
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-latest
+            target: --linux
+          - name: Windows
+            os: windows-latest
+            target: --win
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Etiket ile package.json sürümünü karşılaştır
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: |
+          version="v$(node -p "require('./package.json').version")"
+          if [ "$version" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Etiket $GITHUB_REF_NAME, package.json sürümü $version. Önce package.json sürümünü güncelleyin."
+            exit 1
+          fi
+
+      - run: npm ci
+
+      - name: Testler
+        if: runner.os == 'Linux'
+        run: |
+          # Playwright testleri olan projelerde tarayıcı kurulur.
+          if [ -f playwright.config.ts ]; then npx playwright install --with-deps chromium; fi
+          npm test
+
+      - name: Paketleri üret
+        shell: bash
+        # npm run build tip denetimini de yapar; yayımlamayı bu iş akışı yapar.
+        run: npm run build && npx electron-builder ${{ matrix.target }} --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: paket-${{ matrix.name }}
+          path: |
+            release/*.deb
+            release/*.AppImage
+            release/*.exe
+          if-no-files-found: error
+          retention-days: 7
+
+  android:
+    name: Paketle (Android)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Android projesi var mı
+        id: proje
+        shell: bash
+        run: |
+          if [ -f android/app/build.gradle ]; then echo "android=true" >> "$GITHUB_OUTPUT"; else echo "Android projesi yok, atlanıyor."; fi
+
+      - uses: actions/setup-node@v7
+        if: steps.proje.outputs.android == 'true'
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-java@v5
+        if: steps.proje.outputs.android == 'true'
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: APK üret ve imzala
+        if: steps.proje.outputs.android == 'true'
+        shell: bash
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$ANDROID_KEYSTORE_PASSWORD" ] || [ -z "$ANDROID_KEY_ALIAS" ]; then
+            echo "::error::Android imza secret'ları eksik (ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD)."
+            exit 1
+          fi
+          # Anahtar yalnız bu makinenin geçici klasöründe durur; iş bitince makine silinir.
+          export ANDROID_KEYSTORE="$RUNNER_TEMP/upload.jks"
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$ANDROID_KEYSTORE"
+          npm ci
+          npm run build
+          npx cap sync android
+          (cd android && ./gradlew assembleRelease --no-daemon)
+          name="$(node -p "const p = require('./package.json'); p.build?.productName ?? p.productName")"
+          mkdir -p release
+          cp android/app/build/outputs/apk/release/app-release.apk "release/$name-android.apk"
+          # İmza denetimi: imzasız ya da bozuk APK yayımlanmaz.
+          "$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner" verify --print-certs "release/$name-android.apk"
+
+      - uses: actions/upload-artifact@v7
+        if: steps.proje.outputs.android == 'true'
+        with:
+          name: paket-Android
+          path: release/*.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    name: GitHub sürümünü güncelle
+    needs: [build, android]
+    if: github.event_name == 'push' || inputs.yayinla
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          path: paketler
+          merge-multiple: true
+
+      - name: Sağlama dosyası ve sürüm notu
+        run: node scripts/release-assets.mjs paketler
+
+      - name: Sürümü oluştur veya dosyaları değiştir
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          name="$(node -p "const p = require('./package.json'); p.build?.productName ?? p.productName")"
+          version="$(node -p "require('./package.json').version")"
+          tag="v$version"
+          files=(paketler/"$name"-linux-x86_64.AppImage paketler/"$name"-linux-amd64.deb paketler/"$name"-win-x64.exe paketler/SHA256SUMS.txt)
+          platforms="Linux & Windows"
+          if [ -f paketler/"$name"-android.apk ]; then
+            files+=(paketler/"$name"-android.apk)
+            platforms="Linux, Windows & Android"
+          fi
+          if gh release view "$tag" > /dev/null 2>&1; then
+            gh release edit "$tag" --notes-file paketler/RELEASE_NOTES.md
+            gh release upload "$tag" "${files[@]}" --clobber
+          else
+            gh release create "$tag" "${files[@]}" --target "$GITHUB_SHA" \
+              --title "$name $tag — $platforms" --notes-file paketler/RELEASE_NOTES.md
+          fi
+          echo "Sürüm: $(gh release view "$tag" --json url --jq .url)" >> "$GITHUB_STEP_SUMMARY"
