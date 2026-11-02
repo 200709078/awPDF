@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, net, protocol, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, ipcMain, net, protocol, shell, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -11,6 +11,7 @@ const iconPath = fileURLToPath(new URL(
 ))
 
 const SCHEME = 'awpdf'
+const OPENABLE_PROTOCOLS = new Set(['http:', 'https:', 'mailto:'])
 const APP_HOST = 'app'
 // The app works without a network: documents are untrusted, and nothing may leave the machine.
 const CONTENT_SECURITY_POLICY = [
@@ -100,8 +101,11 @@ async function createWindow(): Promise<void> {
     }
   })
 
-  // Nothing in a document may leave the app; outside links come with their confirmation (roadmap).
-  window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+  // The renderer confirms a link with the user and asks for a window; this hands it to the system.
+  window.webContents.setWindowOpenHandler(({ url }) => {
+    if (OPENABLE_PROTOCOLS.has(new URL(url).protocol)) void shell.openExternal(url).catch(console.error)
+    return { action: 'deny' }
+  })
   window.webContents.on('will-navigate', event => event.preventDefault())
 
   await window.loadURL(devServerUrl || `${SCHEME}://${APP_HOST}/index.html`)

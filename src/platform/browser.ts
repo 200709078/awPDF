@@ -13,5 +13,15 @@ export function browserPlatform(): Platform {
         if (file) listener(pdfFileFromBlob(file))
       })
     },
+    openExternal: url => { window.open(url, '_blank', 'noopener,noreferrer') },
+    print: () => window.print(),
+    get isFullscreen() {
+      return document.fullscreenElement !== null
+    },
+    toggleFullscreen: () => {
+      const change = document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()
+      void change.catch(console.error)
+    },
+    onFullscreenChange: listener => { document.addEventListener('fullscreenchange', listener) },
   }
 }

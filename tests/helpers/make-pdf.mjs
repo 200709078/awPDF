@@ -1,18 +1,29 @@
 // Küçük, gerçek bir PDF üretir; testler ikili dosya taşımaz.
 // `padding`: hiçbir sayfanın başvurmadığı, o kadar baytlık bir nesne (büyük dosya denemesi için).
-export function makePdf({ pages = 3, padding = 0 } = {}) {
+// `text`: sayfa sırasından o sayfanın metnini verir; WinAnsi dışında yalnız ı ve İ yazılabilir.
+// `links`: { page, toPage } belge içi, { page, url } dış bağlantı (0'dan sayılır); sıraları
+// satırlarını belirler, `linkTop` birincisinin yüksekliğidir.
+export const linkTop = 640
+const encoded = text => text.replaceAll('ı', '\xfd').replaceAll('İ', '\xdd')
+export function makePdf({ pages = 3, padding = 0, text = index => `awPDF sayfa ${index + 1}`, links = [] } = {}) {
   const pageId = index => 4 + index * 2
   const paddingId = pageId(pages)
   const kids = Array.from({ length: pages }, (_, index) => `${pageId(index)} 0 R`).join(' ')
   const objects = new Map([
     [1, '<< /Type /Catalog /Pages 2 0 R >>'],
     [2, `<< /Type /Pages /Kids [${kids}] /Count ${pages} >>`],
-    [3, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'],
+    [3, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding << /Type /Encoding '
+      + '/BaseEncoding /WinAnsiEncoding /Differences [221 /Idotaccent 253 /dotlessi] >> >>'],
   ])
   for (let index = 0; index < pages; index += 1) {
-    const content = `BT /F1 28 Tf 72 720 Td (awPDF sayfa ${index + 1}) Tj ET`
+    const content = `BT /F1 28 Tf 72 720 Td (${encoded(text(index))}) Tj ET`
+    const annotations = links.flatMap((link, row) => {
+      if (link.page !== index) return []
+      const target = link.url ? `/A << /S /URI /URI (${link.url}) >>` : `/Dest [${pageId(link.toPage)} 0 R /Fit]`
+      return `<< /Type /Annot /Subtype /Link /Rect [72 ${linkTop - 60 * row - 40} 372 ${linkTop - 60 * row}] /Border [0 0 0] ${target} >>`
+    }).join(' ')
     objects.set(pageId(index), '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] '
-      + `/Resources << /Font << /F1 3 0 R >> >> /Contents ${pageId(index) + 1} 0 R >>`)
+      + `/Resources << /Font << /F1 3 0 R >> >> /Contents ${pageId(index) + 1} 0 R /Annots [${annotations}] >>`)
     objects.set(pageId(index) + 1, `<< /Length ${content.length} >>\nstream\n${content}\nendstream`)
   }
 

@@ -4,12 +4,15 @@ Web, masaüstü ve Android için **PDF görüntüleme** uygulaması.
 
 **mADEMatik Solutions** — [madematik.com](https://madematik.com)
 
-> Geliştirme aşamasında; henüz sürüm yayımlanmadı.
+> Web sürümü: [madematik.com/awPDF](https://madematik.com/awPDF/). Kurulum paketleri henüz yayımlanmadı.
 
 ## Özellikler
 
-- PDF açma, sayfalar arasında gezinme, yakınlaştırma ve genişliğe sığdırma
-- Metin seçme ve kopyalama
+- PDF açma, sayfa önizleme paneli, sayfaya gitme, PDF içi ve dış bağlantılar
+- Yakınlaştırma (iki parmakla da), genişliğe, yüksekliğe ve sayfaya sığdırma
+- Tek ve iki sayfa görünümü, görünümü döndürme, tam ekran, koyu tema
+- Türkçe harflere uyumlu metin arama, metin seçme ve kopyalama
+- Yazdırma, Android'de paylaşma
 - Büyük dosyalar parça parça okunur; dosya bütünüyle belleğe alınmaz
 - Tamamen yerel çalışır: PDF hiçbir sunucuya gönderilmez, internet gerekmez
 

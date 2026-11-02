@@ -19,10 +19,14 @@ function toolButton(tool: Tool, context: ToolContext): HTMLButtonElement {
 
 /** Builds the toolbar and the keyboard shortcuts from the tool list. */
 export function mountToolbar(root: HTMLElement, tools: readonly Tool[], context: ToolContext): void {
-  const buttons = tools.map(tool => ({ tool, button: toolButton(tool, context) }))
-  const status = document.createElement('span')
+  const supported = tools.filter(tool => tool.isSupported?.(context) ?? true)
+  const buttons = supported.filter(tool => tool.inToolbar !== false).map(tool => ({ tool, button: toolButton(tool, context) }))
+  const status = document.createElement('button')
+  status.type = 'button'
   status.id = 'pageStatus'
   status.className = 'toolbar__status'
+  status.title = 'Sayfaya Git'
+  status.addEventListener('click', () => supported.find(tool => tool.id === 'goToPage')?.run(context))
   root.append(...buttons.map(({ button }) => button), status)
 
   const canRun = (tool: Tool) => (!tool.needsDocument || context.view.isOpen) && (tool.isAvailable?.(context.view) ?? true)
@@ -33,15 +37,21 @@ export function mountToolbar(root: HTMLElement, tools: readonly Tool[], context:
       button.disabled = !canRun(tool)
       if (tool.isActive) button.setAttribute('aria-pressed', String(tool.isActive(context)))
     }
+    status.disabled = !isOpen
     status.textContent = isOpen ? `${pageLabel} / ${pageCount}` : ''
   }
   context.view.onChange(update)
   context.sidePanel.onChange(update)
+  context.searchBar.onChange(update)
+  context.theme.onChange(update)
+  context.platform.onFullscreenChange(update)
   update()
 
   window.addEventListener('keydown', event => {
+    const isTyping = event.target instanceof HTMLInputElement && !event.ctrlKey && !event.metaKey
+    if (isTyping || document.querySelector('dialog[open]')) return
     const shortcut = shortcutOf(event)
-    const tool = tools.find(item => item.shortcuts?.includes(shortcut))
+    const tool = supported.find(item => item.shortcuts?.includes(shortcut))
     if (!tool || !canRun(tool)) return
     event.preventDefault()
     tool.run(context)

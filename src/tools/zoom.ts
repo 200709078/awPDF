@@ -27,6 +27,14 @@ export const fitWidthTool: Tool = {
   run: ({ view }) => view.fitWidth(),
 }
 
+export const fitPageTool: Tool = {
+  id: 'fitPage',
+  label: 'Sayfaya Sığdır',
+  icon: '<rect x="7" y="4" width="10" height="16" rx="1"/><path d="M3 9v6M21 9v6"/>',
+  needsDocument: true,
+  run: ({ view }) => view.fitPage(),
+}
+
 export const fitHeightTool: Tool = {
   id: 'fitHeight',
   label: 'Yüksekliğe Sığdır',

@@ -5,22 +5,20 @@ Kesinleşmiş kararlar `CLAUDE.md` dosyasındadır.
 
 ## İlk sürüm (2026-11-02)
 
-İskelette hazır olanlar: PDF açma (dosya seçici), sayfa düğmeleri, yakınlaştırma, genişliğe ve
-yüksekliğe sığdırma, iki sayfa görünümü, sayfa önizleme paneli, metin seçme, 200 MB uyarısı.
+Hazır olanlar: PDF açma (dosya seçici), sayfa düğmeleri, sayfaya gitme, PDF içi ve dış bağlantılar,
+yakınlaştırma (iki parmak, ctrl+tekerlek), genişliğe/yüksekliğe/sayfaya sığdırma, tek ve iki sayfa görünümü,
+görünümü döndürme, tam ekran, koyu tema, sayfa önizleme paneli, metin seçme, Türkçe uyumlu metin arama,
+yazdırma, paylaşma (Android), 200 MB uyarısı.
 
-**Yayın kararı (2026-11-02, kullanıcı):** temel özellikler bitmeden web sürümü yüklenmez ve sürüm
-çıkarılmaz.
+**Yayın (2026-11-02, kullanıcı):** web sürümü `madematik.com/awPDF/` adresine yüklendi. Sürüm paketi henüz
+yok; Android imzası için `ANDROID_KEY_PASSWORD` düzeltilmeli.
 
 Kalanlar:
 
 - **Açma:** sürükle-bırak, "Birlikte aç" (Linux, Windows, Android), son dosyalar, kalınan sayfadan
   devam, parolalı PDF
-- **Gezinme:** içindekiler (yan panelde sekme olarak), sayfa numarasına gitme, PDF içi bağlantılar
-- **Görünüm:** iki parmakla yakınlaştırma, sayfaya sığdırma, görünümü döndürme, tek sayfa görünümü,
-  tam ekran, koyu tema
-- **Metin:** arama (yalnız istenince çalışır, iptal edilebilir)
-- **Dış bağlantılar:** onay sorarak açılır; şimdilik kapalı
-- **Diğer:** yazdırma, paylaşma (Android), masaüstünde sekmeler, Android geri düğmesi
+- **Gezinme:** içindekiler (yan panelde sekme olarak)
+- **Diğer:** masaüstünde sekmeler, Android geri düğmesi
 - **Telefon:** araç çubuğu dar ekrana sığmıyor, şimdilik yana kayıyor; menüye toplanmalı
 - **Tahta:** ekran klavyesi (drAW'daki kopya alınabilir), sunum modu
 
@@ -36,8 +34,9 @@ Kalanlar:
 ## Denenmesi gerekenler
 
 - **Android:** büyük dosyayı dosya seçiciden okumak yavaş olabilir; gerekirse yerel okuma eklenir
-  (`PdfFile.read`). Doğrudan yazdırma ve "Birlikte aç" küçük bir yerel kod ister.
-- **Türkçe arama:** `I/ı` ve `İ/i` eşleşmeleri ayrıca denenmeli, gerekirse düzeltilmeli.
+  (`PdfFile.read`). Yazdırma, paylaşma ve tam ekran yerel eklentiyle yapıldı, derleniyor ama
+  cihazda denenmedi. "Birlikte aç" da küçük bir yerel kod ister.
 - **200 MB eşiği:** tahta ve düşük güçlü tablet testlerinden sonra gözden geçirilir; gerekirse
   platforma göre ayrılır.
+- **Masaüstü yazdırma:** sistem yazdırma penceresi otomatik testle denenemiyor; elle bakılmalı.
 - **Eski tabletler:** en eski WebView'da açılış ve bellek kullanımı.

@@ -5,6 +5,7 @@ export const previousPageTool: Tool = {
   label: 'Önceki Sayfa',
   icon: '<path d="M6 15l6-6 6 6"/>',
   needsDocument: true,
+  shortcuts: ['pageup'],
   isAvailable: view => view.hasPreviousPage,
   run: ({ view }) => view.previousPage(),
 }
@@ -14,6 +15,7 @@ export const nextPageTool: Tool = {
   label: 'Sonraki Sayfa',
   icon: '<path d="M6 9l6 6 6-6"/>',
   needsDocument: true,
+  shortcuts: ['pagedown'],
   isAvailable: view => view.hasNextPage,
   run: ({ view }) => view.nextPage(),
 }

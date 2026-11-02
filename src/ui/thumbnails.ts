@@ -1,4 +1,4 @@
-import type { PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
+import type { PageViewport, PDFDocumentProxy, PDFPageProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import type { DocumentView } from '../app/document-view'
 import type { SidePanel } from './side-panel'
 
@@ -17,6 +17,7 @@ export class ThumbnailList {
   private readonly visible = new Set<number>()
   private readonly drawn = new Set<number>()
   private drawing = false
+  private rotation = 0
   private current = { first: 0, last: 0 }
   private readonly observer: IntersectionObserver
 
@@ -37,7 +38,7 @@ export class ThumbnailList {
 
   private refresh(): void {
     const { pdf } = this.view
-    if (pdf !== this.pdf) this.rebuild(pdf)
+    if (pdf !== this.pdf || this.view.rotation !== this.rotation) this.rebuild(pdf)
     const { first, last } = this.view.row
     if (first === this.current.first && last === this.current.last) return
     this.mark(this.current, false)
@@ -51,13 +52,14 @@ export class ThumbnailList {
     this.visible.clear()
     this.drawn.clear()
     this.pdf = pdf
+    this.rotation = this.view.rotation
     this.current = { first: 0, last: 0 }
     this.items = Array.from({ length: pdf?.numPages ?? 0 }, (_, index) => thumbnail(index + 1))
     this.root.replaceChildren(...this.items)
     for (const item of this.items) this.observer.observe(item)
     // Placeholders take the first page's shape, so the list keeps its length while it is drawn.
     void pdf?.getPage(1).then(page => {
-      const { width, height } = page.getViewport({ scale: 1 })
+      const { width, height } = this.viewport(page, 1)
       this.root.style.setProperty('--thumbnail-ratio', `${width} / ${height}`)
     }).catch(() => undefined)
   }
@@ -109,12 +111,15 @@ export class ThumbnailList {
     this.drawing = false
   }
 
+  private viewport(page: PDFPageProxy, scale: number): PageViewport {
+    return page.getViewport({ scale, rotation: page.rotate + this.rotation })
+  }
+
   private async draw(pdf: PDFDocumentProxy, pageNumber: number): Promise<void> {
     const page = await pdf.getPage(pageNumber)
     const canvas = this.items[pageNumber - 1]?.querySelector('canvas')
     if (pdf !== this.pdf || !canvas) return
-    const scale = THUMBNAIL_WIDTH * window.devicePixelRatio / page.getViewport({ scale: 1 }).width
-    const viewport = page.getViewport({ scale })
+    const viewport = this.viewport(page, THUMBNAIL_WIDTH * window.devicePixelRatio / this.viewport(page, 1).width)
     canvas.width = Math.floor(viewport.width)
     canvas.height = Math.floor(viewport.height)
     canvas.style.aspectRatio = `${canvas.width} / ${canvas.height}`

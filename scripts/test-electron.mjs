@@ -53,6 +53,26 @@ try {
     return canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data.some((value, index) => index % 4 !== 3 && value < 128)
   })
 
+  // Links reach the system only through the window handler, and only of the allowed kinds.
+  await application.evaluate(({ shell }) => {
+    globalThis.openedLinks = []
+    shell.openExternal = async url => { globalThis.openedLinks.push(url) }
+  })
+  await page.evaluate(() => {
+    for (const url of ['https://madematik.com/', 'file:///etc/hostname']) window.open(url, '_blank', 'noopener,noreferrer')
+  })
+  await page.waitForTimeout(300)
+  assert.deepEqual(await application.evaluate(() => globalThis.openedLinks), ['https://madematik.com/'])
+  assert.equal(application.windows().length, 1, 'Bağlantı uygulama içinde yeni pencere açmamalı')
+
+  // The toolbar's full screen button drives the window, not the page.
+  const isFullScreen = () => application.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isFullScreen())
+  await page.locator('#tool-fullscreen').click()
+  await page.waitForFunction(() => document.querySelector('#tool-fullscreen')?.getAttribute('aria-pressed') === 'true')
+  assert.equal(await isFullScreen(), true)
+  await page.locator('#tool-fullscreen').click()
+  await page.waitForFunction(() => document.querySelector('#tool-fullscreen')?.getAttribute('aria-pressed') === 'false')
+
   // The page may read only the app's own origin, never the disk.
   assert.equal(await page.evaluate(() => fetch('file:///etc/hostname').then(() => 'okundu', () => 'engellendi')), 'engellendi')
   assert.equal(await page.evaluate(() => fetch('https://example.com/').then(() => 'gitti', () => 'engellendi')), 'engellendi')

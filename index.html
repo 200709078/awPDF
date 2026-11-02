@@ -16,6 +16,13 @@
 
 <body>
 	<div id="toolbar" class="toolbar" role="toolbar" aria-label="Araçlar"></div>
+	<div id="searchBar" class="search-bar" role="search" hidden>
+		<input id="searchInput" type="search" placeholder="Metinde ara" aria-label="Metinde ara" autocomplete="off">
+		<span id="searchStatus" class="search-bar__status" aria-live="polite"></span>
+		<button id="searchPrevious" class="secondary-button" type="button" aria-label="Önceki eşleşme" title="Önceki eşleşme">↑</button>
+		<button id="searchNext" class="secondary-button" type="button" aria-label="Sonraki eşleşme" title="Sonraki eşleşme">↓</button>
+		<button id="searchClose" class="secondary-button" type="button" aria-label="Aramayı kapat" title="Aramayı kapat">✕</button>
+	</div>
 	<main id="workspace" class="workspace">
 		<aside id="sidePanel" class="side-panel" aria-label="Sayfalar" hidden></aside>
 		<div class="document-area">
@@ -38,7 +45,38 @@
 			<button id="largeFileOpen" value="open" class="primary-button">Yine de aç</button>
 		</form>
 	</dialog>
+	<dialog id="goToPageDialog" class="dialog">
+		<h2>Sayfaya git</h2>
+		<form method="dialog">
+			<label class="dialog__field">
+				<span id="goToPageHint"></span>
+				<input id="goToPageInput" type="number" inputmode="numeric" min="1" step="1" required>
+			</label>
+			<div class="dialog__actions">
+				<button value="go" class="primary-button">Git</button>
+				<button value="cancel" class="secondary-button" formnovalidate>Vazgeç</button>
+			</div>
+		</form>
+	</dialog>
+	<dialog id="externalLinkDialog" class="dialog">
+		<h2>Dış bağlantı</h2>
+		<p>Bu bağlantı uygulamanın dışında açılacak:</p>
+		<p id="externalLinkUrl" class="dialog__address"></p>
+		<form method="dialog" class="dialog__actions">
+			<button value="open" class="primary-button">Aç</button>
+			<button value="cancel" class="secondary-button">Vazgeç</button>
+		</form>
+	</dialog>
+	<dialog id="printDialog" class="dialog">
+		<h2>Yazdırmaya hazırlanıyor</h2>
+		<p id="printProgress"></p>
+		<form method="dialog" class="dialog__actions">
+			<button value="cancel" class="secondary-button">Vazgeç</button>
+		</form>
+	</dialog>
 	<div id="toast" class="toast" role="status" hidden></div>
+	<div id="printContainer" class="print-container"></div>
+	<style id="printPageSize"></style>
 	<script type="module" src="/src/main.ts"></script>
 </body>
 

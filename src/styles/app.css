@@ -7,6 +7,31 @@
 	--border: #d1d5db;
 	--text: #1f2937;
 	--accent: #2563eb;
+	--toast-surface: #1f2937;
+	color-scheme: light;
+}
+
+/* The same dark colours twice: following the system, and chosen with the theme button. */
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) {
+		--surface: #1f2937;
+		--surface-muted: #111827;
+		--border: #374151;
+		--text: #e5e7eb;
+		--accent: #3b82f6;
+		--toast-surface: #374151;
+		color-scheme: dark;
+	}
+}
+
+:root[data-theme="dark"] {
+	--surface: #1f2937;
+	--surface-muted: #111827;
+	--border: #374151;
+	--text: #e5e7eb;
+	--accent: #3b82f6;
+	--toast-surface: #374151;
+	color-scheme: dark;
 }
 
 * {
@@ -81,10 +106,62 @@ body {
 }
 
 .toolbar__status {
+	/* Stays at the row's end while a narrow screen scrolls the buttons under it. */
+	position: sticky;
+	right: -8px;
 	flex: none;
+	min-height: 48px;
 	margin-left: 8px;
+	padding: 0 8px;
+	border: 0;
+	border-radius: 8px;
+	background: var(--surface);
+	color: inherit;
+	font: inherit;
 	font-size: 16px;
 	font-variant-numeric: tabular-nums;
+	touch-action: manipulation;
+	cursor: pointer;
+}
+
+.toolbar__status:disabled {
+	min-width: 0;
+	padding: 0;
+	cursor: default;
+}
+
+.search-bar {
+	display: flex;
+	flex: none;
+	align-items: center;
+	gap: 8px;
+	padding: 8px;
+	border-bottom: 1px solid var(--border);
+	background: var(--surface);
+}
+
+.search-bar input {
+	flex: 0 1 320px;
+	min-width: 0;
+	min-height: 48px;
+	padding: 0 12px;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	background: var(--surface-muted);
+	color: inherit;
+	font: inherit;
+	font-size: 18px;
+}
+
+.search-bar__status {
+	flex: none;
+	min-width: 64px;
+	font-variant-numeric: tabular-nums;
+}
+
+.search-bar .secondary-button {
+	flex: none;
+	padding: 0 16px;
 }
 
 .workspace {
@@ -191,6 +268,9 @@ body {
 	inset: 0;
 	overflow: auto;
 	outline: none;
+	/* Two fingers belong to the app's own zoom; a scroll that ends at the edge stays here. */
+	touch-action: pan-x pan-y;
+	overscroll-behavior: none;
 }
 
 .empty-state {
@@ -236,6 +316,7 @@ body {
 	padding: 24px;
 	border: 0;
 	border-radius: 12px;
+	background: var(--surface);
 	color: inherit;
 }
 
@@ -248,11 +329,38 @@ body {
 	overflow-wrap: anywhere;
 }
 
+.dialog__field {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-bottom: 24px;
+}
+
+.dialog__field input {
+	min-height: 48px;
+	padding: 0 12px;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	background: var(--surface-muted);
+	color: inherit;
+	font: inherit;
+	font-size: 18px;
+}
+
+.dialog__address {
+	font-family: ui-monospace, monospace;
+}
+
 .dialog__actions {
 	display: flex;
 	flex-wrap: wrap;
 	justify-content: flex-end;
 	gap: 8px;
+}
+
+/* The answer comes first in the page, so that Enter chooses it; the eye still gets it last. */
+.dialog__actions .secondary-button {
+	order: -1;
 }
 
 .toast {
@@ -265,6 +373,47 @@ body {
 	margin: auto;
 	padding: 12px 20px;
 	border-radius: 8px;
-	background: var(--text);
+	background: var(--toast-surface);
 	color: #ffffff;
+}
+
+.print-container {
+	display: none;
+}
+
+@media print {
+	html,
+	body {
+		display: block;
+		height: auto;
+		overflow: visible;
+		background: none;
+	}
+
+	body > *:not(.print-container) {
+		display: none !important;
+	}
+
+	.print-container {
+		display: block;
+	}
+
+	.print-page {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		height: 100vh;
+		overflow: hidden;
+		break-after: page;
+		break-inside: avoid;
+	}
+
+	.print-page:last-child {
+		break-after: auto;
+	}
+
+	.print-page img {
+		max-width: 100%;
+		max-height: 100%;
+	}
 }
