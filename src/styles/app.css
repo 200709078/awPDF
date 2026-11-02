@@ -58,13 +58,13 @@ body {
 }
 
 .toolbar {
+	position: relative;
 	display: flex;
 	flex: none;
 	align-items: center;
 	gap: 4px;
 	height: var(--toolbar-height);
 	padding: 0 8px;
-	overflow-x: auto;
 	border-bottom: 1px solid var(--border);
 	background: var(--surface);
 }
@@ -105,13 +105,50 @@ body {
 	cursor: default;
 }
 
+.toolbar__label {
+	display: none;
+}
+
+.toolbar__menu {
+	position: absolute;
+	top: 100%;
+	right: 8px;
+	z-index: 20;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	width: min(260px, calc(100vw - 16px));
+	padding: 6px;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	background: var(--surface);
+	box-shadow: 0 8px 24px rgb(0 0 0 / 25%);
+}
+
+.toolbar__menu .toolbar__button {
+	justify-content: flex-start;
+	gap: 12px;
+	width: 100%;
+	padding: 0 10px;
+	font: inherit;
+	font-size: 16px;
+	text-align: left;
+}
+
+.toolbar__menu .toolbar__button svg {
+	flex: none;
+}
+
+.toolbar__menu .toolbar__label {
+	display: inline;
+}
+
 .toolbar__status {
-	/* Stays at the row's end while a narrow screen scrolls the buttons under it. */
-	position: sticky;
-	right: -8px;
 	flex: none;
 	min-height: 48px;
-	margin-left: 8px;
+	margin-left: auto;
 	padding: 0 8px;
 	border: 0;
 	border-radius: 8px;

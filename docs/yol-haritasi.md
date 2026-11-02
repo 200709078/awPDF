@@ -19,7 +19,6 @@ Kalanlar:
   parolalı PDF
 - **Gezinme:** içindekiler (yan panelde sekme olarak)
 - **Diğer:** masaüstünde sekmeler, Android geri düğmesi
-- **Telefon:** araç çubuğu dar ekrana sığmıyor, şimdilik yana kayıyor; menüye toplanmalı
 - **Tahta:** ekran klavyesi (drAW'daki kopya alınabilir), sunum modu
 
 ## Sonraki araçlar (önerilen sıra)

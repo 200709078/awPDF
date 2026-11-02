@@ -4,17 +4,81 @@ export function shortcutOf(event: KeyboardEvent): string {
   return `${event.ctrlKey || event.metaKey ? 'ctrl+' : ''}${event.key.toLowerCase()}`
 }
 
-function toolButton(tool: Tool, context: ToolContext): HTMLButtonElement {
+const MENU_LABEL = 'Diğer Araçlar'
+const MENU_ICON = '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>'
+/** Space left under the open menu, so its shadow and rounded end stay on screen. */
+const MENU_SCREEN_MARGIN_PX = 8
+
+function emptyButton(id: string, label: string, icon: string): HTMLButtonElement {
   const button = document.createElement('button')
   button.type = 'button'
-  button.id = `tool-${tool.id}`
+  button.id = id
   button.className = 'toolbar__button'
-  button.title = tool.label
-  button.setAttribute('aria-label', tool.label)
+  button.title = label
+  button.setAttribute('aria-label', label)
   button.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"'
-    + ` stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${tool.icon}</svg>`
+    + ` stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icon}</svg>`
+  return button
+}
+
+function toolButton(tool: Tool, context: ToolContext): HTMLButtonElement {
+  const button = emptyButton(`tool-${tool.id}`, tool.label, tool.icon)
+  const label = document.createElement('span')
+  label.className = 'toolbar__label'
+  label.textContent = tool.label
+  button.append(label)
   button.addEventListener('click', () => tool.run(context))
   return button
+}
+
+/**
+ * Keeps the toolbar on one line: the buttons that do not fit move, from the last one back, into a
+ * menu at the row's end, where the styles show their names. They stay the same elements, so their
+ * pressed and disabled states and their IDs need no second copy. Returns the function that
+ * redoes this; a resize runs it by itself.
+ */
+function mountOverflowMenu(root: HTMLElement, buttons: readonly HTMLButtonElement[], rowEnd: HTMLElement): () => void {
+  const toggle = emptyButton('toolbarMenuButton', MENU_LABEL, MENU_ICON)
+  const menu = document.createElement('div')
+  menu.id = 'toolbarMenu'
+  menu.className = 'toolbar__menu'
+  toggle.setAttribute('aria-controls', menu.id)
+  root.append(toggle, menu)
+
+  const setOpen = (open: boolean) => {
+    menu.hidden = !open
+    toggle.setAttribute('aria-expanded', String(open))
+    if (open) menu.style.maxHeight = `${window.innerHeight - root.getBoundingClientRect().bottom - MENU_SCREEN_MARGIN_PX}px`
+  }
+  const fit = () => {
+    setOpen(false)
+    toggle.hidden = true
+    rowEnd.before(...buttons)
+    if (root.scrollWidth <= root.clientWidth) return
+    toggle.hidden = false
+    for (let index = buttons.length - 1; index >= 0 && root.scrollWidth > root.clientWidth; index--) {
+      menu.prepend(buttons[index])
+    }
+  }
+
+  toggle.addEventListener('click', () => setOpen(menu.hidden === true))
+  // Bubbles here after the button's own click has run its tool.
+  menu.addEventListener('click', event => {
+    if ((event.target as Element).closest('button')) setOpen(false)
+  })
+  // In the capture phase, since the page's own handlers may stop a press on the document.
+  document.addEventListener('pointerdown', event => {
+    const target = event.target as Node
+    if (!menu.contains(target) && !toggle.contains(target)) setOpen(false)
+  }, true)
+  window.addEventListener('keydown', event => {
+    if (event.key !== 'Escape' || menu.hidden) return
+    setOpen(false)
+    toggle.focus()
+  })
+  new ResizeObserver(fit).observe(root)
+  fit()
+  return fit
 }
 
 /** Builds the toolbar and the keyboard shortcuts from the tool list. */
@@ -28,6 +92,7 @@ export function mountToolbar(root: HTMLElement, tools: readonly Tool[], context:
   status.title = 'Sayfaya Git'
   status.addEventListener('click', () => supported.find(tool => tool.id === 'goToPage')?.run(context))
   root.append(...buttons.map(({ button }) => button), status)
+  const fitToolbar = mountOverflowMenu(root, buttons.map(({ button }) => button), status)
 
   const canRun = (tool: Tool) => (!tool.needsDocument || context.view.isOpen) && (tool.isAvailable?.(context.view) ?? true)
 
@@ -37,8 +102,10 @@ export function mountToolbar(root: HTMLElement, tools: readonly Tool[], context:
       button.disabled = !canRun(tool)
       if (tool.isActive) button.setAttribute('aria-pressed', String(tool.isActive(context)))
     }
+    const statusWidth = status.offsetWidth
     status.disabled = !isOpen
     status.textContent = isOpen ? `${pageLabel} / ${pageCount}` : ''
+    if (status.offsetWidth !== statusWidth) fitToolbar()
   }
   context.view.onChange(update)
   context.sidePanel.onChange(update)
