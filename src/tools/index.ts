@@ -1,5 +1,5 @@
 import { openTool } from './open'
-import { nextPageTool, previousPageTool } from './pages'
+import { nextPageTool, previousPageTool, twoPagesTool } from './pages'
 import type { Tool } from './tool'
 import { fitHeightTool, fitWidthTool, zoomInTool, zoomOutTool } from './zoom'
 
@@ -12,4 +12,5 @@ export const TOOLS: readonly Tool[] = [
   zoomInTool,
   fitWidthTool,
   fitHeightTool,
+  twoPagesTool,
 ]

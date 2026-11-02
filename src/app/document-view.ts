@@ -1,6 +1,6 @@
 import '../core/pdfjs-global'
 import type { PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
-import { EventBus, PDFLinkService, PDFViewer } from 'pdfjs-dist/legacy/web/pdf_viewer.mjs'
+import { EventBus, PDFLinkService, PDFViewer, SpreadMode } from 'pdfjs-dist/legacy/web/pdf_viewer.mjs'
 
 const FIT_WIDTH = 'page-width'
 const FIT_HEIGHT = 'page-height'
@@ -16,6 +16,7 @@ export class DocumentView {
   private readonly viewer: PDFViewer
   private readonly links: PDFLinkService
   private document: PDFDocumentProxy | null = null
+  private wantsTwoPages = false
   private readonly listeners = new Set<() => void>()
 
   constructor(container: HTMLDivElement, viewerElement: HTMLDivElement) {
@@ -25,7 +26,11 @@ export class DocumentView {
     this.links.externalLinkEnabled = false
     this.viewer = new PDFViewer({ container, viewer: viewerElement, eventBus, linkService: this.links })
     this.links.setViewer(this.viewer)
-    eventBus.on('pagesinit', () => this.fitWidth())
+    eventBus.on('pagesinit', () => {
+      // pdf.js forgets the layout with each document; the choice carries over to the next one.
+      this.applyLayout()
+      this.fitWidth()
+    })
     for (const event of ['pagesinit', 'pagechanging', 'scalechanging']) {
       eventBus.on(event, () => this.notify())
     }
@@ -48,7 +53,32 @@ export class DocumentView {
     return this.document?.numPages ?? 0
   }
 
-  /** Runs whenever the page, the zoom or the open document changes. */
+  get twoPages(): boolean {
+    return this.wantsTwoPages
+  }
+
+  /** The first and last pages on the current row: pairs are 1-2, 3-4, … */
+  private get row(): { first: number; last: number } {
+    const { page } = this
+    if (!this.twoPages) return { first: page, last: page }
+    const first = page % 2 === 1 ? page : page - 1
+    return { first, last: Math.min(first + 1, this.pageCount) }
+  }
+
+  get pageLabel(): string {
+    const { first, last } = this.row
+    return first === last ? `${first}` : `${first}-${last}`
+  }
+
+  get hasPreviousPage(): boolean {
+    return this.row.first > 1
+  }
+
+  get hasNextPage(): boolean {
+    return this.row.last < this.pageCount
+  }
+
+  /** Runs whenever the page, the zoom, the layout or the open document changes. */
   onChange(listener: () => void): void {
     this.listeners.add(listener)
   }
@@ -61,8 +91,19 @@ export class DocumentView {
     this.notify()
   }
 
-  goTo(page: number): void {
-    if (page >= 1 && page <= this.pageCount) this.viewer.currentPageNumber = page
+  /** pdf.js steps a whole row when both of its pages are in view. */
+  previousPage(): void {
+    this.viewer.previousPage()
+  }
+
+  nextPage(): void {
+    this.viewer.nextPage()
+  }
+
+  toggleTwoPages(): void {
+    this.wantsTwoPages = !this.wantsTwoPages
+    this.applyLayout()
+    this.notify()
   }
 
   zoomBy(factor: number): void {
@@ -84,6 +125,10 @@ export class DocumentView {
 
   fitHeight(): void {
     this.viewer.currentScaleValue = FIT_HEIGHT
+  }
+
+  private applyLayout(): void {
+    this.viewer.spreadMode = this.wantsTwoPages ? SpreadMode.ODD : SpreadMode.NONE
   }
 
   private notify(): void {

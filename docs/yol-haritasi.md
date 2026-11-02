@@ -6,15 +6,15 @@ Kesinleşmiş kararlar `CLAUDE.md` dosyasındadır.
 ## İlk sürüm (2026-11-02)
 
 İskelette hazır olanlar: PDF açma (dosya seçici), sayfa düğmeleri, yakınlaştırma, genişliğe ve
-yüksekliğe sığdırma, metin seçme, 200 MB uyarısı.
+yüksekliğe sığdırma, iki sayfa görünümü, metin seçme, 200 MB uyarısı.
 
 Kalanlar:
 
 - **Açma:** sürükle-bırak, "Birlikte aç" (Linux, Windows, Android), son dosyalar, kalınan sayfadan
   devam, parolalı PDF
 - **Gezinme:** sayfa küçük resimleri, içindekiler, sayfa numarasına gitme, PDF içi bağlantılar
-- **Görünüm:** iki parmakla yakınlaştırma, sayfaya sığdırma, görünümü döndürme, tek/sürekli/çift
-  sayfa, tam ekran, koyu tema
+- **Görünüm:** iki parmakla yakınlaştırma, sayfaya sığdırma, görünümü döndürme, tek sayfa görünümü,
+  tam ekran, koyu tema
 - **Metin:** arama (yalnız istenince çalışır, iptal edilebilir)
 - **Dış bağlantılar:** onay sorarak açılır; şimdilik kapalı
 - **Diğer:** yazdırma, paylaşma (Android), masaüstünde sekmeler, Android geri düğmesi

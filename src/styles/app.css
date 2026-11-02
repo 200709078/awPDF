@@ -67,6 +67,13 @@ body {
 	background: var(--surface-muted);
 }
 
+/* Hover included: on a touch screen it stays on after the tap. */
+.toolbar__button[aria-pressed="true"],
+.toolbar__button[aria-pressed="true"]:hover:not(:disabled) {
+	background: var(--accent);
+	color: #ffffff;
+}
+
 .toolbar__button:disabled {
 	opacity: 0.35;
 	cursor: default;

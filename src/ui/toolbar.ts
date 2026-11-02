@@ -28,9 +28,12 @@ export function mountToolbar(root: HTMLElement, tools: readonly Tool[], context:
   const canRun = (tool: Tool) => (!tool.needsDocument || context.view.isOpen) && (tool.isAvailable?.(context.view) ?? true)
 
   const update = () => {
-    const { isOpen, page, pageCount } = context.view
-    for (const { tool, button } of buttons) button.disabled = !canRun(tool)
-    status.textContent = isOpen ? `${page} / ${pageCount}` : ''
+    const { isOpen, pageLabel, pageCount } = context.view
+    for (const { tool, button } of buttons) {
+      button.disabled = !canRun(tool)
+      if (tool.isActive) button.setAttribute('aria-pressed', String(tool.isActive(context.view)))
+    }
+    status.textContent = isOpen ? `${pageLabel} / ${pageCount}` : ''
   }
   context.view.onChange(update)
   update()

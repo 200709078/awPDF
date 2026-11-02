@@ -85,6 +85,63 @@ test('yakınlaştırma düğmeleri ve kısayolları sayfayı büyütür', async 
   await expect.poll(width).toBeCloseTo(fitted, 0);
 });
 
+test('iki sayfa görünümünde sayfalar yan yana gelir, düğmeler satır satır gezer', async ({ page }) => {
+  await openPdf(page, makePdf({ pages: 5 }));
+  const status = page.locator('#pageStatus');
+  const toggle = page.locator('#tool-twoPages');
+  const previous = page.locator('#tool-previousPage');
+  const next = page.locator('#tool-nextPage');
+  await expect(status).toHaveText('1 / 5');
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  // The pointer is still over the button: the pressed look must survive hover.
+  await expect(toggle).toHaveCSS('background-color', 'rgb(37, 99, 235)');
+  await expect(status).toHaveText('1-2 / 5');
+  // The contents, not `.page`: its invisible frame reaches into the neighbour's.
+  await expect.poll(async () => {
+    const first = (await page.locator('.page[data-page-number="1"] .canvasWrapper').boundingBox())!;
+    const second = (await page.locator('.page[data-page-number="2"] .canvasWrapper').boundingBox())!;
+    return Math.abs(second.y - first.y) < 1 && second.x >= first.x + first.width;
+  }).toBe(true);
+  await expect(previous).toBeDisabled();
+
+  await next.click();
+  await expect(status).toHaveText('3-4 / 5');
+  await next.click();
+  await expect(status).toHaveText('5 / 5');
+  await expect(next).toBeDisabled();
+  await previous.click();
+  await expect(status).toHaveText('3-4 / 5');
+  await previous.click();
+  await expect(status).toHaveText('1-2 / 5');
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+  await expect(status).toHaveText(/^[12] \/ 5$/);
+});
+
+test('çift sayılı belgede son satırda sonraki sayfa düğmesi pasif olur', async ({ page }) => {
+  await openPdf(page, makePdf({ pages: 4 }));
+  await expect(page.locator('#pageStatus')).toHaveText('1 / 4');
+  await page.locator('#tool-twoPages').click();
+  await page.locator('#tool-nextPage').click();
+  await expect(page.locator('#pageStatus')).toHaveText('3-4 / 4');
+  await expect(page.locator('#tool-nextPage')).toBeDisabled();
+});
+
+test('iki sayfa görünümünde iki sayfa ekrana sığar, yeni belgede de korunur', async ({ page }) => {
+  await openPdf(page, makePdf());
+  await expect(page.locator('#pageStatus')).toHaveText('1 / 3');
+  await page.locator('#tool-twoPages').click();
+  await expect.poll(() => page.locator('#viewerContainer').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+
+  await openPdf(page, makePdf({ pages: 2 }), 'ikinci.pdf');
+  await expect(page.locator('#pageStatus')).toHaveText('1-2 / 2');
+  await expect(page.locator('#tool-twoPages')).toHaveAttribute('aria-pressed', 'true');
+});
+
 test('yüksekliğe sığdırınca sayfa tümüyle görünür, pencere değişince yeniden sığar', async ({ page }) => {
   await openPdf(page, makePdf());
   const firstPage = page.locator('.page[data-page-number="1"]');

@@ -22,5 +22,7 @@ export interface Tool {
   readonly needsDocument?: boolean
   /** Disabled while this is false, such as on the first page; read whenever the view changes. */
   isAvailable?(view: DocumentView): boolean
+  /** Makes the button an on/off switch; it shows as pressed while this is true. */
+  isActive?(view: DocumentView): boolean
   run(context: ToolContext): void
 }
