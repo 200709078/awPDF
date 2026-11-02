@@ -7,6 +7,7 @@ const FIT_HEIGHT = 'page-height'
 const ZOOM_STEP = 1.25
 const MIN_SCALE = 0.25
 const MAX_SCALE = 8
+const REFIT_DELAY_MS = 100
 
 /**
  * The on-screen document. pdf.js draws only the pages in view and keeps its own per-page pixel
@@ -35,9 +36,15 @@ export class DocumentView {
       eventBus.on(event, () => this.notify())
     }
     // A turned phone or a resized window keeps the page fitted; a chosen zoom stays as it is.
+    // Waiting for the size to settle spares a page redraw on every frame of a resize or of the
+    // side panel's slide.
+    let refit: ReturnType<typeof setTimeout> | undefined
     new ResizeObserver(() => {
-      const scale = this.viewer.currentScaleValue
-      if (this.isOpen && (scale === FIT_WIDTH || scale === FIT_HEIGHT)) this.viewer.currentScaleValue = scale
+      clearTimeout(refit)
+      refit = setTimeout(() => {
+        const scale = this.viewer.currentScaleValue
+        if (this.isOpen && (scale === FIT_WIDTH || scale === FIT_HEIGHT)) this.viewer.currentScaleValue = scale
+      }, REFIT_DELAY_MS)
     }).observe(container)
   }
 

@@ -379,3 +379,49 @@ test('dar ekranda panel belgenin üstünde açılır, seçim ve belgeye dokunma 
   await page.mouse.click(370, 400);
   await expect(panel).toBeHidden();
 });
+
+const panelIsSliding = (page: Page) => page.evaluate(() => {
+  const panel = document.querySelector<HTMLElement>('#sidePanel')!;
+  document.querySelector<HTMLElement>('#tool-sidePanel')!.click();
+  return panel.getAnimations().length > 0 && getComputedStyle(panel).display !== 'none';
+});
+
+for (const [name, viewport] of [['geniş', { width: 1440, height: 900 }], ['dar', { width: 390, height: 780 }]] as const) {
+  test(`${name} ekranda panel kayarak açılır ve kapanır`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await openPdf(page, makePdf());
+    await expect(page.locator('#pageStatus')).toHaveText('1 / 3');
+    const panel = page.locator('#sidePanel');
+    expect(await panelIsSliding(page)).toBe(true);
+    await expect.poll(() => panel.evaluate(element => element.getAnimations().length)).toBe(0);
+    await expect(panel).toBeVisible();
+    await expect.poll(async () => (await panel.boundingBox())!.x).toBe(0);
+    expect(await panelIsSliding(page)).toBe(true);
+    await expect(panel).toBeHidden();
+  });
+}
+
+test('hareketi azalt ayarında panel anında açılır', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await openPdf(page, makePdf());
+  await expect(page.locator('#pageStatus')).toHaveText('1 / 3');
+  expect(await panelIsSliding(page)).toBe(false);
+  await expect(page.locator('#sidePanel')).toBeVisible();
+});
+
+test('panel kayarken sayfa her karede yeniden çizilmez', async ({ page }) => {
+  await openPdf(page, makePdf());
+  const firstPage = page.locator('.page[data-page-number="1"]');
+  await expect(firstPage.locator('.textLayer')).toContainText('awPDF');
+  const scale = () => page.locator('#viewer').evaluate(viewer => getComputedStyle(viewer).getPropertyValue('--scale-factor'));
+  const before = await scale();
+  const changes = await page.evaluate(() => new Promise<number>(resolve => {
+    let count = 0;
+    const observer = new MutationObserver(() => { count += 1; });
+    observer.observe(document.querySelector('#viewer')!, { attributes: true, attributeFilter: ['style'] });
+    document.querySelector<HTMLElement>('#tool-sidePanel')!.click();
+    setTimeout(() => { observer.disconnect(); resolve(count); }, 600);
+  }));
+  expect(changes).toBeLessThanOrEqual(2);
+  expect(await scale()).not.toBe(before);
+});
