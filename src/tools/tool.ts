@@ -1,3 +1,4 @@
+import type { DocumentTabs } from '../app/document-tabs'
 import type { DocumentView } from '../app/document-view'
 import type { Platform } from '../platform/platform'
 import type { SearchBar } from '../ui/search-bar'
@@ -7,6 +8,7 @@ import type { Theme } from '../ui/theme'
 /** What a tool may use. Tools reach the document and the platform only through this. */
 export interface ToolContext {
   readonly view: DocumentView
+  readonly tabs: DocumentTabs
   readonly sidePanel: SidePanel
   readonly searchBar: SearchBar
   readonly theme: Theme

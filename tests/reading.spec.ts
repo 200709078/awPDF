@@ -700,3 +700,113 @@ test.describe('parolalı PDF', () => {
     await expect(status(page)).toHaveText('2 / 2');
   });
 });
+
+test('görünümü döndürünce okunan sayfada kalınır', async ({ page }) => {
+  await page.locator('#pdfInput').setInputFiles({ name: 'deneme.pdf', mimeType: 'application/pdf', buffer: makePdf({ pages: 6 }) });
+  await expect(status(page)).toHaveText('1 / 6');
+  await page.locator('#tool-nextPage').click();
+  await page.locator('#tool-nextPage').click();
+  await expect(status(page)).toHaveText('3 / 6');
+  for (let turn = 0; turn < 4; turn += 1) {
+    await page.locator('#tool-rotate').click();
+    await page.waitForTimeout(200);
+    await expect(status(page)).toHaveText('3 / 6');
+  }
+});
+
+test.describe('sekmeler', () => {
+  const choose = (page: Page, name: string, pages: number) => page.locator('#pdfInput').setInputFiles({
+    name, mimeType: 'application/pdf', buffer: makePdf({ pages, text: index => `${name} ${index + 1}` }),
+  });
+  const tab = (page: Page, name: string) => page.locator('.tab', { hasText: name });
+  const twoDocuments = async (page: Page) => {
+    await choose(page, 'bir.pdf', 4);
+    await expect(status(page)).toHaveText('1 / 4');
+    await choose(page, 'iki.pdf', 2);
+    await expect(status(page)).toHaveText('1 / 2');
+  };
+
+  test('her belge sekmede açılır, aralarında geçilir, başlık izler', async ({ page }) => {
+    await twoDocuments(page);
+    await expect(page.locator('.tab')).toHaveCount(2);
+    await expect(tab(page, 'iki.pdf')).toHaveClass(/is-active/);
+    await expect(page).toHaveTitle(/^iki\.pdf/);
+    await tab(page, 'bir.pdf').locator('.tab__title').click();
+    await expect(status(page)).toHaveText('1 / 4');
+    await expect(page).toHaveTitle(/^bir\.pdf/);
+    await expect(page.locator('.page[data-page-number="1"] .textLayer')).toContainText('bir.pdf 1');
+  });
+
+  test('her sekme sayfasını, yakınlaştırmasını ve döndürmesini korur', async ({ page }) => {
+    await twoDocuments(page);
+    await tab(page, 'bir.pdf').locator('.tab__title').click();
+    await expect(status(page)).toHaveText('1 / 4');
+    await page.locator('#tool-nextPage').click();
+    await page.locator('#tool-nextPage').click();
+    await expect(status(page)).toHaveText('3 / 4');
+    await page.locator('#tool-rotate').click();
+    await page.locator('#tool-zoomIn').click();
+    const box = async () => {
+      const { width, height } = (await page.locator('.page[data-page-number="3"]').boundingBox())!;
+      return { width: Math.round(width), height: Math.round(height) };
+    };
+    await expect.poll(async () => (await box()).width).toBeGreaterThan((await box()).height);
+    const before = await box();
+
+    await tab(page, 'iki.pdf').locator('.tab__title').click();
+    await expect(status(page)).toHaveText('1 / 2');
+    const other = (await page.locator('.page[data-page-number="1"]').boundingBox())!;
+    expect(other.height).toBeGreaterThan(other.width);
+
+    await tab(page, 'bir.pdf').locator('.tab__title').click();
+    await expect(status(page)).toHaveText('3 / 4');
+    await expect.poll(box).toEqual(before);
+  });
+
+  test('aynı belge ikinci kez açılmaz, sekmesine dönülür', async ({ page }) => {
+    await twoDocuments(page);
+    await choose(page, 'bir.pdf', 4);
+    await expect(status(page)).toHaveText('1 / 4');
+    await expect(page.locator('.tab')).toHaveCount(2);
+  });
+
+  test('sekme kapanınca yanındaki gelir, son sekmede boş ekrana dönülür', async ({ page }) => {
+    await twoDocuments(page);
+    await page.locator('#tool-sidePanel').click();
+    await tab(page, 'iki.pdf').locator('.tab__close').click();
+    await expect(status(page)).toHaveText('1 / 4');
+    await expect(page.locator('.thumbnail')).toHaveCount(4);
+    await tab(page, 'bir.pdf').locator('.tab__close').click();
+    await expect(page.locator('.tab')).toHaveCount(0);
+    await expect(page.locator('#tabBar')).toBeHidden();
+    await expect(page.locator('#emptyOpen')).toBeVisible();
+    await expect(page.locator('#viewerContainer')).toBeHidden();
+    await expect(page.locator('#sidePanel')).toBeHidden();
+    await expect(page.locator('#tool-print')).toBeDisabled();
+    await expect(status(page)).toHaveText('');
+    await expect(page).toHaveTitle('awPDF | mADEMatik');
+    await choose(page, 'uc.pdf', 2);
+    await expect(status(page)).toHaveText('1 / 2');
+  });
+
+  test('sekme değişince arama kapanır, kısayolla sırayla geçilir', async ({ page }) => {
+    await twoDocuments(page);
+    await page.locator('#tool-search').click();
+    await page.locator('#searchInput').fill('bir');
+    await tab(page, 'bir.pdf').locator('.tab__title').click();
+    await expect(page.locator('#searchBar')).toBeHidden();
+    await page.locator('#viewerContainer').click();
+    await page.keyboard.press('Control+Tab');
+    await expect(status(page)).toHaveText('1 / 2');
+    await page.keyboard.press('Control+Tab');
+    await expect(status(page)).toHaveText('1 / 4');
+  });
+
+  test('birden çok dosya seçilince hepsi açılır, sonuncusu önde kalır', async ({ page }) => {
+    await page.locator('#pdfInput').setInputFiles(['a.pdf', 'b.pdf', 'c.pdf'].map((name, index) => ({
+      name, mimeType: 'application/pdf', buffer: makePdf({ pages: index + 1 }),
+    })));
+    await expect(page.locator('.tab')).toHaveCount(3);
+    await expect(status(page)).toHaveText('1 / 3');
+  });
+});

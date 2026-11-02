@@ -16,6 +16,7 @@
 
 <body>
 	<div id="toolbar" class="toolbar" role="toolbar" aria-label="Araçlar"></div>
+	<div id="tabBar" class="tab-bar" role="tablist" aria-label="Açık belgeler" hidden></div>
 	<div id="searchBar" class="search-bar" role="search" hidden>
 		<input id="searchInput" type="search" placeholder="Metinde ara" aria-label="Metinde ara" autocomplete="off">
 		<span id="searchStatus" class="search-bar__status" aria-live="polite"></span>
@@ -48,7 +49,7 @@
 			</section>
 		</div>
 	</main>
-	<input id="pdfInput" type="file" accept="application/pdf,.pdf" hidden>
+	<input id="pdfInput" type="file" accept="application/pdf,.pdf" multiple hidden>
 	<dialog id="largeFileDialog" class="dialog">
 		<h2>Bu dosya büyük</h2>
 		<p id="largeFileMessage"></p>

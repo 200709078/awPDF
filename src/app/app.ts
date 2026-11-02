@@ -11,10 +11,12 @@ import { OutlineList } from '../ui/outline'
 import { RecentList } from '../ui/recent-list'
 import { SearchBar } from '../ui/search-bar'
 import { SidePanel } from '../ui/side-panel'
+import { mountTabBar } from '../ui/tab-bar'
 import { Theme } from '../ui/theme'
 import { ThumbnailList } from '../ui/thumbnails'
 import { mountToolbar } from '../ui/toolbar'
 import { closeTopmost } from './back'
+import { DocumentTabs } from './document-tabs'
 import { DocumentView } from './document-view'
 import { bindGestures } from './gestures'
 import { printDocument } from './print'
@@ -32,8 +34,10 @@ export function startApp(): void {
   const searchBar = new SearchBar(document.querySelector('#searchBar')!, view)
   const recent = new RecentFiles(deviceStore())
   const recentList = new RecentList(recent, file => void openRecent(file))
+  const tabs = new DocumentTabs(view, !platform.singleDocument)
   const context: ToolContext = {
     view,
+    tabs,
     sidePanel,
     searchBar,
     theme: new Theme(),
@@ -47,32 +51,39 @@ export function startApp(): void {
       })
     },
   }
-  let lastOpen = 0
+  /** One at a time: a drop of several files must not stack up their dialogs. */
+  let opening = Promise.resolve()
 
   async function openLink(url: string): Promise<void> {
     if (!isOpenableLink(url)) showToast('Bu bağlantı açılamıyor.')
     else if (await confirmExternalLink(url)) platform.openExternal(url)
   }
 
-  async function open(file: PdfFile): Promise<void> {
-    const attempt = ++lastOpen
-    if (needsLargeFileWarning(file.size) && !await confirmLargeFile(file.name, file.size)) return
+  function open(file: PdfFile): Promise<void> {
+    opening = opening.then(() => openNow(file))
+    return opening
+  }
+
+  async function openNow(file: PdfFile): Promise<void> {
+    if (needsLargeFileWarning(file.size) && !await confirmLargeFile(file.name, file.size)) {
+      file.close?.()
+      return
+    }
     try {
       const document_ = await loadPdf(file, wasWrong => askPassword(file.name, wasWrong))
-      if (attempt !== lastOpen) {
-        void document_.loadingTask.destroy()
-        return
-      }
-      container.hidden = false
-      emptyState.hidden = true
-      searchBar.close()
       // pdf.js gives a file without an ID a hash of its contents, so this is never empty in practice.
       const fingerprint = document_.fingerprints[0] ?? file.name
-      const startPage = recent.pageOf(fingerprint)
-      view.open(document_, file, startPage)
+      const alreadyOpen = tabs.find(fingerprint)
+      if (alreadyOpen) {
+        void document_.loadingTask.destroy()
+        file.close?.()
+        tabs.show(alreadyOpen)
+        return
+      }
+      const page = recent.pageOf(fingerprint)
+      tabs.add({ document: document_, file, fingerprint, state: { page } })
       recent.remember(fingerprint, file.name, file.source)
-      if (startPage > 1) showToast(`Kaldığınız yer: sayfa ${startPage}`)
-      document.title = `${file.name} | ${APP_TITLE}`
+      if (page > 1) showToast(`Kaldığınız yer: sayfa ${page}`)
     } catch (error) {
       file.close?.()
       if (error instanceof OpenCancelled) return
@@ -94,6 +105,15 @@ export function startApp(): void {
     }
   }
 
+  tabs.onChange(() => {
+    const name = tabs.active?.file.name
+    document.title = name ? `${name} | ${APP_TITLE}` : APP_TITLE
+    container.hidden = !name
+    emptyState.hidden = Boolean(name)
+    searchBar.close()
+    if (!name && sidePanel.isOpen) sidePanel.toggle()
+  })
+  if (!platform.singleDocument) mountTabBar(document.querySelector('#tabBar')!, tabs)
   const toolbarMenu = mountToolbar(document.querySelector('#toolbar')!, TOOLS, context)
   new ThumbnailList(document.querySelector('#thumbnailList')!, view, sidePanel, page => {
     view.goTo(page)
@@ -107,8 +127,7 @@ export function startApp(): void {
   container.addEventListener('pointerdown', () => sidePanel.closeIfOverlay())
   bindGestures(container, view)
   view.onPageChange(page => {
-    const fingerprint = view.pdf?.fingerprints[0]
-    if (fingerprint) recent.setPage(fingerprint, page)
+    if (tabs.active) recent.setPage(tabs.active.fingerprint, page)
   })
   platform.onFile(file => void open(file))
   platform.onBack?.(() => closeTopmost(context, toolbarMenu))

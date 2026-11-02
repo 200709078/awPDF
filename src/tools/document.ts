@@ -38,6 +38,31 @@ export const recentTool: Tool = {
   run: ({ showRecentFiles }) => showRecentFiles(),
 }
 
+/** The tabs have their own buttons. */
+export const closeTabTool: Tool = {
+  id: 'closeTab',
+  label: 'Belgeyi Kapat',
+  icon: '',
+  shortcuts: ['ctrl+w'],
+  needsDocument: true,
+  inToolbar: false,
+  isSupported: ({ platform }) => !platform.singleDocument,
+  run: ({ tabs }) => {
+    if (tabs.active) tabs.close(tabs.active)
+  },
+}
+
+export const nextTabTool: Tool = {
+  id: 'nextTab',
+  label: 'Sonraki Belge',
+  icon: '',
+  shortcuts: ['ctrl+tab'],
+  needsDocument: true,
+  inToolbar: false,
+  isSupported: ({ platform }) => !platform.singleDocument,
+  run: ({ tabs }) => tabs.showNext(),
+}
+
 /** Has no button of its own: the page number in the toolbar opens it. */
 export const goToPageTool: Tool = {
   id: 'goToPage',

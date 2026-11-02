@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, net, protocol, shell, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, net, protocol, shell, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { DesktopFiles, type OpenedFile } from './files.js'
@@ -144,6 +144,8 @@ if (!isFirstInstance) app.quit()
 
 if (isFirstInstance) void app.whenReady().then(async () => {
   app.setAppUserModelId('com.madematik.awpdf')
+  // Electron's own menu would close the window on ctrl+w and reload the page, tabs and all, on ctrl+r.
+  Menu.setApplicationMenu(null)
   registerAppProtocol()
   registerWindowControls()
   const files = new DesktopFiles()

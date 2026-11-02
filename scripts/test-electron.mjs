@@ -78,6 +78,13 @@ try {
   await page.waitForFunction(() => document.title.startsWith('ikinci.pdf'))
   assert.equal(application.windows().length, 1, 'İkinci başlatma yeni pencere açmamalı')
 
+  // Every document has a tab; ctrl+w closes the tab, never the window.
+  assert.equal(await page.locator('.tab').count(), 3)
+  await page.locator('#viewerContainer').click()
+  await page.keyboard.press('Control+w')
+  await page.waitForFunction(() => document.querySelectorAll('.tab').length === 2)
+  assert.equal(application.windows().length, 1)
+
   // Links reach the system only through the window handler, and only of the allowed kinds.
   await application.evaluate(({ shell }) => {
     globalThis.openedLinks = []

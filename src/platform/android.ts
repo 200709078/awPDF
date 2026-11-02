@@ -58,6 +58,7 @@ export function androidPlatform(): Platform {
   const browser = browserPlatform()
   return {
     ...browser,
+    singleDocument: true,
     pickFile: () => { void native.pickFile().catch(console.error) },
     reopen: async source => {
       const file = await native.reopenFile({ source })

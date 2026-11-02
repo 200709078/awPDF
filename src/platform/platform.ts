@@ -19,6 +19,8 @@ export interface Platform {
   openExternal(url: string): void
   /** Prints what the `@media print` styles show. */
   print(): void
+  /** A new document takes the place of the open one: no room for tabs on a phone. */
+  readonly singleDocument?: boolean
   /** Sends the file to another app; absent where that means nothing. */
   share?(file: PdfFile): Promise<void>
   readonly isFullscreen: boolean

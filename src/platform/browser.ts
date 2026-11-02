@@ -54,9 +54,9 @@ export function browserPlatform(): Platform {
         showFileInput()
         return
       }
-      window.showOpenFilePicker({ types: PDF_PICKER_TYPES }).then(async ([handle]) => {
-        const file = await pdfFileFromHandle(handle)
-        for (const listener of listeners) listener(file)
+      window.showOpenFilePicker({ types: PDF_PICKER_TYPES, multiple: true }).then(async handles => {
+        const files = await Promise.all(handles.map(pdfFileFromHandle))
+        for (const file of files) for (const listener of listeners) listener(file)
       }).catch((error: unknown) => {
         if ((error as DOMException).name !== 'AbortError') console.error(error)
       })

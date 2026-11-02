@@ -15,7 +15,6 @@ Windows ve imzalı Android paketleri GitHub Releases'te yayımlandı (imza doğr
 
 Kalanlar:
 
-- **Diğer:** masaüstünde sekmeler
 - **Tahta:** ekran klavyesi (drAW'daki kopya alınabilir), sunum modu
 
 ## Sonraki araçlar (önerilen sıra)

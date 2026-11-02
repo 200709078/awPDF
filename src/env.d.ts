@@ -34,7 +34,7 @@ interface FileSystemFileHandle {
 
 interface Window {
   /** Chromium browsers on computers only. */
-  showOpenFilePicker?(options: { types: { description: string; accept: Record<string, string[]> }[] }): Promise<FileSystemFileHandle[]>
+  showOpenFilePicker?(options: { types: { description: string; accept: Record<string, string[]> }[]; multiple: boolean }): Promise<FileSystemFileHandle[]>
   awPDFDesktop?: {
     windowControls?: DesktopWindowControls
     files?: DesktopFiles

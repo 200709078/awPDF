@@ -15,6 +15,13 @@ const REFIT_DELAY_MS = 100
 /** While a pinch goes on the page is only stretched; it is drawn sharp this long after it stops. */
 const GESTURE_REDRAW_DELAY_MS = 300
 
+/** What is kept of the view while another document is on screen. A new document gives only `page`. */
+export interface ViewState {
+  page: number
+  scale?: number | string
+  rotation?: number
+}
+
 export type OutlineItem = Awaited<ReturnType<PDFDocumentProxy['getOutline']>>[number]
 
 export type SearchProgress =
@@ -62,8 +69,8 @@ export class DocumentView {
   private wantsSinglePage = false
   /** Detaching the finder stops its page-by-page reading of a long book. */
   private finderDetached = false
-  /** The page to show once pdf.js has laid the document out. */
-  private startPage = 1
+  /** What to restore once pdf.js has laid the document out. */
+  private startState: ViewState = { page: 1 }
   private isSettled = false
   private readonly listeners = new Set<() => void>()
   private readonly pageListeners = new Set<(page: number) => void>()
@@ -78,8 +85,11 @@ export class DocumentView {
     eventBus.on('pagesinit', () => {
       // pdf.js forgets the layout with each document; the choice carries over to the next one.
       this.applyLayout()
-      this.fitWidth()
-      this.goTo(this.startPage)
+      const { page, scale, rotation } = this.startState
+      if (rotation) this.viewer.pagesRotation = rotation
+      if (scale === undefined) this.fitWidth()
+      else this.viewer.currentScaleValue = String(scale)
+      this.goTo(page)
       this.isSettled = true
     })
     eventBus.on('pagechanging', ({ pageNumber }: { pageNumber: number }) => {
@@ -178,17 +188,34 @@ export class DocumentView {
     this.searchListeners.add(listener)
   }
 
-  open(document: PDFDocumentProxy, file: PdfFile, startPage = 1): void {
-    void this.document?.loadingTask.destroy()
-    this.openFile?.close?.()
+  /** Where the reader is now, to come back to with `open`. */
+  get state(): ViewState {
+    return { page: this.page, scale: this.viewer.currentScaleValue, rotation: this.rotation }
+  }
+
+  /** Shows a document. The caller owns it: closing the previous one is not done here. */
+  open(document: PDFDocumentProxy, file: PdfFile, state: ViewState = { page: 1 }): void {
     this.document = document
     this.openFile = file
-    this.startPage = Math.min(startPage, document.numPages)
+    this.startState = { ...state, page: Math.min(state.page, document.numPages) }
     this.isSettled = false
     this.links.setDocument(document)
     this.viewer.setDocument(document)
     this.finder.setDocument(document)
     this.finderDetached = false
+    this.notify()
+  }
+
+  /** Empties the view after its last document closed. */
+  clear(): void {
+    const none = null as unknown as PDFDocumentProxy
+    this.document = null
+    this.openFile = null
+    this.isSettled = false
+    this.finderDetached = false
+    this.viewer.setDocument(none)
+    this.links.setDocument(none)
+    this.finder.setDocument(none)
     this.notify()
   }
 
@@ -222,7 +249,10 @@ export class DocumentView {
   }
 
   rotate(): void {
+    // Pages change height, so the old scroll position would land on another page.
+    const pageNumber = this.page
     this.viewer.pagesRotation = (this.rotation + 90) % 360
+    this.viewer.scrollPageIntoView({ pageNumber })
   }
 
   zoomBy(factor: number): void {
