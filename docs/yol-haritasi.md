@@ -5,8 +5,8 @@ Kesinleşmiş kararlar `CLAUDE.md` dosyasındadır.
 
 ## İlk sürüm (2026-11-02)
 
-İskelette hazır olanlar: PDF açma (dosya seçici), sayfa düğmeleri, yakınlaştırma, genişliğe sığdırma,
-metin seçme, 200 MB uyarısı.
+İskelette hazır olanlar: PDF açma (dosya seçici), sayfa düğmeleri, yakınlaştırma, genişliğe ve
+yüksekliğe sığdırma, metin seçme, 200 MB uyarısı.
 
 Kalanlar:
 

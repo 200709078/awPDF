@@ -25,9 +25,11 @@ export function mountToolbar(root: HTMLElement, tools: readonly Tool[], context:
   status.className = 'toolbar__status'
   root.append(...buttons.map(({ button }) => button), status)
 
+  const canRun = (tool: Tool) => (!tool.needsDocument || context.view.isOpen) && (tool.isAvailable?.(context.view) ?? true)
+
   const update = () => {
     const { isOpen, page, pageCount } = context.view
-    for (const { tool, button } of buttons) button.disabled = tool.needsDocument === true && !isOpen
+    for (const { tool, button } of buttons) button.disabled = !canRun(tool)
     status.textContent = isOpen ? `${page} / ${pageCount}` : ''
   }
   context.view.onChange(update)
@@ -36,7 +38,7 @@ export function mountToolbar(root: HTMLElement, tools: readonly Tool[], context:
   window.addEventListener('keydown', event => {
     const shortcut = shortcutOf(event)
     const tool = tools.find(item => item.shortcuts?.includes(shortcut))
-    if (!tool || (tool.needsDocument && !context.view.isOpen)) return
+    if (!tool || !canRun(tool)) return
     event.preventDefault()
     tool.run(context)
   })

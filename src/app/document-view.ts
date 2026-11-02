@@ -3,6 +3,7 @@ import type { PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { EventBus, PDFLinkService, PDFViewer } from 'pdfjs-dist/legacy/web/pdf_viewer.mjs'
 
 const FIT_WIDTH = 'page-width'
+const FIT_HEIGHT = 'page-height'
 const ZOOM_STEP = 1.25
 const MIN_SCALE = 0.25
 const MAX_SCALE = 8
@@ -30,7 +31,8 @@ export class DocumentView {
     }
     // A turned phone or a resized window keeps the page fitted; a chosen zoom stays as it is.
     new ResizeObserver(() => {
-      if (this.isOpen && this.viewer.currentScaleValue === FIT_WIDTH) this.fitWidth()
+      const scale = this.viewer.currentScaleValue
+      if (this.isOpen && (scale === FIT_WIDTH || scale === FIT_HEIGHT)) this.viewer.currentScaleValue = scale
     }).observe(container)
   }
 
@@ -78,6 +80,10 @@ export class DocumentView {
 
   fitWidth(): void {
     this.viewer.currentScaleValue = FIT_WIDTH
+  }
+
+  fitHeight(): void {
+    this.viewer.currentScaleValue = FIT_HEIGHT
   }
 
   private notify(): void {

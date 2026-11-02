@@ -20,5 +20,7 @@ export interface Tool {
   readonly shortcuts?: readonly string[]
   /** Disabled while no document is open. */
   readonly needsDocument?: boolean
+  /** Disabled while this is false, such as on the first page; read whenever the view changes. */
+  isAvailable?(view: DocumentView): boolean
   run(context: ToolContext): void
 }

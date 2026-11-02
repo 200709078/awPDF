@@ -26,3 +26,11 @@ export const fitWidthTool: Tool = {
   needsDocument: true,
   run: ({ view }) => view.fitWidth(),
 }
+
+export const fitHeightTool: Tool = {
+  id: 'fitHeight',
+  label: 'Yüksekliğe Sığdır',
+  icon: '<path d="M5 3h14M5 21h14M12 7v10M9 10l3-3 3 3M9 14l3 3 3-3"/>',
+  needsDocument: true,
+  run: ({ view }) => view.fitHeight(),
+}

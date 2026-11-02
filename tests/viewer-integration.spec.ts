@@ -36,17 +36,41 @@ test('sayfa çizilir: tuval boş değildir', async ({ page }) => {
   })).toBe(true);
 });
 
-test('sayfa düğmeleri gezinir, ilk ve son sayfada durur', async ({ page }) => {
+test('sayfa düğmeleri gezinir, ilk ve son sayfada pasif olur', async ({ page }) => {
   await openPdf(page, makePdf());
   const status = page.locator('#pageStatus');
+  const previous = page.locator('#tool-previousPage');
+  const next = page.locator('#tool-nextPage');
   await expect(status).toHaveText('1 / 3');
-  await page.locator('#tool-previousPage').click();
-  await expect(status).toHaveText('1 / 3');
-  await page.locator('#tool-nextPage').click();
+  await expect(previous).toBeDisabled();
+  await expect(next).toBeEnabled();
+  await next.click();
   await expect(status).toHaveText('2 / 3');
-  await page.locator('#tool-nextPage').click();
-  await page.locator('#tool-nextPage').click();
+  await expect(previous).toBeEnabled();
+  await expect(next).toBeEnabled();
+  await next.click();
   await expect(status).toHaveText('3 / 3');
+  await expect(previous).toBeEnabled();
+  await expect(next).toBeDisabled();
+  await previous.click();
+  await expect(status).toHaveText('2 / 3');
+  await expect(next).toBeEnabled();
+});
+
+test('kaydırarak son sayfaya gelince sonraki sayfa düğmesi pasif olur', async ({ page }) => {
+  await openPdf(page, makePdf());
+  await expect(page.locator('#pageStatus')).toHaveText('1 / 3');
+  await page.locator('#viewerContainer').evaluate(container => { container.scrollTop = container.scrollHeight; });
+  await expect(page.locator('#pageStatus')).toHaveText('3 / 3');
+  await expect(page.locator('#tool-nextPage')).toBeDisabled();
+  await expect(page.locator('#tool-previousPage')).toBeEnabled();
+});
+
+test('tek sayfalık belgede iki düğme de pasiftir', async ({ page }) => {
+  await openPdf(page, makePdf({ pages: 1 }));
+  await expect(page.locator('#pageStatus')).toHaveText('1 / 1');
+  await expect(page.locator('#tool-previousPage')).toBeDisabled();
+  await expect(page.locator('#tool-nextPage')).toBeDisabled();
 });
 
 test('yakınlaştırma düğmeleri ve kısayolları sayfayı büyütür', async ({ page }) => {
@@ -59,6 +83,22 @@ test('yakınlaştırma düğmeleri ve kısayolları sayfayı büyütür', async 
   await expect.poll(width).toBeLessThan(fitted);
   await page.keyboard.press('Control+0');
   await expect.poll(width).toBeCloseTo(fitted, 0);
+});
+
+test('yüksekliğe sığdırınca sayfa tümüyle görünür, pencere değişince yeniden sığar', async ({ page }) => {
+  await openPdf(page, makePdf());
+  const firstPage = page.locator('.page[data-page-number="1"]');
+  await expect(firstPage.locator('.textLayer')).toContainText('awPDF');
+  const fitsHeight = async () => {
+    const pageHeight = (await firstPage.boundingBox())!.height;
+    const space = (await page.locator('#viewerContainer').boundingBox())!.height;
+    return pageHeight <= space && pageHeight > space * 0.95;
+  };
+  expect(await fitsHeight()).toBe(false);
+  await page.locator('#tool-fitHeight').click();
+  await expect.poll(fitsHeight).toBe(true);
+  await page.setViewportSize({ width: 1440, height: 600 });
+  await expect.poll(fitsHeight).toBe(true);
 });
 
 test('pencere daralınca sayfa genişliğe sığar, seçilen yakınlaştırma korunur', async ({ page }) => {
