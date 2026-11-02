@@ -8,10 +8,13 @@ Web, masaüstü ve Android için **PDF görüntüleme** uygulaması.
 
 ## Özellikler
 
-- PDF açma, sayfa önizleme paneli, sayfaya gitme, PDF içi ve dış bağlantılar
+- PDF açma, sürükle-bırak, "Birlikte aç", masaüstü ve web'de sekmeler
+- Son dosyalar, kalınan sayfadan devam, parolalı PDF'ler
+- Sayfa önizleme paneli, içindekiler, sayfaya gitme, PDF içi ve dış bağlantılar
 - Yakınlaştırma (iki parmakla da), genişliğe, yüksekliğe ve sayfaya sığdırma
 - Tek ve iki sayfa görünümü, görünümü döndürme, tam ekran, koyu tema
 - Türkçe harflere uyumlu metin arama, metin seçme ve kopyalama
+- Akıllı tahta için sunum modu ve ekran klavyesi
 - Yazdırma, Android'de paylaşma
 - Büyük dosyalar parça parça okunur; dosya bütünüyle belleğe alınmaz
 - Tamamen yerel çalışır: PDF hiçbir sunucuya gönderilmez, internet gerekmez

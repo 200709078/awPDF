@@ -1,5 +1,6 @@
 import type { DocumentTabs } from '../app/document-tabs'
 import type { DocumentView } from '../app/document-view'
+import type { Presentation } from '../app/presentation'
 import type { Platform } from '../platform/platform'
 import type { SearchBar } from '../ui/search-bar'
 import type { SidePanel } from '../ui/side-panel'
@@ -9,6 +10,7 @@ import type { Theme } from '../ui/theme'
 export interface ToolContext {
   readonly view: DocumentView
   readonly tabs: DocumentTabs
+  readonly presentation: Presentation
   readonly sidePanel: SidePanel
   readonly searchBar: SearchBar
   readonly theme: Theme

@@ -45,7 +45,7 @@ try {
   assert.equal(preferences.contextIsolation, true)
   assert.equal(preferences.sandbox, true)
   assert.equal(await page.evaluate(() => typeof window.require), 'undefined')
-  assert.deepEqual(await page.evaluate(() => Object.keys(window.awPDFDesktop ?? {}).sort()), ['files', 'windowControls'])
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.awPDFDesktop ?? {}).sort()), ['files', 'screenKeyboard', 'windowControls'])
 
   // Frameless window: the renderer's title bar replaces the system frame.
   const titlebar = page.locator('#titlebar')

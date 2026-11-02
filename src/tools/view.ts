@@ -18,6 +18,15 @@ export const rotateTool: Tool = {
   run: ({ view }) => view.rotate(),
 }
 
+export const presentationTool: Tool = {
+  id: 'presentation',
+  label: 'Sunum Modu',
+  icon: '<rect x="3" y="4" width="18" height="12" rx="1"/><path d="M12 16v4M8 20h8"/>',
+  shortcuts: ['f5'],
+  needsDocument: true,
+  run: ({ presentation }) => presentation.enter(),
+}
+
 export const fullscreenTool: Tool = {
   id: 'fullscreen',
   label: 'Tam Ekran',

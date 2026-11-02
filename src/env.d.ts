@@ -28,6 +28,12 @@ interface DesktopFiles {
   reopen(source: string): Promise<DesktopOpenedFile | null>
 }
 
+/** Opens the system's on-screen keyboard for a text field. */
+interface DesktopScreenKeyboard {
+  show(requestId: string): Promise<'shown' | 'unavailable' | 'cancelled'>
+  hide(requestId: string): void
+}
+
 interface FileSystemFileHandle {
   requestPermission(options: { mode: 'read' }): Promise<PermissionState>
 }
@@ -38,5 +44,6 @@ interface Window {
   awPDFDesktop?: {
     windowControls?: DesktopWindowControls
     files?: DesktopFiles
+    screenKeyboard?: DesktopScreenKeyboard
   }
 }

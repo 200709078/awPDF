@@ -10,7 +10,7 @@ function pdfFileFromDisk(files: DesktopFiles, { id, name, size, source }: Deskto
  * The Electron window: full screen belongs to the window and files come from the shell, which
  * remembers where they are. The rest works as in a browser.
  */
-export function desktopPlatform(controls: DesktopWindowControls, files: DesktopFiles): Platform {
+export function desktopPlatform(controls: DesktopWindowControls, files: DesktopFiles, screenKeyboard?: DesktopScreenKeyboard): Platform {
   const listeners = new Set<() => void>()
   let isFullscreen = false
   const show = (enabled: boolean) => {
@@ -21,6 +21,7 @@ export function desktopPlatform(controls: DesktopWindowControls, files: DesktopF
   void controls.isFullscreen().then(show).catch(() => undefined)
   return {
     ...browserPlatform(),
+    screenKeyboard,
     pickFile: showFileInput,
     reopen: async source => {
       const file = await files.reopen(source)

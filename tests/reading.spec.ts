@@ -810,3 +810,142 @@ test.describe('sekmeler', () => {
     await expect(status(page)).toHaveText('1 / 3');
   });
 });
+
+test.describe('sunum modu', () => {
+  const start = async (page: Page, pages = 3) => {
+    await openPdf(page, makePdf({ pages }));
+    await page.locator('#toolbarMenuButton').or(page.locator('#tool-presentation')).first().waitFor();
+    await page.locator('#tool-presentation').click();
+    await expect(page.locator('body')).toHaveClass(/is-presenting/);
+  };
+  const tapAt = async (page: Page, share: number) => {
+    const { width } = page.viewportSize()!;
+    await page.mouse.click(width * share, 300);
+  };
+
+  test('araçlar kalkar, sayfa ekrana sığar, tek sayfa görünür', async ({ page }) => {
+    await start(page);
+    await expect(page.locator('#toolbar')).toBeHidden();
+    await expect(page.locator('#tabBar')).toBeHidden();
+    await expect(page.locator('#presentationExit')).toBeVisible();
+    await expect.poll(async () => {
+      const box = (await page.locator('.page[data-page-number="1"]').boundingBox())!;
+      return box.height >= page.viewportSize()!.height * 0.9 && box.height <= page.viewportSize()!.height;
+    }).toBe(true);
+    await expect(page.locator('.page[data-page-number="2"]')).toBeHidden();
+  });
+
+  test('sağa dokunmak ilerletir, sol üçte bir geri alır', async ({ page }) => {
+    await start(page);
+    await tapAt(page, 0.8);
+    await expect(status(page)).toHaveText('2 / 3');
+    await tapAt(page, 0.5);
+    await expect(status(page)).toHaveText('3 / 3');
+    await tapAt(page, 0.1);
+    await expect(status(page)).toHaveText('2 / 3');
+  });
+
+  test('tuşlarla ilerlenir; Esc çıkar, görünüm eski haline döner', async ({ page }) => {
+    await openPdf(page, makePdf({ pages: 5 }));
+    await page.locator('#tool-twoPages').click();
+    await page.locator('#tool-zoomOut').click();
+    const width = async () => (await page.locator('.page[data-page-number="1"]').boundingBox())!.width;
+    await page.waitForTimeout(200);
+    const before = await width();
+    await page.keyboard.press('F5');
+    await expect(page.locator('body')).toHaveClass(/is-presenting/);
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('Space');
+    await expect(status(page)).toHaveText('3 / 5');
+    await page.keyboard.press('ArrowLeft');
+    await expect(status(page)).toHaveText('2 / 5');
+    await page.keyboard.press('End');
+    await expect(status(page)).toHaveText('5 / 5');
+    await page.keyboard.press('Home');
+    await expect(status(page)).toHaveText('1 / 5');
+    await page.keyboard.press('Escape');
+    await expect(page.locator('body')).not.toHaveClass(/is-presenting/);
+    await expect(page.locator('#toolbar')).toBeVisible();
+    await expect(page.locator('#tool-twoPages')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('#tool-singlePage')).toHaveAttribute('aria-pressed', 'false');
+    await expect.poll(width).toBeCloseTo(before, 0);
+    await expect(page.locator('#presentationExit')).toBeHidden();
+  });
+
+  test('çıkış düğmesi tam ekranı da kapatır', async ({ page }) => {
+    await start(page);
+    await expect.poll(() => page.evaluate(() => document.fullscreenElement !== null)).toBe(true);
+    await page.locator('#presentationExit').click();
+    await expect(page.locator('body')).not.toHaveClass(/is-presenting/);
+    await expect.poll(() => page.evaluate(() => document.fullscreenElement !== null)).toBe(false);
+  });
+
+  test('tarayıcının kendi tam ekrandan çıkışı sunumu da bitirir', async ({ page }) => {
+    await start(page);
+    await expect.poll(() => page.evaluate(() => document.fullscreenElement !== null)).toBe(true);
+    await page.evaluate(() => document.exitFullscreen());
+    await expect(page.locator('body')).not.toHaveClass(/is-presenting/);
+  });
+
+  test('arama ve panel açıksa kapanır', async ({ page }) => {
+    await openPdf(page, makePdf());
+    await page.locator('#tool-sidePanel').click();
+    await page.locator('#tool-search').click();
+    await page.locator('#tool-presentation').click();
+    await expect(page.locator('#sidePanel')).toBeHidden();
+    await expect(page.locator('#searchBar')).toBeHidden();
+  });
+});
+
+test.describe('ekran klavyesi', () => {
+  const pretendBoard = (page: Page) => page.addInitScript(() => {
+    const calls: string[] = [];
+    Object.assign(window, {
+      keyboardCalls: calls,
+      awPDFDesktop: {
+        windowControls: {
+          isMaximized: async () => false,
+          isFullscreen: async () => false,
+          onMaximizeChanged: () => undefined,
+          onFullscreenChanged: () => undefined,
+        },
+        files: { onOpened: () => undefined, adopt: async () => null },
+        screenKeyboard: {
+          show: async () => { calls.push('show'); return (window as unknown as { keyboardResult?: string }).keyboardResult ?? 'shown'; },
+          hide: () => { calls.push('hide'); },
+        },
+      },
+    });
+  });
+  const calls = (page: Page) => page.evaluate(() => (window as unknown as { keyboardCalls: string[] }).keyboardCalls);
+
+  test('tahtada yazı alanı açar, alandan çıkınca kapatır', async ({ page }) => {
+    await pretendBoard(page);
+    await page.goto('/?tahta=1');
+    await openPdf(page, makePdf());
+    await page.locator('#tool-search').click();
+    await expect.poll(() => calls(page)).toEqual(['show']);
+    await page.locator('#searchClose').click();
+    await expect.poll(() => calls(page)).toEqual(['show', 'hide']);
+    await page.locator('#pageStatus').click();
+    await expect.poll(() => calls(page)).toEqual(['show', 'hide', 'show']);
+  });
+
+  test('klavye yoksa ne yapılacağı söylenir', async ({ page }) => {
+    await pretendBoard(page);
+    await page.addInitScript(() => Object.assign(window, { keyboardResult: 'unavailable' }));
+    await page.goto('/?tahta=1');
+    await openPdf(page, makePdf());
+    await page.locator('#tool-search').click();
+    await expect(page.locator('#toast')).toContainText('ETA Klavye veya Onboard');
+  });
+
+  test('tahta değilse klavye istenmez', async ({ page }) => {
+    await pretendBoard(page);
+    await page.goto('/');
+    await openPdf(page, makePdf());
+    await page.locator('#tool-search').click();
+    await expect(page.locator('#searchInput')).toBeFocused();
+    expect(await calls(page)).toEqual([]);
+  });
+});

@@ -2,6 +2,11 @@
 const { contextBridge, ipcRenderer, webUtils } = require('electron') as typeof import('electron')
 
 contextBridge.exposeInMainWorld('awPDFDesktop', {
+  // The system keyboards it can open, ETA's and Onboard, exist only on Linux.
+  screenKeyboard: process.platform === 'linux' ? {
+    show: (requestId: string): Promise<unknown> => ipcRenderer.invoke('screen-keyboard:show', requestId),
+    hide: (requestId: string): void => ipcRenderer.send('screen-keyboard:hide', requestId),
+  } : undefined,
   files: {
     onOpened: (callback: (file: unknown) => void): void => {
       ipcRenderer.on('files:opened', (_event, file: unknown) => callback(file))

@@ -3,6 +3,7 @@ import type { PdfFile } from '../core/pdf-file'
 import { androidPlatform } from './android'
 import { browserPlatform } from './browser'
 import { desktopPlatform } from './desktop'
+import { isSmartBoard } from './smart-board'
 
 /**
  * Everything that differs between Electron, Android and the web. The rest of the app talks only
@@ -21,6 +22,8 @@ export interface Platform {
   print(): void
   /** A new document takes the place of the open one: no room for tabs on a phone. */
   readonly singleDocument?: boolean
+  /** A smart board has no keys; absent everywhere else, where the system sees to its own keyboard. */
+  readonly screenKeyboard?: DesktopScreenKeyboard
   /** Sends the file to another app; absent where that means nothing. */
   share?(file: PdfFile): Promise<void>
   readonly isFullscreen: boolean
@@ -35,6 +38,7 @@ export interface Platform {
 
 export function currentPlatform(): Platform {
   if (Capacitor.getPlatform() === 'android') return androidPlatform()
-  const { windowControls, files } = window.awPDFDesktop ?? {}
-  return windowControls && files ? desktopPlatform(windowControls, files) : browserPlatform()
+  const { windowControls, files, screenKeyboard } = window.awPDFDesktop ?? {}
+  if (!windowControls || !files) return browserPlatform()
+  return desktopPlatform(windowControls, files, isSmartBoard() ? screenKeyboard : undefined)
 }

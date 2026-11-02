@@ -9,6 +9,7 @@ import type { ToolContext } from '../tools/tool'
 import { askPassword, confirmExternalLink, confirmLargeFile, showToast } from '../ui/messages'
 import { OutlineList } from '../ui/outline'
 import { RecentList } from '../ui/recent-list'
+import { connectScreenKeyboard } from '../ui/screen-keyboard'
 import { SearchBar } from '../ui/search-bar'
 import { SidePanel } from '../ui/side-panel'
 import { mountTabBar } from '../ui/tab-bar'
@@ -19,6 +20,7 @@ import { closeTopmost } from './back'
 import { DocumentTabs } from './document-tabs'
 import { DocumentView } from './document-view'
 import { bindGestures } from './gestures'
+import { Presentation } from './presentation'
 import { printDocument } from './print'
 
 const APP_TITLE = 'awPDF | mADEMatik'
@@ -35,9 +37,11 @@ export function startApp(): void {
   const recent = new RecentFiles(deviceStore())
   const recentList = new RecentList(recent, file => void openRecent(file))
   const tabs = new DocumentTabs(view, !platform.singleDocument)
+  const presentation = new Presentation(container, view, sidePanel, searchBar, platform)
   const context: ToolContext = {
     view,
     tabs,
+    presentation,
     sidePanel,
     searchBar,
     theme: new Theme(),
@@ -114,6 +118,7 @@ export function startApp(): void {
     if (!name && sidePanel.isOpen) sidePanel.toggle()
   })
   if (!platform.singleDocument) mountTabBar(document.querySelector('#tabBar')!, tabs)
+  if (platform.screenKeyboard) connectScreenKeyboard(platform.screenKeyboard)
   const toolbarMenu = mountToolbar(document.querySelector('#toolbar')!, TOOLS, context)
   new ThumbnailList(document.querySelector('#thumbnailList')!, view, sidePanel, page => {
     view.goTo(page)

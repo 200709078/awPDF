@@ -5,17 +5,15 @@ Kesinleşmiş kararlar `CLAUDE.md` dosyasındadır.
 
 ## İlk sürüm (2026-11-02)
 
-Hazır olanlar: PDF açma (dosya seçici), sayfa düğmeleri, sayfaya gitme, PDF içi ve dış bağlantılar,
+Hazır olanlar: PDF açma (dosya seçici, sürükle-bırak, "Birlikte aç"), son dosyalar, kalınan sayfadan
+devam, parolalı PDF, sekmeler (masaüstü ve web), içindekiler, sunum modu, ekran klavyesi (tahta), Android
+geri düğmesi, sayfa düğmeleri, sayfaya gitme, PDF içi ve dış bağlantılar,
 yakınlaştırma (iki parmak, ctrl+tekerlek), genişliğe/yüksekliğe/sayfaya sığdırma, tek ve iki sayfa görünümü,
 görünümü döndürme, tam ekran, koyu tema, sayfa önizleme paneli, metin seçme, Türkçe uyumlu metin arama,
 yazdırma, paylaşma (Android), 200 MB uyarısı.
 
 **Yayın (2026-11-02, kullanıcı):** web sürümü `madematik.com/awPDF/` adresine yüklendi. 0.0.2 ile Linux,
 Windows ve imzalı Android paketleri GitHub Releases'te yayımlandı (imza doğrulandı).
-
-Kalanlar:
-
-- **Tahta:** ekran klavyesi (drAW'daki kopya alınabilir), sunum modu
 
 ## Sonraki araçlar (önerilen sıra)
 
@@ -37,5 +35,7 @@ Kalanlar:
   ziyaretle bitiyor), dosya yeniden seçilir; kendi seçicisinden açılanlar açılır. Cihazda denenmeli.
 - **Birlikte aç (masaüstü):** Linux ve Windows'ta dosya yöneticisinden denenmeli; Windows varsayılan
   uygulamayı değiştirmez, kullanıcı "Birlikte aç" listesinden seçer.
+- **Tahta:** sunum modu ve ekran klavyesi (ETA Klavye, Onboard) gerçek tahtada denenmeli; burada klavye
+  servisi sahte komutlarla sınandı.
 - **Masaüstü yazdırma:** sistem yazdırma penceresi otomatik testle denenemiyor; elle bakılmalı.
 - **Eski tabletler:** en eski WebView'da açılış ve bellek kullanımı.

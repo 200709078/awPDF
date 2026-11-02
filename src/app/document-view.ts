@@ -236,6 +236,19 @@ export class DocumentView {
     this.viewer.nextPage()
   }
 
+  /** Both view switches at once, so that only one layout change happens. */
+  setLayout(singlePage: boolean, twoPages: boolean): void {
+    this.wantsSinglePage = singlePage
+    this.wantsTwoPages = twoPages
+    this.applyLayout()
+    this.notify()
+  }
+
+  /** A `ViewState.scale`: a number, or a mode that keeps fitting. */
+  setScale(scale: number | string | undefined): void {
+    if (scale !== undefined) this.viewer.currentScaleValue = String(scale)
+  }
+
   toggleTwoPages(): void {
     this.wantsTwoPages = !this.wantsTwoPages
     this.applyLayout()

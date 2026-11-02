@@ -56,6 +56,19 @@ test('tek belge vardır: yenisi öncekinin yerine geçer, sekme çıkmaz', async
 });
 
 test.describe('geri düğmesi', () => {
+  test('sunumdan çıkar', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 640 });
+    const pdf = await start(page);
+    await send(page, 'fileOpened', { id: 1, name: 'gelen.pdf', size: pdf.length });
+    await expect(page.locator('#pageStatus')).toHaveText('1 / 3');
+    await page.locator('#toolbarMenuButton').click();
+    await page.locator('#tool-presentation').click();
+    await expect(page.locator('body')).toHaveClass(/is-presenting/);
+    await send(page, 'backButton');
+    await expect(page.locator('body')).not.toHaveClass(/is-presenting/);
+    expect(await calls(page)).not.toContain('leaveApp');
+  });
+
   test('açık olanı üstten alta kapatır, en son uygulamadan çıkar', async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 640 });
     const pdf = await start(page);
