@@ -10,8 +10,8 @@ yakınlaştırma (iki parmak, ctrl+tekerlek), genişliğe/yüksekliğe/sayfaya s
 görünümü döndürme, tam ekran, koyu tema, sayfa önizleme paneli, metin seçme, Türkçe uyumlu metin arama,
 yazdırma, paylaşma (Android), 200 MB uyarısı.
 
-**Yayın (2026-11-02, kullanıcı):** web sürümü `madematik.com/awPDF/` adresine yüklendi. Sürüm paketi henüz
-yayımlanmadı; Linux, Windows ve imzalı Android paketleri GitHub Actions'ta derleniyor (imza doğrulandı).
+**Yayın (2026-11-02, kullanıcı):** web sürümü `madematik.com/awPDF/` adresine yüklendi. 0.0.2 ile Linux,
+Windows ve imzalı Android paketleri GitHub Releases'te yayımlandı (imza doğrulandı).
 
 Kalanlar:
 

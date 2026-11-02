@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 awPDF is a PDF viewer in the spirit of Adobe Reader (pdf.js, TypeScript + Vite) shipped as a web app, an Electron desktop app (Linux AppImage/deb, Windows NSIS) and an Android app (Capacitor, APK). More PDF tools will be added later. It is meant for class smart boards (Pardus ETAP) as well as phones and PCs. The UI, test names, docs (README, `docs/yol-haritasi.md`) and messages are in **Turkish** — keep new user-facing strings and docs in Turkish.
 
-Status: the web app is live at `madematik.com/awPDF/` (deploy with `npm run deploy`); no packaged release yet. What is done and what remains is in `docs/yol-haritasi.md`; record new requests there with a date and do not implement any item until the user explicitly asks.
+Status: the web app is live at `madematik.com/awPDF/` (deploy with `npm run deploy`) and packages are on GitHub Releases since 0.0.2. What is done and what remains is in `docs/yol-haritasi.md`; record new requests there with a date and do not implement any item until the user explicitly asks.
 
 ## Decisions (2026-11-02, the user's)
 

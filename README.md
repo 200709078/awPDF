@@ -4,7 +4,7 @@ Web, masaüstü ve Android için **PDF görüntüleme** uygulaması.
 
 **mADEMatik Solutions** — [madematik.com](https://madematik.com)
 
-> Web sürümü: [madematik.com/awPDF](https://madematik.com/awPDF/). Kurulum paketleri henüz yayımlanmadı.
+> Web sürümü: [madematik.com/awPDF](https://madematik.com/awPDF/). Kurulum paketleri: [GitHub Releases](https://github.com/200709078/awPDF/releases/latest).
 
 ## Özellikler
 
