@@ -9,20 +9,22 @@ function clearPages(root: HTMLElement): void {
   root.replaceChildren()
 }
 
-async function printedPage(pdf: PDFDocumentProxy, number: number): Promise<HTMLElement> {
+async function printedPage(pdf: PDFDocumentProxy, number: number, canvas: HTMLCanvasElement): Promise<HTMLElement> {
   const page = await pdf.getPage(number)
   const viewport = page.getViewport({ scale: PRINT_DPI / PDF_POINTS_PER_INCH })
-  const canvas = document.createElement('canvas')
   canvas.width = Math.floor(viewport.width)
   canvas.height = Math.floor(viewport.height)
   await page.render({ canvas, viewport, intent: 'print' }).promise
   page.cleanup()
   const blob = await new Promise<Blob | null>(resolve => { canvas.toBlob(resolve) })
   if (!blob) throw new Error(`Sayfa ${number} yazdırmaya hazırlanamadı.`)
-  canvas.width = 0
+  // Loaded but not decoded: a decoded page takes some 8 MB, which a long book cannot afford.
   const image = new Image()
-  image.src = URL.createObjectURL(blob)
-  await image.decode()
+  await new Promise((resolve, reject) => {
+    image.onload = resolve
+    image.onerror = reject
+    image.src = URL.createObjectURL(blob)
+  })
   const wrapper = document.createElement('div')
   wrapper.className = 'print-page'
   wrapper.append(image)
@@ -42,6 +44,8 @@ export async function printDocument(pdf: PDFDocumentProxy, platform: Platform): 
   const first = (await pdf.getPage(1)).getViewport({ scale: 1 })
   document.querySelector('#printPageSize')!.textContent = `@page { size: ${first.width}pt ${first.height}pt; margin: 0 }`
 
+  // One canvas for all pages: a new one for each piles up faster than memory is reclaimed.
+  const canvas = document.createElement('canvas')
   let isFinished = false
   let isCancelled = false
   dialog.addEventListener('close', () => { isCancelled = !isFinished }, { once: true })
@@ -49,9 +53,10 @@ export async function printDocument(pdf: PDFDocumentProxy, platform: Platform): 
   try {
     for (let number = 1; number <= pdf.numPages && !isCancelled; number += 1) {
       progress.textContent = `${number} / ${pdf.numPages}`
-      root.append(await printedPage(pdf, number))
+      root.append(await printedPage(pdf, number, canvas))
     }
   } finally {
+    canvas.width = 0
     isFinished = true
     dialog.close()
   }

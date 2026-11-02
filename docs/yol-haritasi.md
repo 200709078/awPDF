@@ -37,5 +37,7 @@ Windows ve imzalı Android paketleri GitHub Releases'te yayımlandı (imza doğr
   uygulamayı değiştirmez, kullanıcı "Birlikte aç" listesinden seçer.
 - **Tahta:** sunum modu ve ekran klavyesi (ETA Klavye, Onboard) gerçek tahtada denenmeli; burada klavye
   servisi sahte komutlarla sınandı.
+- **Uzun kitap yazdırma:** 410 sayfalık 70 MB'lık kitabın tamamı (2026-11-02, Electron) yaklaşık 1 dakikada
+  hazırlanıyor, bellek 1,9 GB'a çıkıyor. Öneri: sayfa aralığı seçerek yazdırma.
 - **Masaüstü yazdırma:** sistem yazdırma penceresi otomatik testle denenemiyor; elle bakılmalı.
 - **Eski tabletler:** en eski WebView'da açılış ve bellek kullanımı.
