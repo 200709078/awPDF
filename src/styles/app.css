@@ -82,11 +82,9 @@ body {
 
 .toolbar__status {
 	flex: none;
-	/* Wide enough for usual numbers, so the buttons stay put as the page changes. */
-	min-width: 88px;
+	margin-left: 8px;
 	font-size: 16px;
 	font-variant-numeric: tabular-nums;
-	text-align: center;
 }
 
 .workspace {

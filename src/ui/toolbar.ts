@@ -23,9 +23,7 @@ export function mountToolbar(root: HTMLElement, tools: readonly Tool[], context:
   const status = document.createElement('span')
   status.id = 'pageStatus'
   status.className = 'toolbar__status'
-  root.append(...buttons.map(({ button }) => button))
-  // Between the two page buttons, which it describes.
-  root.insertBefore(status, root.querySelector('#tool-nextPage'))
+  root.append(...buttons.map(({ button }) => button), status)
 
   const canRun = (tool: Tool) => (!tool.needsDocument || context.view.isOpen) && (tool.isAvailable?.(context.view) ?? true)
 

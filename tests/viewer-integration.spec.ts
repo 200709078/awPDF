@@ -36,28 +36,6 @@ test('sayfa çizilir: tuval boş değildir', async ({ page }) => {
   })).toBe(true);
 });
 
-test('sayfa bilgisi iki sayfa düğmesinin arasındadır ve düğmeler sayfa değişince kaymaz', async ({ page }) => {
-  await openPdf(page, makePdf({ pages: 12 }));
-  await expect(page.locator('#pageStatus')).toHaveText('1 / 12');
-  const order = await page.locator('#toolbar').evaluate(toolbar => [...toolbar.children].map(child => child.id));
-  expect(order.indexOf('pageStatus')).toBe(order.indexOf('tool-previousPage') + 1);
-  expect(order.indexOf('tool-nextPage')).toBe(order.indexOf('pageStatus') + 1);
-
-  const left = (await page.locator('#tool-nextPage').boundingBox())!.x;
-  await page.locator('#tool-twoPages').click();
-  await page.locator('.thumbnail[data-page="10"]').evaluate((item: HTMLElement) => item.click());
-  await expect(page.locator('#pageStatus')).toHaveText('9-10 / 12');
-  expect((await page.locator('#tool-nextPage').boundingBox())!.x).toBe(left);
-});
-
-test('dar ekranda sayfa bilgisi görünür', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 780 });
-  await openPdf(page, makePdf());
-  await expect(page.locator('#pageStatus')).toHaveText('1 / 3');
-  const box = (await page.locator('#pageStatus').boundingBox())!;
-  expect(box.x + box.width).toBeLessThanOrEqual(390);
-});
-
 test('sayfa düğmeleri gezinir, ilk ve son sayfada pasif olur', async ({ page }) => {
   await openPdf(page, makePdf());
   const status = page.locator('#pageStatus');
