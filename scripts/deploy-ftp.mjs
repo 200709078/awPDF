@@ -73,9 +73,10 @@ function parentDirs(file) {
   return parts.map((_, i) => parts.slice(0, i + 1).join("/"));
 }
 
-// assets/ içindeki adlar içerik özeti taşır (Vite): aynı ad ve boyut varsa dosya aynıdır.
-// Diğer dosyalar (index.html, img/…) küçüktür ve her seferinde yüklenir.
-const isHashed = (file) => file.startsWith("assets/");
+// assets/ içindeki adlar içerik özeti taşır (Vite), pdfjs/ pdf.js'in sabit sürümünden kopyalanır:
+// aynı ad ve boyut varsa dosya aynıdır. Paylaşımlı sunucu yüzlerce aktarımdan sonra yavaşlıyor,
+// bu yüzden yarım kalan yükleme kaldığı yerden sürer. Diğerleri her seferinde yüklenir.
+const isHashed = (file) => file.startsWith("assets/") || file.startsWith("pdfjs/");
 const isHidden = (file) => path.posix.basename(file).startsWith(".");
 
 const client = new Client(30_000);
