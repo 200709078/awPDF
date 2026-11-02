@@ -18,7 +18,7 @@ Kalanlar:
 - **Açma:** sürükle-bırak, "Birlikte aç" (Linux, Windows), son dosyalar, kalınan sayfadan devam,
   parolalı PDF
 - **Gezinme:** içindekiler (yan panelde sekme olarak)
-- **Diğer:** masaüstünde sekmeler, Android geri düğmesi
+- **Diğer:** masaüstünde sekmeler
 - **Tahta:** ekran klavyesi (drAW'daki kopya alınabilir), sunum modu
 
 ## Sonraki araçlar (önerilen sıra)
@@ -33,9 +33,8 @@ Kalanlar:
 ## Denenmesi gerekenler
 
 - **Android:** büyük dosyayı dosya seçiciden okumak yavaş olabilir; gerekirse yerel okuma eklenir
-  (`PdfFile.read`). Yazdırma, paylaşma ve tam ekran yerel eklentiyle yapıldı, derleniyor ama
-  cihazda denenmedi. "Birlikte aç" 2026-11-02'de eklendi (kullanıcı telefonda listede göremedi):
-  PDF'e dokununca ve "Birlikte aç"ta awPDF çıkmalı, dosya uygulama kapalıyken de açıkken de açılmalı.
+  (`PdfFile.read`). Yazdırma, paylaşma, tam ekran ve "Birlikte aç" kullanıcının telefonunda denendi, sorun görülmedi
+  (2026-11-02). Geri düğmesi denenmeli.
 - **200 MB eşiği:** tahta ve düşük güçlü tablet testlerinden sonra gözden geçirilir; gerekirse
   platforma göre ayrılır.
 - **Masaüstü yazdırma:** sistem yazdırma penceresi otomatik testle denenemiyor; elle bakılmalı.

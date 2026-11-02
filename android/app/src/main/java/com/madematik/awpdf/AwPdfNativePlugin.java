@@ -11,6 +11,7 @@ import android.print.PrintManager;
 import android.provider.OpenableColumns;
 import android.util.Base64;
 import android.view.Window;
+import androidx.activity.OnBackPressedCallback;
 import androidx.core.content.FileProvider;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -42,6 +43,26 @@ public class AwPdfNativePlugin extends Plugin {
     /** The file from "open with"; `readFile` serves it until the next one arrives. */
     private FileInputStream openedFile;
     private int openedId = 0;
+
+    /** Without this the back button would close the app, whatever is open on the page. */
+    @Override
+    public void load() {
+        getActivity().getOnBackPressedDispatcher().addCallback(getActivity(), new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (hasListeners("backButton")) notifyListeners("backButton", new JSObject());
+                else getActivity().moveTaskToBack(true);
+            }
+        });
+    }
+
+    @PluginMethod
+    public void leaveApp(PluginCall call) {
+        getActivity().runOnUiThread(() -> {
+            getActivity().moveTaskToBack(true);
+            call.resolve();
+        });
+    }
 
     /** Capacitor sends the intent that starts the app through here too. */
     @Override

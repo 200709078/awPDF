@@ -22,6 +22,11 @@ export interface Platform {
   readonly isFullscreen: boolean
   toggleFullscreen(): void
   onFullscreenChange(listener: () => void): void
+  /**
+   * The device's back button, where it has one. The listener answers whether it closed something;
+   * when it did not, the platform leaves the app.
+   */
+  onBack?(listener: () => boolean): void
 }
 
 export function currentPlatform(): Platform {

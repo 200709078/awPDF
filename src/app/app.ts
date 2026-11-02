@@ -11,6 +11,7 @@ import { SidePanel } from '../ui/side-panel'
 import { Theme } from '../ui/theme'
 import { ThumbnailList } from '../ui/thumbnails'
 import { mountToolbar } from '../ui/toolbar'
+import { closeTopmost } from './back'
 import { DocumentView } from './document-view'
 import { bindGestures } from './gestures'
 import { printDocument } from './print'
@@ -67,7 +68,7 @@ export function startApp(): void {
     }
   }
 
-  mountToolbar(document.querySelector('#toolbar')!, TOOLS, context)
+  const toolbarMenu = mountToolbar(document.querySelector('#toolbar')!, TOOLS, context)
   new ThumbnailList(sidePanel.element, view, sidePanel, page => {
     view.goTo(page)
     sidePanel.closeIfOverlay()
@@ -75,5 +76,6 @@ export function startApp(): void {
   container.addEventListener('pointerdown', () => sidePanel.closeIfOverlay())
   bindGestures(container, view)
   platform.onFile(file => void open(file))
+  platform.onBack?.(() => closeTopmost(context, toolbarMenu))
   document.querySelector('#emptyOpen')!.addEventListener('click', context.pickFile)
 }

@@ -1,0 +1,34 @@
+import type { Page } from '@playwright/test';
+
+/**
+ * Stands in for Capacitor's native side, so the Android platform runs in Chromium. Plugin calls
+ * are recorded; `window.androidFile` answers `readFile`, and `sendNative` fires a native event.
+ */
+export async function pretendAndroid(page: Page, files: Record<number, number[]> = {}) {
+  await page.addInitScript(contents => {
+    const listeners: Record<string, (data: unknown) => void> = {};
+    const calls: string[] = [];
+    const methods = ['print', 'setFullscreen', 'appendShareFile', 'shareFile', 'readFile', 'leaveApp', 'removeListener'];
+    Object.assign(window, {
+      androidBridge: { postMessage: () => undefined },
+      androidCalls: calls,
+      sendNative: (event: string, data: unknown) => listeners[event]?.(data),
+      Capacitor: {
+        PluginHeaders: [{
+          name: 'AwPdfNative',
+          methods: [...methods.map(name => ({ name, rtype: 'promise' })), { name: 'addListener', rtype: 'callback' }],
+        }],
+        nativePromise: async (_plugin: string, method: string, options: { id: number; begin: number; end: number }) => {
+          calls.push(method);
+          if (method !== 'readFile') return undefined;
+          const part = (contents[options.id] ?? []).slice(options.begin, options.end);
+          return { data: btoa(String.fromCharCode(...part)) };
+        },
+        nativeCallback: (_plugin: string, _method: string, options: { eventName: string }, callback: (data: unknown) => void) => {
+          listeners[options.eventName] = callback;
+          return Promise.resolve('callback');
+        },
+      },
+    });
+  }, files);
+}

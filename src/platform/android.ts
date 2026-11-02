@@ -14,6 +14,9 @@ interface OpenedFile {
 /** The Android app's own plugin (android/…/AwPdfNativePlugin.java). */
 interface AwPdfNative {
   addListener(event: 'fileOpened', listener: (file: OpenedFile) => void): Promise<PluginListenerHandle>
+  addListener(event: 'backButton', listener: () => void): Promise<PluginListenerHandle>
+  /** Puts the app behind the others; the open document is still there on coming back. */
+  leaveApp(): Promise<void>
   readFile(options: { id: number; begin: number; end: number }): Promise<{ data: string }>
   print(options: { name: string }): Promise<void>
   setFullscreen(options: { enabled: boolean }): Promise<void>
@@ -67,5 +70,10 @@ export function androidPlatform(): Platform {
       for (const listener of listeners) listener()
     },
     onFullscreenChange: listener => { listeners.add(listener) },
+    onBack: listener => {
+      void native.addListener('backButton', () => {
+        if (!listener()) void native.leaveApp().catch(console.error)
+      })
+    },
   }
 }
