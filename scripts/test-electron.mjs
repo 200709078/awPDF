@@ -17,9 +17,9 @@ const launch = (...files) => electron.launch({
   timeout: 30_000,
 })
 const folder = mkdtempSync(path.join(tmpdir(), 'awpdf-'))
-const pdfOnDisk = name => {
+const pdfOnDisk = (name, pages = 3) => {
   const file = path.join(folder, name)
-  writeFileSync(file, makePdf())
+  writeFileSync(file, makePdf({ pages }))
   return file
 }
 const application = await launch()
@@ -66,14 +66,14 @@ try {
   })
 
   // A file from the disk is read by the shell; the page gets its name, never its path.
-  await page.locator('#pdfInput').setInputFiles(pdfOnDisk('secilen.pdf'))
+  await page.locator('#pdfInput').setInputFiles(pdfOnDisk('secilen.pdf', 4))
   await page.waitForFunction(() => document.title.startsWith('secilen.pdf'))
   await page.waitForFunction(() => document.querySelector('.page[data-page-number="1"] .textLayer')?.textContent.includes('awPDF'))
   assert.equal(await page.evaluate(() => window.awPDFDesktop.files.reopen('/etc/hostname')), null)
 
   // A second start ("open with" while the app runs) hands its file over and leaves.
   const electronBinary = executablePath ?? await application.evaluate(() => process.execPath)
-  const second = spawnSync(electronBinary, [...launchArguments, pdfOnDisk('ikinci.pdf')], { env: launchEnvironment, timeout: 20_000 })
+  const second = spawnSync(electronBinary, [...launchArguments, pdfOnDisk('ikinci.pdf', 5)], { env: launchEnvironment, timeout: 20_000 })
   assert.equal(second.status, 0, 'İkinci başlatma dosyayı devredip çıkmalı')
   await page.waitForFunction(() => document.title.startsWith('ikinci.pdf'))
   assert.equal(application.windows().length, 1, 'İkinci başlatma yeni pencere açmamalı')
