@@ -6,7 +6,7 @@
   "private": true,
   "type": "module",
   "description": "awPDF — PDF görüntüleme uygulaması",
-  "author": "mADEMatik <madematik@madematik.com>",
+  "author": "mADEMatik <ademvarol@madematik.com>",
   "license": "MIT",
   "homepage": "https://www.madematik.com",
   "repository": {
