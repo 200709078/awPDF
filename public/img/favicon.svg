@@ -7,11 +7,15 @@
     <path d="M96 44H336L416 124V468H96Z" fill="#f8fafc"/>
     <path d="M336 44V124H416" fill="#dbe4f0"/>
   </g>
-  <!-- Metin satırları, çok hafif -->
-  <path d="M132 384H380M132 424H300" stroke="#c3cfdf" stroke-width="14" stroke-linecap="round"/>
-  <!-- A: üç doğru parçası; W: dört doğru parçası -->
+  <!-- Üstte, kıvrık köşenin solunda basık AW: A üç doğru parçası, W dört doğru parçası -->
   <g stroke-width="17" stroke-linecap="round" stroke-linejoin="round" fill="none">
-    <path d="M128 336L176 160L224 336M145 276H207" stroke="#2563eb"/>
-    <path d="M240 160L268 336L304 216L340 336L384 160" stroke="#e11d48"/>
+    <path d="M128 140L163 78L198 140M140 119H186" stroke="#2563eb"/>
+    <path d="M210 78L228 140L257 96L286 140L304 78" stroke="#e11d48"/>
+  </g>
+  <!-- Altta kalın PDF, sayfada ortalı; sol kenarı AW ile hizalı -->
+  <g stroke="#1f2937" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M128 398V220H146A40 45 0 0 1 146 310H128"/>
+    <path d="M227 220H237A48 89 0 0 1 237 398H227Z"/>
+    <path d="M384 220H326V398M326 302H376"/>
   </g>
 </svg>
