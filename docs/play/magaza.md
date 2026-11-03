@@ -47,8 +47,8 @@ awPDF ücretsiz ve açık kaynaklıdır (MIT lisansı). Öneri ve sorunlar için
 
 - **Uygulama mı, oyun mu:** Uygulama
 - **Kategori:** Verimlilik
-- **Etiketler:** Play'in listesinden en çok 5 tane; "PDF", "Belge görüntüleyici", "Okuyucu" gibi
-  yakın olanlar seçilir.
+- **Etiketler (2026-11-03):** Verimlilik, E-okuyucu, Kitaplar ve referans, Araçlar, Eğitim. Play'in
+  listesinde "PDF" ya da "Belge görüntüleyici" yok; en yakınları bunlar.
 - **E-posta (herkese açık):** destek@madematik.com
 - **Web sitesi:** https://madematik.com
 - **Telefon:** boş bırakılır (isteğe bağlı).
