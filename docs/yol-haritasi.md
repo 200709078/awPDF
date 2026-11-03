@@ -15,6 +15,22 @@ yazdırma, paylaşma (Android), 200 MB uyarısı.
 **Yayın (2026-11-02, kullanıcı):** web sürümü `madematik.com/awPDF/` adresine yüklendi. 0.0.2 ile Linux,
 Windows ve imzalı Android paketleri GitHub Releases'te yayımlandı (imza doğrulandı).
 
+## Google Play yayını (2026-11-03, kullanıcı isteği)
+
+Android uygulamaları Google Play'de yayımlanacak; sıra awPDF, drAW, drAW2D, drAW3D. Önce yalnız awPDF;
+ötekilere awPDF yayına girince geçilir. Süreç adım adım yürür, kullanıcı bir adımı bitirince sonrakine
+geçilir. Kullanıcının henüz geliştirici hesabı yok.
+
+1. Google Play geliştirici hesabı (kişisel hesap, 25 $, kimlik doğrulaması)
+2. Play'e uygun paket: imzalı AAB (`bundleRelease`) ve iş akışına eklenmesi; Play App Signing kararı
+3. Gizlilik politikası sayfası (madematik.com'da) ve mağaza metinleri, görseller
+4. Play Console'da uygulama: mağaza kaydı, uygulama içeriği beyanları (veri güvenliği, içerik derecesi,
+   hedef kitle, reklam yok)
+5. Dahili test: ilk AAB'yi yükleyip kendi telefonunda denemek
+6. Kapalı test: en az 12 test kullanıcısı, kesintisiz 14 gün (2023-11-13'ten sonra açılan kişisel
+   hesaplarda her yeni uygulama için şart)
+7. Üretim erişimi başvurusu ve yayın
+
 ## Sonraki araçlar (önerilen sıra)
 
 1. İşaretleme, not ve kalem
