@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <application
         android:allowBackup="true"
@@ -62,7 +63,7 @@
         </provider>
     </application>
 
-    <!-- Permissions -->
-
-    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- İzin yok: uygulama ağa çıkmaz. Sayfa WebView'e Capacitor'ın yerel sunucusundan gelir, dış
+         bağlantıları tarayıcı açar. Bir kütüphane INTERNET iznini eklemeye kalkarsa birleştirmede silinir. -->
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
 </manifest>

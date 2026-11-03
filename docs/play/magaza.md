@@ -35,7 +35,7 @@ awPDF, telefonda, tablette ve sınıftaki akıllı tahtada rahatça kullanılmak
 • Başka uygulamalardan "Birlikte aç" ile gelen PDF'leri doğrudan açar.
 
 Gizliliğiniz önce gelir
-PDF'leriniz yalnızca cihazınızda okunur; hiçbir dosya internete ya da bir sunucuya gönderilmez. PDF içindeki betikler çalıştırılmaz, internet bağlantılarına dokunduğunuzda adres size gösterilir ve onayınız istenir.
+PDF'leriniz yalnızca cihazınızda okunur; hiçbir dosya internete ya da bir sunucuya gönderilmez. Uygulama hiçbir izin istemez, internet izni bile yoktur. PDF içindeki betikler çalıştırılmaz, internet bağlantılarına dokunduğunuzda adres size gösterilir ve onayınız istenir.
 
 Her yerde aynı uygulama
 awPDF'in Linux (Pardus dahil) ve Windows sürümleri ile tarayıcıda çalışan web sürümü de vardır: madematik.com/awPDF

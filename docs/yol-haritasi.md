@@ -48,12 +48,15 @@ geçilir. Kullanıcının henüz geliştirici hesabı yok.
 
 ## Denenmesi gerekenler
 
-- **Arama vurgusu (2026-11-03):** Play ekran görüntülerindeki örnek belgede (Chromium'un ürettiği PDF,
-  DejaVu yazı tipi) bulunan sözcüklerin vurgusu sözcükten biraz aşağı ve sağa kayık. Başka kaynaklardan
-  PDF'lerde (Word, LaTeX, taranmış kitap) denenmeli; kayma onlarda da varsa metin katmanında bir hata vardır.
-- **İnternet izni (2026-11-03, öneri):** Android manifest'inde `INTERNET` izni var (Capacitor şablonu), ama
-  uygulama ağa çıkmıyor. Kaldırılırsa Play'deki izin listesi "veri toplamıyor, ağa çıkmıyor" sözüyle uyuşur;
-  kaldırmadan önce bağlantıların tarayıcıda açıldığı cihazda denenmeli.
+- **Arama vurgusu (2026-11-03, incelendi):** satırın ortasındaki eşleşmelerin vurgusu sözcükten bir harfe
+  kadar sağa kayabiliyor; satır başındakiler tam oturuyor. Chromium'un ve LibreOffice'in ürettiği PDF'lerde
+  aynı, Türkçe katlama kapatılınca da aynı: hata bizim aramamızda değil, pdf.js'in metin katmanında
+  (satırı PDF'in yazı tipiyle değil tarayıcının yedek yazı tipiyle ölçüp genişliğe uyduruyor; Firefox'un
+  PDF görüntüleyicisinde de böyle). İleride istenirse vurgunun konumu satırın gerçek genişliğinden
+  hesaplanabilir; şimdilik dokunulmadı.
+- **İnternet izni kaldırıldı (2026-11-03, kullanıcı isteği):** Android uygulaması hiçbir izin istemez
+  (`tools:node="remove"` ile kütüphaneler de ekleyemez). Telefonda denenmeli: açılış, PDF açma, "Birlikte
+  aç", yazdırma, paylaşma ve PDF içindeki bir internet bağlantısının tarayıcıda açılması.
 
 - **Android:** büyük dosyayı dosya seçiciden okumak yavaş olabilir; gerekirse yerel okuma eklenir
   (`PdfFile.read`). Yazdırma, paylaşma, tam ekran ve "Birlikte aç" kullanıcının telefonunda denendi, sorun görülmedi
