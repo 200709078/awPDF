@@ -40,6 +40,7 @@ npx electron-builder --dir && AWPDF_ELECTRON_EXECUTABLE=$PWD/release/linux-unpac
 npm run dist:linux | dist:win
 npm run android:sync     # build + copy dist/ into android/ (Capacitor)
 npm run android:apk      # release APK; signed when ANDROID_KEYSTORE, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD are set
+npm run android:aab      # release AAB for Google Play (bundleRelease), signed the same way
 bash scripts/icons.sh    # regenerate every icon from public/img/app-icon.svg (Inkscape + ImageMagick)
 ```
 
@@ -73,6 +74,7 @@ GitHub Releases is the only place packages are published. Same as the siblings:
 - **Version:** `package.json` is the single source. New release: `npm version patch`, then `git push --follow-tags`; ask the user first. The workflow fails if the tag differs from `package.json`.
 - **Build only, nothing published:** `gh workflow run release.yml -f yayinla=false`.
 - **Asset names have no version:** `awPDF-linux-amd64.deb`, `awPDF-linux-x86_64.AppImage`, `awPDF-win-x64.exe`, `awPDF-android.apk`.
+- **Google Play:** the Android job also builds `awPDF-android.aab` (`bundleRelease`, same key; on Play this key is the app signing key and the upload key, the user's 2026-11-03 decision). It is never attached to the GitHub release: it is the `play-Android` artifact (kept 30 days), downloaded with `gh run download <run> --name play-Android` and uploaded to Play Console by the user.
 - **Shared files:** the workflow and `scripts/release-assets.mjs` are identical copies in drAW, drAW2D, drAW3D and awPDF — change all four together. Change release notes in the script, not on GitHub.
 - **Trigger quirk:** push a new or changed workflow file before the tag.
 - **Metadata:** license MIT (same text in all four repos), deb `Section: education`, `.desktop` categories `Office;Viewer;Education`.
