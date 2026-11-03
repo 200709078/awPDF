@@ -42,6 +42,8 @@ geçilir. Kullanıcının henüz geliştirici hesabı yok.
    SHA-256 `84f78df0…`, izin yok), PDF açılıyor.
 6. Kapalı test: en az 12 test kullanıcısı, kesintisiz 14 gün (2023-11-13'ten sonra açılan kişisel
    hesaplarda her yeni uygulama için şart)
+   Kapalı test – Alpha açıldı (2026-11-03): ülke Türkiye, "awPDF" listesinde 13 testçi, sürüm 3 (0.0.3)
+   Google incelemesine gönderildi. Katılma bağlantısı testçilere inceleme bitince gönderilecek.
 7. Üretim erişimi başvurusu ve yayın
 
 ## Sonraki araçlar (önerilen sıra)
