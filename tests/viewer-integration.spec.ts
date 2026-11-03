@@ -146,10 +146,12 @@ test('yüksekliğe sığdırınca sayfa tümüyle görünür, pencere değişinc
   await openPdf(page, makePdf());
   const firstPage = page.locator('.page[data-page-number="1"]');
   await expect(firstPage.locator('.textLayer')).toContainText('awPDF');
+  // The drawing, not the page's box: pdf.js's transparent border around it carries only the shadow.
   const fitsHeight = async () => {
-    const pageHeight = (await firstPage.boundingBox())!.height;
-    const space = (await page.locator('#viewerContainer').boundingBox())!.height;
-    return pageHeight <= space && pageHeight > space * 0.95;
+    const drawing = (await firstPage.locator('.canvasWrapper').boundingBox())!;
+    const space = (await page.locator('#viewerContainer').boundingBox())!;
+    return drawing.y >= space.y && drawing.y + drawing.height <= space.y + space.height + 1
+      && drawing.height > space.height * 0.95;
   };
   expect(await fitsHeight()).toBe(false);
   await page.locator('#tool-fitHeight').click();

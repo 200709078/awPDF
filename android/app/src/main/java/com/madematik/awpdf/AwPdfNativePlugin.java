@@ -4,8 +4,12 @@ import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.ParcelFileDescriptor;
 import android.print.PrintAttributes;
 import android.print.PrintManager;
@@ -34,8 +38,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 /**
- * What the WebView cannot do itself: the print service, sharing with other apps, hiding the
- * system bars and reading a file another app hands over. The web side is
+ * What the WebView cannot do itself: the print service, sharing with other apps, hiding and
+ * colouring the system bars and reading a file another app hands over. The web side is
  * src/platform/android.ts.
  */
 @CapacitorPlugin(name = "AwPdfNative")
@@ -46,6 +50,9 @@ public class AwPdfNativePlugin extends Plugin {
     /** The file from "open with"; `readFile` serves it until the next one arrives. */
     private FileInputStream openedFile;
     private int openedId = 0;
+    /** The interface's colour for the system bars; null until the page has said it. */
+    private Integer barColor;
+    private boolean darkBars = false;
 
     /** Without this the back button would close the app, whatever is open on the page. */
     @Override
@@ -215,6 +222,42 @@ public class AwPdfNativePlugin extends Plugin {
             else bars.show(WindowInsetsCompat.Type.systemBars());
             call.resolve();
         });
+    }
+
+    /**
+     * The strips behind the status and navigation bars take the interface's colour, and their
+     * icons turn light on a dark one. Capacitor's SystemBars puts its own background back after a
+     * configuration change (a turn of the phone), so the colour is laid on again right after it.
+     */
+    @PluginMethod
+    public void setSystemBars(PluginCall call) {
+        try {
+            barColor = Color.parseColor(call.getString("color", "#ffffff"));
+        } catch (IllegalArgumentException error) {
+            call.reject("Renk okunamadı.", error);
+            return;
+        }
+        darkBars = Boolean.TRUE.equals(call.getBoolean("dark", false));
+        getActivity().runOnUiThread(() -> {
+            applySystemBars();
+            call.resolve();
+        });
+    }
+
+    @Override
+    protected void handleOnConfigurationChanged(Configuration newConfig) {
+        super.handleOnConfigurationChanged(newConfig);
+        if (barColor != null) new Handler(Looper.getMainLooper()).post(this::applySystemBars);
+    }
+
+    private void applySystemBars() {
+        Window window = getActivity().getWindow();
+        window.getDecorView().setBackgroundColor(barColor);
+        window.setStatusBarColor(barColor);
+        window.setNavigationBarColor(barColor);
+        WindowInsetsControllerCompat bars = WindowCompat.getInsetsController(window, window.getDecorView());
+        bars.setAppearanceLightStatusBars(!darkBars);
+        bars.setAppearanceLightNavigationBars(!darkBars);
     }
 
     @PluginMethod

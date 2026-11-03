@@ -24,6 +24,8 @@ interface AwPdfNative {
   readFile(options: { id: number; begin: number; end: number }): Promise<{ data: string }>
   print(options: { name: string }): Promise<void>
   setFullscreen(options: { enabled: boolean }): Promise<void>
+  /** `color` is a CSS hex colour; `dark` turns the bars' icons light. */
+  setSystemBars(options: { color: string; dark: boolean }): Promise<void>
   /** Adds base64 data to the copy kept for sharing; `first` starts a new copy. */
   appendShareFile(options: { name: string; data: string; first: boolean }): Promise<void>
   shareFile(options: { name: string }): Promise<void>
@@ -71,6 +73,7 @@ export function androidPlatform(): Platform {
     openExternal: url => { window.location.href = url },
     print: () => { void native.print({ name: 'awPDF' }).catch(console.error) },
     share,
+    setSystemBars: bars => { void native.setSystemBars(bars).catch(console.error) },
     get isFullscreen() {
       return isFullscreen
     },

@@ -18,10 +18,12 @@ test.describe('görünüm', () => {
   test('sayfaya sığdırınca sayfa tümüyle görünür, pencere değişince yeniden sığar', async ({ page }) => {
     await openPdf(page, makePdf());
     await expect(status(page)).toHaveText('1 / 3');
+    // The drawing, not the page's box: pdf.js's transparent border around it carries only the shadow.
     const fits = async () => {
-      const box = await pageBox(page);
+      const box = (await page.locator('.page[data-page-number="1"] .canvasWrapper').boundingBox())!;
       const room = await space(page);
-      return box.height <= room.height && box.width <= room.width && box.height > room.height * 0.9;
+      return box.y >= room.y && box.y + box.height <= room.y + room.height + 1
+        && box.width <= room.width && box.height > room.height * 0.9;
     };
     await page.locator('#tool-fitPage').click();
     await expect.poll(fits).toBe(true);
@@ -370,6 +372,16 @@ test.describe('arama', () => {
     await expect(result).toHaveText('2 / 3');
     await input.press('Shift+Enter');
     await expect(result).toHaveText('1 / 3');
+  });
+
+  test('işaretin oturduğu metin katmanı sayfanın çizimiyle aynı yerde ve boyda', async ({ page }) => {
+    // Dar ekranda sayfa küçük, kenarlığı görece büyüktür; bir fark burada en çok kayar.
+    await page.setViewportSize({ width: 392, height: 800 });
+    await openPdf(page, makePdf());
+    const box = (selector: string) => page.locator(`.page[data-page-number="1"] ${selector}`).boundingBox();
+    const drawing = (await box('.canvasWrapper'))!;
+    const text = (await box('.textLayer'))!;
+    for (const side of ['x', 'y', 'width', 'height'] as const) expect(text[side]).toBeCloseTo(drawing[side], 0);
   });
 
   test('bulunamayınca söyler, kapatınca işaretler silinir, yeniden açınca çalışır', async ({ page }) => {
@@ -833,6 +845,17 @@ test.describe('sunum modu', () => {
       return box.height >= page.viewportSize()!.height * 0.9 && box.height <= page.viewportSize()!.height;
     }).toBe(true);
     await expect(page.locator('.page[data-page-number="2"]')).toBeHidden();
+  });
+
+  test('dik ekranda sayfa dikeyde ortalanır', async ({ page }) => {
+    await start(page);
+    // Telefon dik çevrilmiş gibi; sayfaya sığdırma yeni boyuta yeniden uyar.
+    await page.setViewportSize({ width: 360, height: 740 });
+    // Sayfa yeni genişliğe sığınca üstte ve altta eşit boşluk kalır.
+    await expect.poll(async () => {
+      const box = (await page.locator('.page[data-page-number="1"]').boundingBox())!;
+      return box.width <= 360 && Math.abs(box.y + box.height / 2 - 740 / 2) < 4;
+    }).toBe(true);
   });
 
   test('sağa dokunmak ilerletir, sol üçte bir geri alır', async ({ page }) => {

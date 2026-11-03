@@ -26,6 +26,8 @@ export interface Platform {
   readonly screenKeyboard?: DesktopScreenKeyboard
   /** Sends the file to another app; absent where that means nothing. */
   share?(file: PdfFile): Promise<void>
+  /** The system's own bars around the app take the interface's colour; absent where it has none. */
+  setSystemBars?(bars: { color: string; dark: boolean }): void
   readonly isFullscreen: boolean
   toggleFullscreen(): void
   onFullscreenChange(listener: () => void): void

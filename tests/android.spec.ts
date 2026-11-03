@@ -55,6 +55,17 @@ test('tek belge vardır: yenisi öncekinin yerine geçer, sekme çıkmaz', async
   await expect(page.locator('#tabBar')).toBeHidden();
 });
 
+test('sistem çubukları araç çubuğunun rengini alır, koyu temada simgeleri açık olur', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 640 });
+  await start(page);
+  const lastBars = () => page.evaluate(() => (window as unknown as { androidCallOptions: { method: string; options: unknown }[] })
+    .androidCallOptions.filter(call => call.method === 'setSystemBars').at(-1)?.options);
+  await expect.poll(lastBars).toEqual({ color: '#ffffff', dark: false });
+  await page.locator('#toolbarMenuButton').click();
+  await page.locator('#tool-theme').click();
+  await expect.poll(lastBars).toEqual({ color: '#1f2937', dark: true });
+});
+
 test.describe('geri düğmesi', () => {
   test('sunumdan çıkar', async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 640 });

@@ -136,5 +136,12 @@ export function startApp(): void {
   })
   platform.onFile(file => void open(file))
   platform.onBack?.(() => closeTopmost(context, toolbarMenu))
+  // On a phone the status bar sits on top of the toolbar, so it takes the toolbar's colour.
+  const colourSystemBars = () => platform.setSystemBars?.({
+    color: getComputedStyle(document.documentElement).getPropertyValue('--surface').trim(),
+    dark: context.theme.isDark,
+  })
+  context.theme.onChange(colourSystemBars)
+  colourSystemBars()
   document.querySelector('#emptyOpen')!.addEventListener('click', context.pickFile)
 }

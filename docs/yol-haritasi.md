@@ -48,15 +48,22 @@ geçilir. Kullanıcının henüz geliştirici hesabı yok.
 
 ## Denenmesi gerekenler
 
-- **Arama vurgusu (2026-11-03, incelendi):** satırın ortasındaki eşleşmelerin vurgusu sözcükten bir harfe
-  kadar sağa kayabiliyor; satır başındakiler tam oturuyor. Chromium'un ve LibreOffice'in ürettiği PDF'lerde
-  aynı, Türkçe katlama kapatılınca da aynı: hata bizim aramamızda değil, pdf.js'in metin katmanında
-  (satırı PDF'in yazı tipiyle değil tarayıcının yedek yazı tipiyle ölçüp genişliğe uyduruyor; Firefox'un
-  PDF görüntüleyicisinde de böyle). İleride istenirse vurgunun konumu satırın gerçek genişliğinden
-  hesaplanabilir; şimdilik dokunulmadı.
-- **İnternet izni kaldırıldı (2026-11-03, kullanıcı isteği):** Android uygulaması hiçbir izin istemez
-  (`tools:node="remove"` ile kütüphaneler de ekleyemez). Telefonda denenmeli: açılış, PDF açma, "Birlikte
-  aç", yazdırma, paylaşma ve PDF içindeki bir internet bağlantısının tarayıcıda açılması.
+- **Arama vurgusu (2026-11-03, düzeltildi):** vurgu sözcüğün sağına ve altına kayıyordu, telefonda çok
+  belirgindi. Asıl neden bizim stilimizdi: `* { box-sizing: border-box }` pdf.js'in sayfasına da uyuyor,
+  çizim kenarlığın içine sığmak için küçülüyor, metin katmanı tam boyda kalıyordu (telefonda %5). Artık
+  pdf.js'in sayfası `content-box`; test: "işaretin oturduğu metin katmanı…". Kalan küçük fark pdf.js'in:
+  satırı tarayıcının yedek yazı tipiyle ölçüp genişliğe uyduruyor, satır ortasında vurgu biraz kayabilir.
+- **Telefon testi (2026-11-03, Android 13, Xiaomi):** izinsiz açılış, "Birlikte aç", sistemin dosya
+  seçicisi, dış bağlantı (onaydan sonra tarayıcı) ve iç bağlantı, Türkçe arama, geri düğmesi, sayfa paneli,
+  parolalı PDF, 410 sayfalık kitap (2 sn'de açılıyor, kaldığı sayfa hatırlanıyor), yazdırma, paylaşma,
+  sunum, koyu tema denendi, çalışıyor. Düzeltilenler: sunumda dik ekranda sayfa üste yapışıyordu (artık
+  dikeyde ortada); koyu temada durum ve gezinme çubukları beyaz kalıyordu (artık araç çubuğunun rengini
+  alıyor, telefon çevrilince de).
+- **İzlenecek (2026-11-03):** kitap ilk açılışta bir kez kendiliğinden 2. sayfaya geçti, sayfa turuncu
+  odak çerçevesiyle göründü; üç denemede tekrarlanmadı.
+- **Sunumda kamera deliği (2026-11-03):** tam ekranda Android içeriği kamera deliğinin şeridine taşırmıyor;
+  sayfa web görünümünde ortada, ekranın tamamına göre durum çubuğu yüksekliğinin yarısı kadar aşağıda.
+  İstenirse `layoutInDisplayCutoutMode` ile yalnız sunumda şerit de kullanılabilir.
 
 - **Android:** büyük dosyayı dosya seçiciden okumak yavaş olabilir; gerekirse yerel okuma eklenir
   (`PdfFile.read`). Yazdırma, paylaşma, tam ekran ve "Birlikte aç" kullanıcının telefonunda denendi, sorun görülmedi

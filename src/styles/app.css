@@ -38,6 +38,15 @@
 	box-sizing: border-box;
 }
 
+/*
+ * pdf.js measures its pages without the border (content-box). With border-box the drawing shrinks
+ * inside the border while the text layer keeps the full size, and search highlights slide off the words.
+ * No specificity, so pdf.js's own border-box rules still win.
+ */
+:where(.pdfViewer, .pdfViewer *) {
+	box-sizing: content-box;
+}
+
 html,
 body {
 	height: 100%;
@@ -664,6 +673,14 @@ body {
 	cursor: pointer;
 	user-select: none;
 	-webkit-user-select: none;
+}
+
+/* Sayfa ekrana sığınca bir yanda boşluk kalır; dik telefonda o boşluk üstte ve altta eşit olsun. */
+.is-presenting .pdfViewer {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	min-height: 100%;
 }
 
 .is-presenting .pdfViewer .page {
