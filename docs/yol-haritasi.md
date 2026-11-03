@@ -26,7 +26,10 @@ geçilir. Kullanıcının henüz geliştirici hesabı yok.
    **Bitti (2026-11-03):** iş akışı `play-Android` artifact'ı olarak imzalı AAB üretir (dört depoda);
    anahtar `madematik-release.jks` olarak yeniden adlandırıldı. Karar: bu anahtar Play'de hem uygulama
    imza anahtarı (PEPK ile verilir) hem yükleme anahtarı olur.
-3. Gizlilik politikası sayfası (madematik.com'da) ve mağaza metinleri, görseller
+3. Gizlilik politikası sayfası (madematik.com'da) ve mağaza metinleri, görseller.
+   **Hazır (2026-11-03), kullanıcının onayı bekleniyor:** `public/gizlilik.html`, `docs/play/magaza.md`,
+   `docs/play/` görselleri (`scripts/play/` ile üretilir). Herkese açık destek adresi destek@madematik.com.
+   Gizlilik sayfası canlıya `npm run deploy` ile çıkacak.
 4. Play Console'da uygulama: mağaza kaydı, uygulama içeriği beyanları (veri güvenliği, içerik derecesi,
    hedef kitle, reklam yok)
 5. Dahili test: ilk AAB'yi yükleyip kendi telefonunda denemek
@@ -44,6 +47,13 @@ geçilir. Kullanıcının henüz geliştirici hesabı yok.
 6. İmza ve parola koyma
 
 ## Denenmesi gerekenler
+
+- **Arama vurgusu (2026-11-03):** Play ekran görüntülerindeki örnek belgede (Chromium'un ürettiği PDF,
+  DejaVu yazı tipi) bulunan sözcüklerin vurgusu sözcükten biraz aşağı ve sağa kayık. Başka kaynaklardan
+  PDF'lerde (Word, LaTeX, taranmış kitap) denenmeli; kayma onlarda da varsa metin katmanında bir hata vardır.
+- **İnternet izni (2026-11-03, öneri):** Android manifest'inde `INTERNET` izni var (Capacitor şablonu), ama
+  uygulama ağa çıkmıyor. Kaldırılırsa Play'deki izin listesi "veri toplamıyor, ağa çıkmıyor" sözüyle uyuşur;
+  kaldırmadan önce bağlantıların tarayıcıda açıldığı cihazda denenmeli.
 
 - **Android:** büyük dosyayı dosya seçiciden okumak yavaş olabilir; gerekirse yerel okuma eklenir
   (`PdfFile.read`). Yazdırma, paylaşma, tam ekran ve "Birlikte aç" kullanıcının telefonunda denendi, sorun görülmedi

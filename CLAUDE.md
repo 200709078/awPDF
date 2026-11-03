@@ -42,6 +42,8 @@ npm run android:sync     # build + copy dist/ into android/ (Capacitor)
 npm run android:apk      # release APK; signed when ANDROID_KEYSTORE, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD are set
 npm run android:aab      # release AAB for Google Play (bundleRelease), signed the same way
 bash scripts/icons.sh    # regenerate every icon from public/img/app-icon.svg (Inkscape + ImageMagick)
+npx playwright test -c scripts/play   # Google Play screenshots, icon, feature graphic → docs/play/ (own config, not part of npm test)
+node scripts/play/sinirlar.mjs        # store texts in docs/play/magaza.md fit Play's character limits
 ```
 
 Playwright uses `/usr/bin/chromium` if present, otherwise `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`, otherwise its own Chromium. Port 4175 keeps these tests from colliding with drAW2D and drAW3D (both 4173), so they may run at the same time.
@@ -77,6 +79,7 @@ GitHub Releases is the only place packages are published. Same as the siblings:
 - **Google Play:** the Android job also builds `awPDF-android.aab` (`bundleRelease`, same key; on Play this key is the app signing key and the upload key, the user's 2026-11-03 decision). It is never attached to the GitHub release: it is the `play-Android` artifact (kept 30 days), downloaded with `gh run download <run> --name play-Android` and uploaded to Play Console by the user.
 - **Shared files:** the workflow and `scripts/release-assets.mjs` are identical copies in drAW, drAW2D, drAW3D and awPDF — change all four together. Change release notes in the script, not on GitHub.
 - **Trigger quirk:** push a new or changed workflow file before the tag.
+- **Google Play listing:** texts and images in `docs/play/` (`magaza.md`); the privacy policy is `public/gizlilik.html`, live at `madematik.com/awPDF/gizlilik.html` and linked from Play. It states that nothing is collected or sent: a change that collects or sends anything (ads, analytics, network) must update it and Play's data safety form.
 - **Metadata:** license MIT (same text in all four repos), deb `Section: education`, `.desktop` categories `Office;Viewer;Education`.
 
 ## Tests
