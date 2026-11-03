@@ -38,6 +38,8 @@ geçilir. Kullanıcının henüz geliştirici hesabı yok.
    bizim anahtar yüklendi (2026-11-03), Play'deki SHA-256 `84:F7:8D:F0:…` doğrulandı.
    İlk dahili test sürümü (0.0.3, sürüm kodu 3) 2026-11-03'te yayımlandı. Play'in "kod gösterme dosyası yok"
    uyarısı yok sayıldı: `minifyEnabled false`, yüklenecek eşleme dosyası yok.
+   **Bitti (2026-11-03):** kullanıcının telefonuna Play'den kuruldu (yükleyen `com.android.vending`, imza
+   SHA-256 `84f78df0…`, izin yok), PDF açılıyor.
 6. Kapalı test: en az 12 test kullanıcısı, kesintisiz 14 gün (2023-11-13'ten sonra açılan kişisel
    hesaplarda her yeni uygulama için şart)
 7. Üretim erişimi başvurusu ve yayın
