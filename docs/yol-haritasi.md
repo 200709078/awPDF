@@ -27,9 +27,9 @@ geçilir. Kullanıcının henüz geliştirici hesabı yok.
    anahtar `madematik-release.jks` olarak yeniden adlandırıldı. Karar: bu anahtar Play'de hem uygulama
    imza anahtarı (PEPK ile verilir) hem yükleme anahtarı olur.
 3. Gizlilik politikası sayfası (madematik.com'da) ve mağaza metinleri, görseller.
-   **Hazır (2026-11-03), kullanıcının onayı bekleniyor:** `public/gizlilik.html`, `docs/play/magaza.md`,
-   `docs/play/` görselleri (`scripts/play/` ile üretilir). Herkese açık destek adresi destek@madematik.com.
-   Gizlilik sayfası canlıya `npm run deploy` ile çıkacak.
+   **Bitti (2026-11-03):** `public/gizlilik.html` canlıda (madematik.com/awPDF/gizlilik.html),
+   `docs/play/magaza.md`, `docs/play/` görselleri (`scripts/play/` ile üretilir). Herkese açık destek
+   adresi destek@madematik.com. Uygulama telefonda denendi, bulunan hatalar düzeltildi.
 4. Play Console'da uygulama: mağaza kaydı, uygulama içeriği beyanları (veri güvenliği, içerik derecesi,
    hedef kitle, reklam yok)
 5. Dahili test: ilk AAB'yi yükleyip kendi telefonunda denemek
