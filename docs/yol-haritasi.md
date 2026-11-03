@@ -22,7 +22,10 @@ Android uygulamaları Google Play'de yayımlanacak; sıra awPDF, drAW, drAW2D, d
 geçilir. Kullanıcının henüz geliştirici hesabı yok.
 
 1. Google Play geliştirici hesabı (kişisel hesap, 25 $, kimlik doğrulaması)
-2. Play'e uygun paket: imzalı AAB (`bundleRelease`) ve iş akışına eklenmesi; Play App Signing kararı
+2. Play'e uygun paket: imzalı AAB (`bundleRelease`) ve iş akışına eklenmesi; Play App Signing kararı.
+   **Bitti (2026-11-03):** iş akışı `play-Android` artifact'ı olarak imzalı AAB üretir (dört depoda);
+   anahtar `madematik-release.jks` olarak yeniden adlandırıldı. Karar: bu anahtar Play'de hem uygulama
+   imza anahtarı (PEPK ile verilir) hem yükleme anahtarı olur.
 3. Gizlilik politikası sayfası (madematik.com'da) ve mağaza metinleri, görseller
 4. Play Console'da uygulama: mağaza kaydı, uygulama içeriği beyanları (veri güvenliği, içerik derecesi,
    hedef kitle, reklam yok)
