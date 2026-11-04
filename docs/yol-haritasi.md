@@ -46,6 +46,20 @@ geçilir. Kullanıcının henüz geliştirici hesabı yok.
    Google incelemesine gönderildi. Katılma bağlantısı testçilere inceleme bitince gönderilecek.
 7. Üretim erişimi başvurusu ve yayın
 
+## Belgeyi kapatıp ilk ekrana dönmek (2026-11-04, kullanıcı isteği)
+
+Şu an masaüstünde ve web'de belge sekmedeki küçük ✕ ya da Ctrl+W ile kapanıyor, son belge kapanınca ilk
+ekran ("PDF Aç" ve son dosyalar) geliyor. Android'de (tek belge, sekme yok) kapatmanın yolu yok: geri
+düğmesi açık olanları kapatıp en sonda uygulamayı arka plana alıyor, belge açık kalıyor. Sırayla:
+
+1. **Android geri düğmesi belgeyi kapatsın:** önce pencere, sunum, menü, arama, yan panel, tam ekran
+   kapanır; sonra belge kapanır ve ilk ekran gelir; uygulama ancak ilk ekranda arka plana gider (Adobe
+   Reader ve Google'ın görüntüleyicisi de böyle). Yanlışlıkla basmanın zararı küçük: belge Son Dosyalar'da
+   kalır, kalınan sayfadan açılır. Kısıt: "Birlikte aç" ile gelen dosyaların çoğu listeden yeniden
+   açılamaz (izin bitiyor), dosya yöneticisinden yeniden açılır.
+2. **"Belgeyi Kapat" düğmesi, bütün platformlarda:** geri düğmesi görünmez bir yol, sekmedeki ✕ de tahtada
+   parmakla zor. Araç çubuğunun sonunda durur, dar ekranda ☰ menüsüne düşer.
+
 ## Sonraki araçlar (önerilen sıra)
 
 1. İşaretleme, not ve kalem
