@@ -49,7 +49,7 @@ geçilir. Kullanıcının henüz geliştirici hesabı yok.
    sıfırlanmaz; üretim başvurusunda "geri bildirimle neyi değiştirdiniz" sorusu için değişiklikler not edilir.
    Geri bildirimler testçilerden kullanıcıya doğrudan geliyor; Google'ın görmesi gerekmez, başvuruda özetlenir.
    Testçi geri bildirimleri (2026-11-04): belgeyi kapatıp ilk ekrana dönmek (Android geri düğmesi,
-   "Belgeyi Kapat" düğmesi); arama vurgusunun renkleri.
+   "Belgeyi Kapat" düğmesi); arama vurgusunun renkleri; Word → PDF ve PDF → Word dönüştürme.
 7. Üretim erişimi başvurusu ve yayın
 
 ## Belgeyi kapatıp ilk ekrana dönmek (2026-11-04, kullanıcı isteği)
@@ -80,6 +80,8 @@ seçimiyle karışmaz, kitapların mavi, kırmızı, pembe kutularında da seçi
 pdf.js'in `--highlight-bg-color` ve `--highlight-selected-bg-color` değişkenleri (ve çerçeve).
 
 ## Word ↔ PDF dönüştürme (2026-11-04, kullanıcı isteği)
+
+**Kaynak: kapalı test kullanıcılarının geri bildirimi** (kullanıcıya doğrudan söylediler).
 
 Her şey cihazda yapılır; internetteki dönüştürme servisleri kullanılmaz (PDF cihazdan çıkmaz kararı ve Play'deki
 "veri gönderilmez" beyanı). Denemeler kullanıcının iki dosyasıyla, yalnız yerelde yapıldı; kod değişmedi.
