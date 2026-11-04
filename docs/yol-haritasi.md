@@ -48,10 +48,13 @@ geçilir. Kullanıcının henüz geliştirici hesabı yok.
    katıldığı andan sayılır; en erken 2026-11-18 civarı dolar. Test sırasında yeni sürüm yüklenebilir, süre
    sıfırlanmaz; üretim başvurusunda "geri bildirimle neyi değiştirdiniz" sorusu için değişiklikler not edilir.
    Geri bildirimler testçilerden kullanıcıya doğrudan geliyor; Google'ın görmesi gerekmez, başvuruda özetlenir.
-   Testçi geri bildirimleri: arama vurgusunun renkleri (2026-11-04).
+   Testçi geri bildirimleri (2026-11-04): belgeyi kapatıp ilk ekrana dönmek (Android geri düğmesi,
+   "Belgeyi Kapat" düğmesi); arama vurgusunun renkleri.
 7. Üretim erişimi başvurusu ve yayın
 
 ## Belgeyi kapatıp ilk ekrana dönmek (2026-11-04, kullanıcı isteği)
+
+**Kaynak: kapalı test kullanıcılarının geri bildirimi** (kullanıcıya doğrudan söylediler).
 
 Şu an masaüstünde ve web'de belge sekmedeki küçük ✕ ya da Ctrl+W ile kapanıyor, son belge kapanınca ilk
 ekran ("PDF Aç" ve son dosyalar) geliyor. Android'de (tek belge, sekme yok) kapatmanın yolu yok: geri
