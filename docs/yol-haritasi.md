@@ -60,6 +60,15 @@ düğmesi açık olanları kapatıp en sonda uygulamayı arka plana alıyor, bel
 2. **"Belgeyi Kapat" düğmesi, bütün platformlarda:** geri düğmesi görünmez bir yol, sekmedeki ✕ de tahtada
    parmakla zor. Araç çubuğunun sonunda durur, dar ekranda ☰ menüsüne düşer.
 
+## Arama vurgusunun renkleri (2026-11-04, kullanıcı kararı)
+
+Şu an pdf.js'in varsayılanları: bulunanlar yarı saydam mor (kırmızı-pembe görünüyor), aktif olan yarı saydam
+koyu yeşil. Karar: **bulunanlar sarı (fosforlu kalem gibi), aktif olan turuncu ve çevresinde ince koyu turuncu
+çerçeve**; harfler okunur kalacak kadar saydam. Chrome ve Edge'in sayfa içi aramasıyla aynı renkler; mavi metin
+seçimiyle karışmaz, kitapların mavi, kırmızı, pembe kutularında da seçilir, renk körlüğünde de ayırt edilir
+(yeşil-kırmızı edilmez). Mavi düşünüldü, metin seçimiyle karıştığı için seçilmedi. Değişiklik `app.css`'te
+pdf.js'in `--highlight-bg-color` ve `--highlight-selected-bg-color` değişkenleri (ve çerçeve).
+
 ## Word ↔ PDF dönüştürme (2026-11-04, kullanıcı isteği)
 
 Her şey cihazda yapılır; internetteki dönüştürme servisleri kullanılmaz (PDF cihazdan çıkmaz kararı ve Play'deki
