@@ -60,6 +60,35 @@ düğmesi açık olanları kapatıp en sonda uygulamayı arka plana alıyor, bel
 2. **"Belgeyi Kapat" düğmesi, bütün platformlarda:** geri düğmesi görünmez bir yol, sekmedeki ✕ de tahtada
    parmakla zor. Araç çubuğunun sonunda durur, dar ekranda ☰ menüsüne düşer.
 
+## Word ↔ PDF dönüştürme (2026-11-04, kullanıcı isteği)
+
+Her şey cihazda yapılır; internetteki dönüştürme servisleri kullanılmaz (PDF cihazdan çıkmaz kararı ve Play'deki
+"veri gönderilmez" beyanı). Denemeler kullanıcının iki dosyasıyla, yalnız yerelde yapıldı; kod değişmedi.
+
+**PDF → Word (karar: awPDF yolu, gerekirse sonra düzeltme ekranı):**
+
+1. **Otomatik dönüştürücü:** metin düzenlenebilir metin olur (satır, paragraf, kalın, punto, üs ve alt simge);
+   formüller, şekiller, fotoğraflar ve tablolar sayfadan kesilip resim olarak aynı yere konur. pdf.js'ten metin,
+   konum ve yazı tipi; çizimlerin yeri işlem listesinden (kırpma sınırları dahil); Word dosyasını `docx`
+   kütüphanesi (MIT) yazar. Sonuç "Farklı kaydet" ile yeni dosyadır, PDF'e dokunulmaz.
+   Deneme (MATEMATİK_12, 6 sayfa, 7 sn): yaklaşım çalışıyor. Bu kitapta formül işaretleri MathMagic yazı
+   tiplerinde (MM…) ve yanlış kodlanmış ("≥" → "2", "≠" → "!"), bu yüzden formülü resim yapmak şart; x, f(x),
+   rakamlar düz yazı tipinde, formül sınırı tahminle bulunuyor. Sağlamlaştırılacaklar: bölünen formüller, üst
+   üste kesirler, iki sütunlu sayfada sıra, kutu zeminleri ve yazı renkleri. Sade PDF'lerde sonuç daha iyi olur.
+   LibreOffice'in PDF → Word çevirisi kullanılamaz: her satır ayrı metin kutusu (6 sayfada 2.800'den fazla),
+   LibreOffice dosyayı açarken takılıyor.
+2. **Düzeltme ekranı, gerekirse (FineReader benzeri):** dönüştürmeden önce sayfanın üstünde bölgeler renkli
+   kutularla gösterilir; kullanıcı kutu siler, yeni kutu çizer, boyutunu değiştirir, sonra dönüştürür. İsteğe
+   bağlı adım ("Doğrudan dönüştür" kalır). 1. adım gerçek kullanımda denendikten sonra karar verilir.
+   Düzenlenebilir tablo ve taranmış sayfalar (OCR) bu planın dışında, ayrı adımlar.
+
+**Word → PDF:** kelime işlemci gerekmez; belge sayfa sayfa çizilip PDF olarak kaydedilir. Deneme (1 ÜNİTE 11
+EKİM.docx, Word'de 90 sayfa): LibreOffice 7 sn'de 92 sayfa, Word'e çok yakın. docx-preview (Apache 2.0,
+tarayıcıda çalışır, web ve Android'e de girer) 6 sn'de 95 sayfa; metin, tablolar, denklemler, resimler doğru;
+grafik ve SmartArt boş, madde işaretleri yok, sayfa bölünmeleri farklı. Öneri: her yerde docx-preview (awPDF
+Word dosyasını açıp gösterir, "PDF olarak kaydet" bir düğme olur); masaüstünde LibreOffice kuruluysa onu kullanmak.
+Yazı tipleri için Carlito/Caladea gibi ölçüsü aynı serbest yazı tipleri uygulamaya konabilir.
+
 ## Sonraki araçlar (önerilen sıra)
 
 1. İşaretleme, not ve kalem
