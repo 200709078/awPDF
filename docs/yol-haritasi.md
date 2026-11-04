@@ -44,6 +44,9 @@ geçilir. Kullanıcının henüz geliştirici hesabı yok.
    hesaplarda her yeni uygulama için şart)
    Kapalı test – Alpha açıldı (2026-11-03): ülke Türkiye, "awPDF" listesinde 13 testçi, sürüm 3 (0.0.3)
    Google incelemesine gönderildi. Katılma bağlantısı testçilere inceleme bitince gönderilecek.
+   2026-11-04: inceleme bitti (bekleyen değişiklik yok), bağlantı 16 testçiye gönderildi. 14 gün her testçinin
+   katıldığı andan sayılır; en erken 2026-11-18 civarı dolar. Test sırasında yeni sürüm yüklenebilir, süre
+   sıfırlanmaz; üretim başvurusunda "geri bildirimle neyi değiştirdiniz" sorusu için değişiklikler not edilir.
 7. Üretim erişimi başvurusu ve yayın
 
 ## Belgeyi kapatıp ilk ekrana dönmek (2026-11-04, kullanıcı isteği)
