@@ -47,6 +47,8 @@ geçilir. Kullanıcının henüz geliştirici hesabı yok.
    2026-11-04: inceleme bitti (bekleyen değişiklik yok), bağlantı 16 testçiye gönderildi. 14 gün her testçinin
    katıldığı andan sayılır; en erken 2026-11-18 civarı dolar. Test sırasında yeni sürüm yüklenebilir, süre
    sıfırlanmaz; üretim başvurusunda "geri bildirimle neyi değiştirdiniz" sorusu için değişiklikler not edilir.
+   Geri bildirimler testçilerden kullanıcıya doğrudan geliyor; Google'ın görmesi gerekmez, başvuruda özetlenir.
+   Testçi geri bildirimleri: arama vurgusunun renkleri (2026-11-04).
 7. Üretim erişimi başvurusu ve yayın
 
 ## Belgeyi kapatıp ilk ekrana dönmek (2026-11-04, kullanıcı isteği)
@@ -64,6 +66,8 @@ düğmesi açık olanları kapatıp en sonda uygulamayı arka plana alıyor, bel
    parmakla zor. Araç çubuğunun sonunda durur, dar ekranda ☰ menüsüne düşer.
 
 ## Arama vurgusunun renkleri (2026-11-04, kullanıcı kararı)
+
+**Kaynak: kapalı test kullanıcılarının geri bildirimi** (kullanıcıya doğrudan söylediler).
 
 Şu an pdf.js'in varsayılanları: bulunanlar yarı saydam mor (kırmızı-pembe görünüyor), aktif olan yarı saydam
 koyu yeşil. Karar: **bulunanlar sarı (fosforlu kalem gibi), aktif olan turuncu ve çevresinde ince koyu turuncu
