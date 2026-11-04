@@ -47,6 +47,22 @@
 	box-sizing: content-box;
 }
 
+/*
+ * Search matches as in a browser's find: yellow, the current one orange with a darker edge. The letters
+ * come from the page below, so the colours stay light enough to read through. Blue would look like a
+ * text selection. High contrast mode keeps pdf.js's own.
+ */
+@media not (forced-colors: active) {
+	.textLayer .highlight {
+		--highlight-bg-color: rgb(255 204 0 / 0.4);
+		--highlight-selected-bg-color: rgb(255 120 0 / 0.5);
+	}
+
+	.textLayer .highlight.selected {
+		box-shadow: 0 0 0 1.5px rgb(204 82 0);
+	}
+}
+
 html,
 body {
 	height: 100%;

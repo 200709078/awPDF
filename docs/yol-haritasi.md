@@ -54,6 +54,8 @@ geçilir. Kullanıcının henüz geliştirici hesabı yok.
 
 ## Belgeyi kapatıp ilk ekrana dönmek (2026-11-04, kullanıcı isteği)
 
+**Yapıldı (2026-11-04, 0.0.4 için):** ikisi de; testler `android.spec.ts` ve `reading.spec.ts`'te.
+
 **Kaynak: kapalı test kullanıcılarının geri bildirimi** (kullanıcıya doğrudan söylediler).
 
 Şu an masaüstünde ve web'de belge sekmedeki küçük ✕ ya da Ctrl+W ile kapanıyor, son belge kapanınca ilk
@@ -70,6 +72,8 @@ düğmesi açık olanları kapatıp en sonda uygulamayı arka plana alıyor, bel
 
 ## Arama vurgusunun renkleri (2026-11-04, kullanıcı kararı)
 
+**Yapıldı (2026-11-04, 0.0.4 için).**
+
 **Kaynak: kapalı test kullanıcılarının geri bildirimi** (kullanıcıya doğrudan söylediler).
 
 Şu an pdf.js'in varsayılanları: bulunanlar yarı saydam mor (kırmızı-pembe görünüyor), aktif olan yarı saydam
@@ -80,6 +84,9 @@ seçimiyle karışmaz, kitapların mavi, kırmızı, pembe kutularında da seçi
 pdf.js'in `--highlight-bg-color` ve `--highlight-selected-bg-color` değişkenleri (ve çerçeve).
 
 ## Word ↔ PDF dönüştürme (2026-11-04, kullanıcı isteği)
+
+**Sıra (2026-11-04, kullanıcı kararı):** 0.0.5 Word → PDF, 0.0.6 PDF → Word; kapalı test sırasında, yetişmeyen
+yayından sonraki ilk güncellemeye kalır.
 
 **Kaynak: kapalı test kullanıcılarının geri bildirimi** (kullanıcıya doğrudan söylediler).
 
@@ -126,6 +133,10 @@ Yazı tipleri için Carlito/Caladea gibi ölçüsü aynı serbest yazı tipleri 
   çizim kenarlığın içine sığmak için küçülüyor, metin katmanı tam boyda kalıyordu (telefonda %5). Artık
   pdf.js'in sayfası `content-box`; test: "işaretin oturduğu metin katmanı…". Kalan küçük fark pdf.js'in:
   satırı tarayıcının yedek yazı tipiyle ölçüp genişliğe uyduruyor, satır ortasında vurgu biraz kayabilir.
+- **Sistem çubuklarının rengi (2026-11-04, düzeltildi, 0.0.4):** derleme açık temanın rengini `#ffffff` yerine
+  `#fff` yazıyor, Android `Color.parseColor` bunu okumuyordu; 0.0.3'te koyu temadan açık temaya dönünce çubuklar
+  koyu kalmış olmalı (telefonda bakılmalı). Renk artık altı haneli gönderiliyor; derlenmiş sürümün testi
+  (`TEST_PREVIEW=1`) bunu yakaladı.
 - **Telefon testi (2026-11-03, Android 13, Xiaomi):** izinsiz açılış, "Birlikte aç", sistemin dosya
   seçicisi, dış bağlantı (onaydan sonra tarayıcı) ve iç bağlantı, Türkçe arama, geri düğmesi, sayfa paneli,
   parolalı PDF, 410 sayfalık kitap (2 sn'de açılıyor, kaldığı sayfa hatırlanıyor), yazdırma, paylaşma,

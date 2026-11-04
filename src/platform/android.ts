@@ -36,6 +36,11 @@ const native = registerPlugin<AwPdfNative>('AwPdfNative')
 /** A multiple of 3: the chunks' base64 joins up without padding in the middle of the file. */
 const SHARE_CHUNK_BYTES = 3 * 256 * 1024
 
+/** Android's `Color.parseColor` reads only #RRGGBB, and the build shortens #ffffff to #fff. */
+function sixDigitHex(color: string): string {
+  return /^#[0-9a-f]{3}$/i.test(color) ? `#${[...color.slice(1)].map(digit => digit + digit).join('')}` : color
+}
+
 function pdfFileFromNative({ id, name, size, source }: OpenedFile): PdfFile {
   return {
     name,
@@ -73,7 +78,7 @@ export function androidPlatform(): Platform {
     openExternal: url => { window.location.href = url },
     print: () => { void native.print({ name: 'awPDF' }).catch(console.error) },
     share,
-    setSystemBars: bars => { void native.setSystemBars(bars).catch(console.error) },
+    setSystemBars: ({ color, dark }) => { void native.setSystemBars({ color: sixDigitHex(color), dark }).catch(console.error) },
     get isFullscreen() {
       return isFullscreen
     },

@@ -80,7 +80,7 @@ test.describe('geri düğmesi', () => {
     expect(await calls(page)).not.toContain('leaveApp');
   });
 
-  test('açık olanı üstten alta kapatır, en son uygulamadan çıkar', async ({ page }) => {
+  test('açık olanı üstten alta kapatır, sonra belgeyi; ilk ekrandan uygulamadan çıkar', async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 640 });
     const pdf = await start(page);
     await send(page, 'fileOpened', { id: 1, name: 'gelen.pdf', size: pdf.length });
@@ -117,7 +117,24 @@ test.describe('geri düğmesi', () => {
     expect(await calls(page)).not.toContain('leaveApp');
 
     await send(page, 'backButton');
+    await expect(page.locator('#emptyOpen')).toBeVisible();
+    await expect(page.locator('#viewerContainer')).toBeHidden();
+    expect(await calls(page)).not.toContain('leaveApp');
+
+    await send(page, 'backButton');
     await expect.poll(() => calls(page)).toContain('leaveApp');
-    await expect(page.locator('#viewerContainer')).toBeVisible();
+    await expect(page.locator('#emptyOpen')).toBeVisible();
   });
+});
+
+test('Belgeyi Kapat ilk ekrana döndürür; belge son dosyalarda kalır', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 640 });
+  const pdf = await start(page);
+  await send(page, 'fileOpened', { id: 1, name: 'gelen.pdf', size: pdf.length, source: 'content://belge/1' });
+  await expect(page.locator('#pageStatus')).toHaveText('1 / 3');
+  await page.locator('#toolbarMenuButton').click();
+  await page.locator('#tool-closeTab').click();
+  await expect(page.locator('#emptyOpen')).toBeVisible();
+  await expect(page.locator('#recentFiles .recent-file')).toHaveCount(1);
+  await expect(page).toHaveTitle('awPDF | mADEMatik');
 });

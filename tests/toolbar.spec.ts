@@ -34,7 +34,7 @@ test('geniş ekranda bütün düğmeler sırada, menü düğmesi görünmez', as
   await page.setViewportSize(WIDE);
   await openPdf(page);
   await expect(toggle(page)).toBeHidden();
-  await expect(toolbar(page).locator(':scope > .toolbar__button:visible')).toHaveCount(18);
+  await expect(toolbar(page).locator(':scope > .toolbar__button:visible')).toHaveCount(19);
   await expect(page.locator('.toolbar__label:visible')).toHaveCount(0);
   await expectOneLine(page);
 });

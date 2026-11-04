@@ -38,15 +38,13 @@ export const recentTool: Tool = {
   run: ({ showRecentFiles }) => showRecentFiles(),
 }
 
-/** The tabs have their own buttons. */
+/** Also on Android, where there are no tabs, and on a board, where a tab's small ✕ is hard to hit. */
 export const closeTabTool: Tool = {
   id: 'closeTab',
   label: 'Belgeyi Kapat',
-  icon: '',
+  icon: '<path d="M12 3H5v18h6M12 3l5 5v3M12 3v5h5"/><path d="M14 14l7 7M21 14l-7 7"/>',
   shortcuts: ['ctrl+w'],
   needsDocument: true,
-  inToolbar: false,
-  isSupported: ({ platform }) => !platform.singleDocument,
   run: ({ tabs }) => {
     if (tabs.active) tabs.close(tabs.active)
   },

@@ -27,7 +27,7 @@ export const TOOLS: readonly Tool[] = [
   themeTool,
   printTool,
   shareTool,
-  goToPageTool,
   closeTabTool,
+  goToPageTool,
   nextTabTool,
 ]

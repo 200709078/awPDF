@@ -353,6 +353,19 @@ test.describe('arama', () => {
     }
   });
 
+  test('bulunanlar sarı, üzerinde durulan turuncu ve çerçeveli', async ({ page }) => {
+    await openPdf(page, makePdf({ pages: 1, text: () => 'kitap ve kitap' }));
+    await page.locator('#tool-search').click();
+    await page.locator('#searchInput').fill('kitap');
+    await expect(page.locator('#searchStatus')).toHaveText('1 / 2');
+    const look = (selector: string) => page.locator(selector).first().evaluate(element => {
+      const style = getComputedStyle(element);
+      return { background: style.backgroundColor, edge: style.boxShadow };
+    });
+    expect(await look('.textLayer .highlight.selected')).toEqual({ background: 'rgba(255, 120, 0, 0.5)', edge: 'rgb(204, 82, 0) 0px 0px 0px 1.5px' });
+    expect((await look('.textLayer .highlight:not(.selected)')).background).toBe('rgba(255, 204, 0, 0.4)');
+  });
+
   test('eşleşmeler arasında gezer, sayfası değişir, sayfada işaretlenir', async ({ page }) => {
     await openPdf(page, makePdf({ pages: 3, text: index => `kitap ${index + 1}` }));
     await expect(status(page)).toHaveText('1 / 3');
@@ -773,6 +786,16 @@ test.describe('sekmeler', () => {
     await tab(page, 'bir.pdf').locator('.tab__title').click();
     await expect(status(page)).toHaveText('3 / 4');
     await expect.poll(box).toEqual(before);
+  });
+
+  test('Belgeyi Kapat düğmesi açık olan sekmeyi kapatır', async ({ page }) => {
+    await twoDocuments(page);
+    await page.locator('#tool-closeTab').click();
+    await expect(page.locator('.tab')).toHaveCount(1);
+    await expect(status(page)).toHaveText('1 / 4');
+    await page.locator('#tool-closeTab').click();
+    await expect(page.locator('#emptyOpen')).toBeVisible();
+    await expect(page.locator('#tool-closeTab')).toBeDisabled();
   });
 
   test('aynı belge ikinci kez açılmaz, sekmesine dönülür', async ({ page }) => {
