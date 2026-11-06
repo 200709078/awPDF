@@ -34,11 +34,13 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 /**
- * What the WebView cannot do itself: the print service, sharing with other apps, hiding and
+ * What the WebView cannot do itself: the print service, sharing with other apps, saving a new
+ * file where the user chooses, hiding and
  * colouring the system bars and reading a file another app hands over. The web side is
  * src/platform/android.ts.
  */
@@ -275,11 +277,66 @@ public class AwPdfNativePlugin extends Plugin {
     public void shareFile(PluginCall call) {
         Uri uri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", sharedCopy(call));
         Intent send = new Intent(Intent.ACTION_SEND);
-        send.setType("application/pdf");
+        send.setType(fileType(call));
         send.putExtra(Intent.EXTRA_STREAM, uri);
         send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
         getActivity().startActivity(Intent.createChooser(send, null));
         call.resolve();
+    }
+
+    /**
+     * The system's "save" screen makes a new file, so the open one is never written over. The data
+     * comes first through `appendShareFile`, piece by piece.
+     */
+    @PluginMethod
+    public void saveFile(PluginCall call) {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType(fileType(call));
+        intent.putExtra(Intent.EXTRA_TITLE, sharedCopy(call).getName());
+        startActivityForResult(call, intent, "fileSaved");
+    }
+
+    @ActivityCallback
+    private void fileSaved(PluginCall call, ActivityResult result) {
+        File copy = sharedCopy(call);
+        Intent data = result.getData();
+        if (result.getResultCode() != Activity.RESULT_OK || data == null || data.getData() == null) {
+            copy.delete();
+            call.resolve(new JSObject());
+            return;
+        }
+        Uri uri = data.getData();
+        getBridge().execute(() -> {
+            try (InputStream input = new FileInputStream(copy);
+                 OutputStream output = getContext().getContentResolver().openOutputStream(uri, "wt")) {
+                if (output == null) throw new FileNotFoundException(uri.toString());
+                byte[] buffer = new byte[COPY_BUFFER_BYTES];
+                for (int count = input.read(buffer); count >= 0; count = input.read(buffer)) {
+                    output.write(buffer, 0, count);
+                }
+                JSObject saved = new JSObject();
+                saved.put("name", displayName(uri));
+                call.resolve(saved);
+            } catch (IOException | SecurityException error) {
+                call.reject("Dosya kaydedilemedi.", error);
+            } finally {
+                copy.delete();
+            }
+        });
+    }
+
+    /** Only the kinds the app makes; anything else is taken for a PDF. */
+    private String fileType(PluginCall call) {
+        String type = call.getString("type", "application/pdf");
+        switch (type) {
+            case "image/png":
+            case "image/jpeg":
+            case "application/zip":
+                return type;
+            default:
+                return "application/pdf";
+        }
     }
 
     /** One folder in the cache; the name is reduced to a file name so it cannot leave it. */

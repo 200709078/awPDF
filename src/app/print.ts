@@ -1,5 +1,6 @@
-import type { PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
+import { AnnotationMode, type PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import type { Platform } from '../platform/platform'
+import { canvasBytes } from './images'
 
 const PRINT_DPI = 150
 const PDF_POINTS_PER_INCH = 72
@@ -14,10 +15,17 @@ async function printedPage(pdf: PDFDocumentProxy, number: number, canvas: HTMLCa
   const viewport = page.getViewport({ scale: PRINT_DPI / PDF_POINTS_PER_INCH })
   canvas.width = Math.floor(viewport.width)
   canvas.height = Math.floor(viewport.height)
-  await page.render({ canvas, viewport, intent: 'print' }).promise
+  // Filled-in form fields go on paper as they are on screen.
+  await page.render({
+    canvas,
+    viewport,
+    intent: 'print',
+    annotationMode: AnnotationMode.ENABLE_STORAGE,
+    printAnnotationStorage: pdf.annotationStorage.print,
+  }).promise
   page.cleanup()
-  const blob = await new Promise<Blob | null>(resolve => { canvas.toBlob(resolve) })
-  if (!blob) throw new Error(`Sayfa ${number} yazdırmaya hazırlanamadı.`)
+  // Encoded at once: `toBlob` would wait some four seconds a page in an Android WebView.
+  const blob = new Blob([canvasBytes(canvas, 'image/png') as Uint8Array<ArrayBuffer>], { type: 'image/png' })
   // Loaded but not decoded: a decoded page takes some 8 MB, which a long book cannot afford.
   const image = new Image()
   await new Promise((resolve, reject) => {
@@ -32,16 +40,17 @@ async function printedPage(pdf: PDFDocumentProxy, number: number, canvas: HTMLCa
 }
 
 /**
- * Printing paper gets the file as it is: the view's rotation and zoom do not apply. Pages become
- * images one at a time so the dialog can show progress and a long print can be cancelled.
+ * Printing paper gets the file as it is: the view's rotation and zoom do not apply. The chosen
+ * `pages` become images one at a time, so the dialog can show progress and a long print can be
+ * cancelled.
  */
-export async function printDocument(pdf: PDFDocumentProxy, platform: Platform): Promise<void> {
+export async function printDocument(pdf: PDFDocumentProxy, platform: Platform, pages: readonly number[]): Promise<void> {
   const root = document.querySelector<HTMLElement>('#printContainer')!
   const dialog = document.querySelector<HTMLDialogElement>('#printDialog')!
   const progress = document.querySelector('#printProgress')!
   clearPages(root)
 
-  const first = (await pdf.getPage(1)).getViewport({ scale: 1 })
+  const first = (await pdf.getPage(pages[0])).getViewport({ scale: 1 })
   document.querySelector('#printPageSize')!.textContent = `@page { size: ${first.width}pt ${first.height}pt; margin: 0 }`
 
   // One canvas for all pages: a new one for each piles up faster than memory is reclaimed.
@@ -51,8 +60,9 @@ export async function printDocument(pdf: PDFDocumentProxy, platform: Platform): 
   dialog.addEventListener('close', () => { isCancelled = !isFinished }, { once: true })
   dialog.showModal()
   try {
-    for (let number = 1; number <= pdf.numPages && !isCancelled; number += 1) {
-      progress.textContent = `${number} / ${pdf.numPages}`
+    for (const [done, number] of pages.entries()) {
+      if (isCancelled) break
+      progress.textContent = `${done + 1} / ${pages.length}`
       root.append(await printedPage(pdf, number, canvas))
     }
   } finally {

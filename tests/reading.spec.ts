@@ -461,6 +461,13 @@ test.describe('yazdırma ve paylaşma', () => {
     });
   }
   const prints = (page: Page) => page.evaluate(() => (window as unknown as { prints: number }).prints);
+  /** The range dialog comes first; Enter takes its choice, all pages unless told otherwise. */
+  async function confirmPrint(page: Page) {
+    await expect(page.locator('#printRangeDialog')).toBeVisible();
+    await page.locator('#printRangeDialog').getByRole('button', { name: 'Yazdır' }).click();
+  }
+  const printedSizes = (page: Page) => page.locator('#printContainer .print-page img')
+    .evaluateAll(images => (images as HTMLImageElement[]).map(image => [image.naturalWidth, image.naturalHeight]));
 
   test('bütün sayfalar hazırlanır, yazdırma görünümünde yalnız onlar görünür', async ({ page }) => {
     await stubPrint(page);
@@ -468,6 +475,7 @@ test.describe('yazdırma ve paylaşma', () => {
     await expect(status(page)).toHaveText('1 / 3');
     await page.locator('#tool-rotate').click();
     await page.locator('#tool-print').click();
+    await confirmPrint(page);
     await expect.poll(() => prints(page)).toBe(1);
     await expect(page.locator('#printDialog')).toBeHidden();
     const pages = page.locator('#printContainer .print-page img');
@@ -487,6 +495,7 @@ test.describe('yazdırma ve paylaşma', () => {
     await openPdf(page, makePdf({ pages: 3 }));
     await expect(status(page)).toHaveText('1 / 3');
     await page.locator('#tool-print').click();
+    await confirmPrint(page);
     await expect.poll(() => prints(page)).toBe(1);
     const pdf = await page.pdf({ preferCSSPageSize: true });
     expect(pdf.toString('latin1').match(/\/Type\s*\/Page\b/g)?.length).toBe(3);
@@ -497,6 +506,8 @@ test.describe('yazdırma ve paylaşma', () => {
     await openPdf(page, makePdf());
     await expect(status(page)).toHaveText('1 / 3');
     await page.keyboard.press('Control+p');
+    await expect(page.locator('#printRangeDialog')).toBeVisible();
+    await page.keyboard.press('Enter');
     await expect.poll(() => prints(page)).toBe(1);
     await expect(page.locator('#printContainer img')).toHaveCount(3);
     await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
@@ -508,6 +519,7 @@ test.describe('yazdırma ve paylaşma', () => {
     await openPdf(page, makePdf({ pages: 60 }));
     await expect(status(page)).toHaveText('1 / 60');
     await page.locator('#tool-print').click();
+    await confirmPrint(page);
     const dialog = page.locator('#printDialog');
     await expect(dialog).toBeVisible();
     await dialog.getByRole('button', { name: 'Vazgeç' }).click();
@@ -515,6 +527,63 @@ test.describe('yazdırma ve paylaşma', () => {
     await page.waitForTimeout(600);
     expect(await prints(page)).toBe(0);
     await expect(page.locator('#printContainer img')).toHaveCount(0);
+  });
+
+  test('yalnız yazılan sayfalar, belgedeki sıralarıyla hazırlanır', async ({ page }) => {
+    await stubPrint(page);
+    await openPdf(page, makePdf({ pages: 6, text: index => `Sayfa ${index + 1}` }));
+    await expect(status(page)).toHaveText('1 / 6');
+    await page.locator('#tool-print').click();
+    await expect(page.locator('#printRangeAll')).toHaveText('Tüm sayfalar (6)');
+    // Typing chooses "these pages" by itself.
+    await page.locator('#printRangeInput').fill('5-6, 2');
+    await expect(page.locator('input[name="printRange"][value="pages"]')).toBeChecked();
+    await confirmPrint(page);
+    await expect.poll(() => prints(page)).toBe(1);
+    await expect(page.locator('#printContainer img')).toHaveCount(3);
+  });
+
+  test('bu sayfa seçilince yalnız o sayfa hazırlanır', async ({ page }) => {
+    await stubPrint(page);
+    await openPdf(page, makePdf({ pages: 4 }));
+    await page.locator('#pageStatus').click();
+    await page.locator('#goToPageInput').fill('3');
+    await page.keyboard.press('Enter');
+    await expect(status(page)).toHaveText('3 / 4');
+    await page.locator('#tool-print').click();
+    await expect(page.locator('#printRangeCurrent')).toHaveText('Bu sayfa (3)');
+    await page.locator('#printRangeCurrent').click();
+    await confirmPrint(page);
+    await expect.poll(() => prints(page)).toBe(1);
+    await expect(page.locator('#printContainer img')).toHaveCount(1);
+  });
+
+  test('okunamayan aralıkta pencere açık kalır ve nedenini söyler', async ({ page }) => {
+    await stubPrint(page);
+    await openPdf(page, makePdf({ pages: 4 }));
+    await expect(status(page)).toHaveText('1 / 4');
+    await page.locator('#tool-print').click();
+    await page.locator('#printRangeInput').fill('3-9');
+    await confirmPrint(page);
+    await expect(page.locator('#printRangeError')).toHaveText('Sayfaları 1 ile 4 arasında yazın, örneğin 1-5, 8.');
+    await expect(page.locator('#printRangeDialog')).toBeVisible();
+    await page.locator('#printRangeInput').fill('3-');
+    await confirmPrint(page);
+    await expect.poll(() => prints(page)).toBe(1);
+    await expect(page.locator('#printContainer img')).toHaveCount(2);
+    expect(await printedSizes(page)).toEqual([[1275, 1650], [1275, 1650]]);
+  });
+
+  test('aralık penceresinden vazgeçince hiçbir şey hazırlanmaz', async ({ page }) => {
+    await stubPrint(page);
+    await openPdf(page, makePdf({ pages: 2 }));
+    await expect(status(page)).toHaveText('1 / 2');
+    await page.locator('#tool-print').click();
+    await page.locator('#printRangeDialog').getByRole('button', { name: 'Vazgeç' }).click();
+    await expect(page.locator('#printRangeDialog')).toBeHidden();
+    await page.waitForTimeout(300);
+    expect(await prints(page)).toBe(0);
+    await expect(page.locator('#printDialog')).toBeHidden();
   });
 
   test('paylaşma düğmesi webde yoktur, sayfaya git düğmesi araç çubuğunda yer almaz', async ({ page }) => {

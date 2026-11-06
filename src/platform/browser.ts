@@ -1,6 +1,6 @@
 import { pdfFileFromBlob, type PdfFile } from '../core/pdf-file'
 import { findHandle, keepHandle } from './file-handles'
-import type { Platform } from './platform'
+import { PDF_TYPE, SameFileError, type FileType, type Platform } from './platform'
 
 const DROPPING_CLASS = 'is-dropping'
 
@@ -36,6 +36,8 @@ export function showFileInput(): void {
   document.querySelector<HTMLInputElement>('#pdfInput')!.click()
 }
 
+/** Long enough for the browser to have taken the download. */
+const DOWNLOAD_URL_LIFETIME_MS = 60_000
 const PDF_PICKER_TYPES = [{ description: 'PDF', accept: { 'application/pdf': ['.pdf'] } }]
 
 async function pdfFileFromHandle(handle: FileSystemFileHandle): Promise<PdfFile> {
@@ -43,6 +45,32 @@ async function pdfFileFromHandle(handle: FileSystemFileHandle): Promise<PdfFile>
   const source = `${file.name}/${file.size}/${file.lastModified}`
   await keepHandle(source, handle)
   return { ...pdfFileFromBlob(file), source }
+}
+
+/** Chromium on a computer asks where to save; elsewhere the file goes to the downloads. */
+async function saveFile(name: string, data: Uint8Array, original?: PdfFile, type: FileType = PDF_TYPE): Promise<string | null> {
+  if (!window.showSaveFilePicker) {
+    const url = URL.createObjectURL(new Blob([data as Uint8Array<ArrayBuffer>], { type: type.mime }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = name
+    link.click()
+    setTimeout(() => URL.revokeObjectURL(url), DOWNLOAD_URL_LIFETIME_MS)
+    return name
+  }
+  let handle: FileSystemFileHandle
+  try {
+    handle = await window.showSaveFilePicker({ suggestedName: name, types: [{ description: type.description, accept: { [type.mime]: [`.${type.extension}`] } }] })
+  } catch (error) {
+    if ((error as DOMException).name === 'AbortError') return null
+    throw error
+  }
+  const open = original?.source ? await findHandle(original.source) : undefined
+  if (open && await handle.isSameEntry(open)) throw new SameFileError()
+  const writable = await handle.createWritable()
+  await writable.write(data as Uint8Array<ArrayBuffer>)
+  await writable.close()
+  return handle.name
 }
 
 export function browserPlatform(): Platform {
@@ -72,6 +100,7 @@ export function browserPlatform(): Platform {
     },
     openExternal: url => { window.open(url, '_blank', 'noopener,noreferrer') },
     print: () => window.print(),
+    saveFile,
     get isFullscreen() {
       return document.fullscreenElement !== null
     },

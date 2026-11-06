@@ -1,9 +1,14 @@
 import { pdfFileFromBlob, type PdfFile } from '../core/pdf-file'
 import { browserPlatform, onPickedFile, showFileInput } from './browser'
-import type { Platform } from './platform'
+import { PDF_TYPE, SameFileError, type Platform } from './platform'
+
+/** The shell's number for each file it opened; a save dialog starts in that file's folder. */
+const diskIds = new WeakMap<PdfFile, number>()
 
 function pdfFileFromDisk(files: DesktopFiles, { id, name, size, source }: DesktopOpenedFile): PdfFile {
-  return { name, size, source, read: (begin, end) => files.read(id, begin, end), close: () => files.close(id) }
+  const file: PdfFile = { name, size, source, read: (begin, end) => files.read(id, begin, end), close: () => files.close(id) }
+  diskIds.set(file, id)
+  return file
 }
 
 /**
@@ -34,6 +39,11 @@ export function desktopPlatform(controls: DesktopWindowControls, files: DesktopF
           listener(opened ? pdfFileFromDisk(files, opened) : pdfFileFromBlob(file))
         })
       })
+    },
+    saveFile: async (name, data, original, type = PDF_TYPE) => {
+      const saved = await files.save(name, data, original && diskIds.get(original), type)
+      if (saved && 'refused' in saved) throw new SameFileError()
+      return saved?.name ?? null
     },
     get isFullscreen() {
       return isFullscreen

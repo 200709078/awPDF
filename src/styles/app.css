@@ -242,6 +242,13 @@ body {
 	border-radius: 8px;
 }
 
+/* Kaydedilmemiş değişikliği olan sekmenin adının önünde bir nokta. */
+.tab.is-modified .tab__title::before {
+	margin-right: 6px;
+	color: var(--accent);
+	content: "●";
+}
+
 .tab__close:hover {
 	background: var(--border);
 }
@@ -290,6 +297,10 @@ body {
 
 .document-area {
 	position: relative;
+	/* pdf.js gives each link and form field a rising z-index (64 and more in a long contents page).
+	   Kept inside the document, they can no longer lie, unseen, over the toolbar's menu, the side
+	   panel or the presentation's exit button and take a tap meant for those. */
+	isolation: isolate;
 	flex: 1;
 	min-width: 0;
 }
@@ -485,6 +496,262 @@ body {
 	font-weight: 600;
 }
 
+/* Sayfaları düzenleme: tam ekran bir pencere, üstte işlemler, altta sayfa kartları. */
+.page-editor {
+	width: 100vw;
+	max-width: none;
+	height: 100vh;
+	height: 100dvh;
+	max-height: none;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	background: var(--surface-muted);
+	color: var(--text);
+}
+
+.page-editor[open] {
+	display: flex;
+	flex-direction: column;
+}
+
+.page-editor.is-busy {
+	cursor: progress;
+}
+
+.page-editor__header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 16px;
+	border-bottom: 1px solid var(--border);
+	background: var(--surface);
+}
+
+.page-editor__title {
+	display: flex;
+	flex: 1;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 0 16px;
+	min-width: 0;
+}
+
+.page-editor__title h2 {
+	margin: 0;
+	font-size: 20px;
+}
+
+.page-editor__status {
+	opacity: 0.75;
+}
+
+.page-editor__header .secondary-button {
+	padding: 0 16px;
+}
+
+.page-editor__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 8px 16px;
+	border-bottom: 1px solid var(--border);
+	background: var(--surface);
+}
+
+.page-editor__action {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 48px;
+	padding: 0 14px;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	background: var(--surface);
+	color: inherit;
+	font: inherit;
+	touch-action: manipulation;
+	cursor: pointer;
+}
+
+.page-editor__action svg {
+	flex: none;
+	width: 22px;
+	height: 22px;
+}
+
+.page-editor__action:hover:not(:disabled) {
+	background: var(--surface-muted);
+}
+
+.page-editor__action.is-primary {
+	border-color: transparent;
+	background: var(--accent);
+	color: #ffffff;
+}
+
+.page-editor__action:disabled {
+	opacity: 0.4;
+	cursor: default;
+}
+
+/* Dar ekranda yalnız simgeler kalır; adları düğmenin ipucunda ve ekran okuyucuda durur. */
+@media (max-width: 700px) {
+	.page-editor__header {
+		padding: 6px 8px;
+	}
+
+	.page-editor__title h2 {
+		font-size: 17px;
+	}
+
+	.page-editor__status {
+		font-size: 14px;
+	}
+
+	.page-editor__actions {
+		gap: 6px;
+		padding: 6px 8px;
+	}
+
+	.page-editor__actions .page-editor__action {
+		flex: 1 0 48px;
+		justify-content: center;
+		padding: 0 8px;
+	}
+
+	.page-editor__actions .page-editor__label {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+}
+
+.page-editor__note {
+	margin: 0;
+	padding: 8px 16px;
+	background: #fef3c7;
+	color: #78350f;
+}
+
+.page-editor__grid {
+	display: grid;
+	flex: 1;
+	grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+	align-content: start;
+	gap: 16px;
+	padding: 16px;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+@media (max-width: 700px) {
+	.page-editor__grid {
+		grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+		gap: 8px;
+		padding: 8px;
+	}
+}
+
+.page-card {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	min-width: 0;
+	padding: 8px;
+	border: 3px solid transparent;
+	border-radius: 10px;
+	background: none;
+	color: inherit;
+	font: inherit;
+	touch-action: manipulation;
+	cursor: pointer;
+	user-select: none;
+	-webkit-user-select: none;
+	-webkit-touch-callout: none;
+}
+
+.page-card__frame {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	aspect-ratio: 1 / 1.25;
+}
+
+.page-card canvas {
+	display: block;
+	max-width: 100%;
+	max-height: 100%;
+	background: #ffffff;
+	box-shadow: 0 0 0 1px var(--border), 0 2px 6px rgb(0 0 0 / 15%);
+}
+
+.page-card__number {
+	font-weight: 600;
+}
+
+.page-card__origin {
+	max-width: 100%;
+	overflow: hidden;
+	font-size: 13px;
+	opacity: 0.7;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.page-card.is-selected {
+	border-color: var(--accent);
+	background: rgb(37 99 235 / 12%);
+}
+
+.page-card.is-selected::after {
+	position: absolute;
+	top: 4px;
+	right: 4px;
+	display: grid;
+	place-items: center;
+	width: 28px;
+	height: 28px;
+	border-radius: 50%;
+	background: var(--accent);
+	color: #ffffff;
+	content: "✓";
+	font-weight: 700;
+}
+
+.page-editor__grid.is-dragging {
+	cursor: grabbing;
+}
+
+.page-card.is-dragged {
+	opacity: 0.4;
+}
+
+.page-card.is-drop-before::before,
+.page-card.is-drop-after::before {
+	position: absolute;
+	top: 8px;
+	bottom: 8px;
+	width: 4px;
+	border-radius: 2px;
+	background: var(--accent);
+	content: "";
+}
+
+.page-card.is-drop-before::before {
+	left: -10px;
+}
+
+.page-card.is-drop-after::before {
+	right: -10px;
+}
+
 /* pdf.js requires an absolutely positioned scroll container. */
 .viewer-container {
 	position: absolute;
@@ -637,6 +904,146 @@ body {
 	font-size: 18px;
 }
 
+.dialog__choices {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin: 0 0 24px;
+	padding: 0;
+	border: 0;
+}
+
+.dialog__choices legend {
+	margin-bottom: 8px;
+	padding: 0;
+}
+
+.dialog__choices label {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-height: 44px;
+	cursor: pointer;
+}
+
+.dialog__choices input[type="radio"] {
+	width: 22px;
+	height: 22px;
+	margin: 0;
+	accent-color: var(--accent);
+}
+
+.dialog__choices input[type="text"] {
+	width: calc(100% - 34px);
+	min-width: 0;
+	min-height: 48px;
+	margin-left: 34px;
+	padding: 0 12px;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	background: var(--surface-muted);
+	color: inherit;
+	font: inherit;
+	font-size: 18px;
+}
+
+.dialog__choices .dialog__error {
+	margin-left: 34px;
+}
+
+.dialog__choices--row {
+	flex-direction: row;
+	flex-wrap: wrap;
+	gap: 4px 24px;
+}
+
+.dialog__choices--row legend {
+	width: 100%;
+}
+
+.dialog p.dialog__hint {
+	margin-bottom: 16px;
+	font-size: 14px;
+	opacity: 0.75;
+}
+
+/* Seçilen bölgenin önizlemesi: pencereye sığar, oranı korunur. */
+.region-dialog {
+	width: min(640px, calc(100vw - 32px));
+}
+
+.region-dialog__preview {
+	display: block;
+	max-width: 100%;
+	max-height: 55vh;
+	margin: 0 auto 8px;
+	box-shadow: 0 0 0 1px var(--border);
+	background: #ffffff;
+}
+
+/* Bölge seçerken belgenin üstünü kaplayan katman; sayfa kaymaz, parmak dikdörtgen çizer. */
+.region-overlay {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	background: rgb(0 0 0 / 8%);
+	cursor: crosshair;
+	touch-action: none;
+	user-select: none;
+	-webkit-user-select: none;
+}
+
+.region-overlay__box {
+	position: absolute;
+	border: 2px dashed var(--accent);
+	background: rgb(37 99 235 / 12%);
+	pointer-events: none;
+}
+
+.region-hint {
+	position: absolute;
+	bottom: 12px;
+	left: 50%;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	width: max-content;
+	max-width: calc(100% - 16px);
+	padding: 6px 6px 6px 16px;
+	border-radius: 10px;
+	background: var(--toast-surface);
+	color: #ffffff;
+	transform: translateX(-50%);
+	cursor: default;
+}
+
+.region-hint .secondary-button {
+	flex: none;
+	min-height: 40px;
+	padding: 0 16px;
+	color: var(--text);
+}
+
+/* Bölge görsele çevrilirken yeni çizim beklemez. */
+.region-overlay.is-busy {
+	cursor: progress;
+	pointer-events: none;
+}
+
+/* Çizerken ipucu yoldan çekilir. */
+.region-overlay.is-drawing .region-hint {
+	opacity: 0;
+	pointer-events: none;
+}
+
+.danger-button.primary-button {
+	background: #dc2626;
+}
+
+.danger-button.secondary-button {
+	color: #dc2626;
+}
+
 .dialog__address {
 	font-family: ui-monospace, monospace;
 }
@@ -655,13 +1062,17 @@ body {
 
 .toast {
 	position: fixed;
+	/* As a popover it would be centred on the screen by the browser's own `inset: 0`. */
+	top: auto;
 	right: 16px;
 	bottom: 16px;
 	left: 16px;
 	z-index: 100;
 	width: fit-content;
+	height: fit-content;
 	margin: auto;
 	padding: 12px 20px;
+	border: 0;
 	border-radius: 8px;
 	background: var(--toast-surface);
 	color: #ffffff;

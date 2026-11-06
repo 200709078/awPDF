@@ -39,6 +39,10 @@ android {
         }
     }
     buildTypes {
+        // A test copy installs beside the one from Google Play, whose signature it does not share.
+        debug {
+            applicationIdSuffix ".deneme"
+        }
         release {
             if (keystorePath) signingConfig signingConfigs.release
             minifyEnabled false

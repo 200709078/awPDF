@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, net, protocol, shell, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu, net, protocol, shell, type IpcMainEvent, type IpcMainInvokeEvent } from 'electron'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { DesktopFiles, type OpenedFile } from './files.js'
@@ -137,6 +137,19 @@ async function createWindow(): Promise<void> {
     return { action: 'deny' }
   })
   window.webContents.on('will-navigate', event => event.preventDefault())
+  // The page holds back closing while a document has unsaved changes; the user decides here.
+  window.webContents.on('will-prevent-unload', event => {
+    const choice = dialog.showMessageBoxSync(window, {
+      type: 'warning',
+      title: 'awPDF',
+      message: 'Kaydedilmemiş değişiklikler var.',
+      detail: 'Kapatırsanız değişiklikler kaybolur.',
+      buttons: ['Kaydetmeden kapat', 'Vazgeç'],
+      defaultId: 1,
+      cancelId: 1,
+    })
+    if (choice === 0) event.preventDefault()
+  })
 
   await window.loadURL(devServerUrl || `${SCHEME}://${APP_HOST}/index.html`)
 }

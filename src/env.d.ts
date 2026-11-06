@@ -26,6 +26,8 @@ interface DesktopFiles {
   read(id: number, begin: number, end: number): Promise<Uint8Array>
   close(id: number): void
   reopen(source: string): Promise<DesktopOpenedFile | null>
+  /** Asks where to save, next to the file `nearId` when given; `refused` means an open file was chosen. */
+  save(name: string, data: Uint8Array, nearId: number | undefined, type: { extension: string; description: string }): Promise<{ name: string } | { refused: true } | null>
 }
 
 /** Opens the system's on-screen keyboard for a text field. */
@@ -40,6 +42,7 @@ interface FileSystemFileHandle {
 
 interface Window {
   /** Chromium browsers on computers only. */
+  showSaveFilePicker?(options: { suggestedName: string; types: { description: string; accept: Record<string, string[]> }[] }): Promise<FileSystemFileHandle>
   showOpenFilePicker?(options: { types: { description: string; accept: Record<string, string[]> }[]; multiple: boolean }): Promise<FileSystemFileHandle[]>
   awPDFDesktop?: {
     windowControls?: DesktopWindowControls

@@ -34,7 +34,7 @@ test('geniş ekranda bütün düğmeler sırada, menü düğmesi görünmez', as
   await page.setViewportSize(WIDE);
   await openPdf(page);
   await expect(toggle(page)).toBeHidden();
-  await expect(toolbar(page).locator(':scope > .toolbar__button:visible')).toHaveCount(19);
+  await expect(toolbar(page).locator(':scope > .toolbar__button:visible')).toHaveCount(24);
   await expect(page.locator('.toolbar__label:visible')).toHaveCount(0);
   await expectOneLine(page);
 });
@@ -116,4 +116,69 @@ test('PDF açılmadan önce de satır taşmaz', async ({ page }) => {
   await page.setViewportSize(PHONE);
   await expectOneLine(page);
   await expect(toggle(page)).toBeVisible();
+});
+
+test.describe('belgedeki bağlantılar üstteki düğmelerin dokunuşunu almaz', () => {
+  test.use({ hasTouch: true });
+  // pdf.js gives each link a rising z-index, so 25 links below the page come first and lift the
+  // ten rows that cover most of the page above 20, the menu's own.
+  const linkedPdf = () => makePdf({
+    pages: 3,
+    links: [
+      ...Array.from({ length: 25 }, () => ({ page: 0, toPage: 1, row: 30 })),
+      ...Array.from({ length: 10 }, (_, row) => ({ page: 0, toPage: 2, row })),
+    ],
+  });
+
+  /** Points of `selector`'s elements that lie over a link; each must hit the element itself. */
+  const hitsOverLinks = (page: Page, selector: string) => page.evaluate(selected => {
+    const links = [...document.querySelectorAll('.linkAnnotation')].map(link => link.getBoundingClientRect());
+    return [...document.querySelectorAll<HTMLElement>(selected)].filter(element => element.offsetParent !== null).flatMap(element => {
+      const box = element.getBoundingClientRect();
+      const link = links.find(area => area.left < box.right && area.right > box.left && area.top < box.bottom && area.bottom > box.top);
+      if (!link) return [];
+      const x = (Math.max(box.left, link.left) + Math.min(box.right, link.right)) / 2;
+      const y = (Math.max(box.top, link.top) + Math.min(box.bottom, link.bottom)) / 2;
+      return [{ x, y, hit: element.contains(document.elementFromPoint(x, y)) }];
+    });
+  }, selector);
+
+  test('menü maddesine dokununca arkadaki bağlantı değil, madde çalışır', async ({ page }) => {
+    await page.setViewportSize(PHONE);
+    await page.locator('#pdfInput').setInputFiles({ name: 'baglanti.pdf', mimeType: 'application/pdf', buffer: linkedPdf() });
+    await expect(page.locator('#pageStatus')).toHaveText('1 / 3');
+    await expect(page.locator('.linkAnnotation')).toHaveCount(35);
+    await toggle(page).click();
+    const points = await hitsOverLinks(page, '#toolbarMenu button');
+    expect(points.length).toBeGreaterThan(3);
+    expect(points.every(point => point.hit)).toBe(true);
+
+    const zoom = (await hitsOverLinks(page, '#toolbarMenu #tool-zoomIn'))[0];
+    const client = await page.context().newCDPSession(page);
+    await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: zoom.x, y: zoom.y }] });
+    await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await expect(menu(page)).toBeHidden();
+    await page.waitForTimeout(400);
+    await expect(page.locator('#pageStatus')).toHaveText('1 / 3');
+  });
+
+  test('dar ekrandaki sayfa paneli ve sunumdan çıkış düğmesi de bağlantıların üstündedir', async ({ page }) => {
+    await page.setViewportSize(PHONE);
+    await page.locator('#pdfInput').setInputFiles({ name: 'baglanti.pdf', mimeType: 'application/pdf', buffer: linkedPdf() });
+    await expect(page.locator('.linkAnnotation')).toHaveCount(35);
+    await page.locator('#tool-sidePanel').click();
+    await expect(page.locator('#sidePanel')).toBeVisible();
+    await page.waitForTimeout(400);
+    const thumbnails = await hitsOverLinks(page, '.thumbnail');
+    expect(thumbnails.length).toBeGreaterThan(0);
+    expect(thumbnails.every(point => point.hit)).toBe(true);
+    await page.locator('#tool-sidePanel').click();
+
+    await page.evaluate(() => { document.querySelector<HTMLElement>('#presentationExit')!.hidden = false; });
+    const exit = await page.locator('#presentationExit').evaluate(button => {
+      const box = button.getBoundingClientRect();
+      return button.contains(document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2));
+    });
+    expect(exit).toBe(true);
+  });
 });

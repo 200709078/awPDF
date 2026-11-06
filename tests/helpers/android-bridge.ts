@@ -9,7 +9,7 @@ export async function pretendAndroid(page: Page, files: Record<number, number[]>
     const listeners: Record<string, (data: unknown) => void> = {};
     const calls: string[] = [];
     const callOptions: { method: string; options: unknown }[] = [];
-    const methods = ['print', 'setFullscreen', 'setSystemBars', 'appendShareFile', 'shareFile', 'pickFile', 'reopenFile', 'readFile', 'leaveApp', 'removeListener'];
+    const methods = ['print', 'setFullscreen', 'setSystemBars', 'appendShareFile', 'shareFile', 'pickFile', 'reopenFile', 'readFile', 'leaveApp', 'saveFile', 'removeListener'];
     Object.assign(window, {
       androidBridge: { postMessage: () => undefined },
       androidCalls: calls,
@@ -24,6 +24,7 @@ export async function pretendAndroid(page: Page, files: Record<number, number[]>
           calls.push(method);
           callOptions.push({ method, options });
           if (method === 'reopenFile') return { id: 1, name: 'gelen.pdf', size: contents[1]?.length ?? 0, source: 'content://belge/1' };
+          if (method === 'saveFile') return { name: (options as unknown as { name: string }).name };
           if (method !== 'readFile') return undefined;
           const part = (contents[options.id] ?? []).slice(options.begin, options.end);
           return { data: btoa(String.fromCharCode(...part)) };

@@ -15,7 +15,13 @@ Web, masaüstü ve Android için **PDF görüntüleme** uygulaması.
 - Tek ve iki sayfa görünümü, görünümü döndürme, tam ekran, koyu tema
 - Türkçe harflere uyumlu metin arama, metin seçme ve kopyalama
 - Akıllı tahta için sunum modu ve ekran klavyesi
-- Yazdırma, Android'de paylaşma
+- Yazdırma (bütün belge, bu sayfa ya da "1-5, 8" gibi bir aralık), Android'de paylaşma
+- Form doldurma: PDF'teki alanlar doldurulur, doldurulmuş hâli yeni bir dosyaya kaydedilir
+- Sayfaları düzenleme: silme, döndürme, taşıma, başka PDF'lerle birleştirme, seçilen sayfaları ayrı kaydetme
+- Görsellerden PDF (fotoğraflar A4 ya da kendi boyutunda sayfalar olur), PDF'e görsel ekleme
+- Sayfaları PNG/JPG olarak kaydetme (birden çok sayfa tek ZIP), sayfadan bir bölgeyi görsel olarak alma
+  (kaydetme, kopyalama, Android'de paylaşma)
+- Kaydetme her zaman "Farklı Kaydet"tir; açık dosyanın üzerine yazılmaz
 - Büyük dosyalar parça parça okunur; dosya bütünüyle belleğe alınmaz
 - Tamamen yerel çalışır: PDF hiçbir sunucuya gönderilmez, internet gerekmez
 

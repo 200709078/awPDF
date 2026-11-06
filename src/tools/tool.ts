@@ -1,6 +1,7 @@
 import type { DocumentTabs } from '../app/document-tabs'
 import type { DocumentView } from '../app/document-view'
 import type { Presentation } from '../app/presentation'
+import type { RegionCapture } from '../ui/region-capture'
 import type { Platform } from '../platform/platform'
 import type { SearchBar } from '../ui/search-bar'
 import type { SidePanel } from '../ui/side-panel'
@@ -15,9 +16,17 @@ export interface ToolContext {
   readonly searchBar: SearchBar
   readonly theme: Theme
   readonly platform: Platform
+  readonly regionCapture: RegionCapture
   pickFile(): void
   showRecentFiles(): void
   print(): void
+  /** Saves the active document under a new name, with its filled-in form fields. */
+  saveAs(): void
+  editPages(): void
+  /** Asks for pictures and makes a PDF of them in the page editor. */
+  pdfFromImages(): void
+  /** Saves pages of the active document as pictures. */
+  saveImages(): void
 }
 
 /**

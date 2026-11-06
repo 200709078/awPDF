@@ -1,6 +1,7 @@
 import { showToast } from './messages'
 
-const TEXT_FIELD = 'input:not([type="file"])'
+/** Typing fields, the PDF's own form fields among them; a tick box or a list needs no keys. */
+const TEXT_FIELD = 'input:not([type="file"], [type="checkbox"], [type="radio"]), textarea'
 
 const isTextField = (target: EventTarget | null) => target instanceof Element && target.matches(TEXT_FIELD)
 

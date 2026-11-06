@@ -138,3 +138,62 @@ test('Belgeyi Kapat ilk ekrana döndürür; belge son dosyalarda kalır', async 
   await expect(page.locator('#recentFiles .recent-file')).toHaveCount(1);
   await expect(page).toHaveTitle('awPDF | mADEMatik');
 });
+
+test.describe('kaydetme ve düzenleme', () => {
+  const callOptions = (page: Page) => page.evaluate(() => (window as unknown as { androidCallOptions: { method: string; options: Record<string, unknown> }[] }).androidCallOptions);
+
+  test('Farklı Kaydet dosyayı parça parça yerel tarafa verir, sistemin kaydet ekranını açar', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 640 });
+    const pdf = await start(page);
+    await send(page, 'fileOpened', { id: 1, name: 'gelen.pdf', size: pdf.length });
+    await expect(page.locator('#pageStatus')).toHaveText('1 / 3');
+    await page.locator('#toolbarMenuButton').click();
+    await page.locator('#tool-saveAs').click();
+    await expect(page.locator('#toast')).toHaveText('Kaydedildi: gelen (kopya).pdf');
+    const options = await callOptions(page);
+    const pieces = options.filter(call => call.method === 'appendShareFile');
+    expect(pieces[0].options).toMatchObject({ name: 'gelen (kopya).pdf', first: true });
+    expect(options.at(-1)).toEqual({ method: 'saveFile', options: { name: 'gelen (kopya).pdf', type: 'application/pdf' } });
+  });
+
+  test('geri düğmesi değişmiş sayfa düzenleyicisinden çıkmadan önce sorar', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 640 });
+    const pdf = await start(page);
+    await send(page, 'fileOpened', { id: 1, name: 'gelen.pdf', size: pdf.length });
+    await expect(page.locator('#pageStatus')).toHaveText('1 / 3');
+    await page.locator('#toolbarMenuButton').click();
+    await page.locator('#tool-editPages').click();
+    await page.locator('#pageEditorGrid .page-card').first().click();
+    await page.locator('#pageEditor-delete').click();
+    await send(page, 'backButton');
+    await expect(page.locator('#leaveEditorDialog')).toBeVisible();
+    await send(page, 'backButton');
+    await expect(page.locator('#leaveEditorDialog')).toBeHidden();
+    await expect(page.locator('#pageEditor')).toBeVisible();
+    await page.locator('#pageEditorClose').click();
+    await page.locator('#leaveEditorDialog').getByRole('button', { name: 'Çık' }).click();
+    await expect(page.locator('#pageEditor')).toBeHidden();
+    await send(page, 'backButton');
+    await expect(page.locator('#emptyOpen')).toBeVisible();
+    expect(await calls(page)).not.toContain('leaveApp');
+  });
+
+  test('bölge görseli Android\'de PNG olarak paylaşılır; geri düğmesi bölge almayı bırakır', async ({ page }) => {
+    const pdf = await start(page);
+    await send(page, 'fileOpened', { id: 1, name: 'gelen.pdf', size: pdf.length });
+    await expect(page.locator('#pageStatus')).toHaveText('1 / 3');
+    await page.locator('#toolbarMenuButton').or(page.locator('#tool-captureRegion')).first().click();
+    if (await page.locator('#toolbarMenu').isVisible()) await page.locator('#tool-captureRegion').click();
+    const box = (await page.locator('.page[data-page-number="1"] .canvasWrapper').boundingBox())!;
+    await page.mouse.move(box.x + 20, box.y + 20);
+    await page.mouse.down();
+    await page.mouse.move(box.x + 120, box.y + 80, { steps: 3 });
+    await page.mouse.up();
+    await page.locator('#regionShare').click();
+    await expect.poll(async () => (await callOptions(page)).at(-1)).toEqual({ method: 'shareFile', options: { name: 'gelen - sayfa 1 bölge.png', type: 'image/png' } });
+    await page.locator('#regionClose').click();
+    await send(page, 'backButton');
+    await expect(page.locator('.region-overlay')).toHaveCount(0);
+    await expect(page.locator('#viewerContainer')).toBeVisible();
+  });
+});

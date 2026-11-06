@@ -124,10 +124,12 @@ export function mountToolbar(root: HTMLElement, tools: readonly Tool[], context:
   context.searchBar.onChange(update)
   context.theme.onChange(update)
   context.platform.onFullscreenChange(update)
+  context.regionCapture.onChange(update)
   update()
 
   window.addEventListener('keydown', event => {
-    const isTyping = event.target instanceof HTMLInputElement && !event.ctrlKey && !event.metaKey
+    // Form fields in the document take letters too: an "r" there is text, not a turn.
+    const isTyping = (event.target as Element).matches?.('input, textarea, select, [contenteditable]') && !event.ctrlKey && !event.metaKey
     if (isTyping || document.querySelector('dialog[open]')) return
     const shortcut = shortcutOf(event)
     const tool = supported.find(item => item.shortcuts?.includes(shortcut))

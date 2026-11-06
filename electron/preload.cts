@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('awPDFDesktop', {
     read: (id: number, begin: number, end: number): Promise<Uint8Array> => ipcRenderer.invoke('files:read', id, begin, end),
     close: (id: number): void => ipcRenderer.send('files:close', id),
     reopen: (source: string): Promise<unknown> => ipcRenderer.invoke('files:reopen', source),
+    save: (name: string, data: Uint8Array, nearId: number | undefined, type: { extension: string; description: string }): Promise<unknown> => ipcRenderer.invoke('files:save', name, data, nearId, { extension: type.extension, description: type.description }),
   },
   windowControls: {
     minimize: (): void => ipcRenderer.send('window:minimize'),

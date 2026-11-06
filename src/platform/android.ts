@@ -2,7 +2,7 @@ import { registerPlugin, type PluginListenerHandle } from '@capacitor/core'
 import { fromBase64, toBase64 } from '../core/base64'
 import type { PdfFile } from '../core/pdf-file'
 import { browserPlatform } from './browser'
-import type { Platform } from './platform'
+import { PDF_TYPE, type FileType, type Platform } from './platform'
 
 /** A file from the system's "open with". Size 0 means it could not be opened. */
 interface OpenedFile {
@@ -28,7 +28,9 @@ interface AwPdfNative {
   setSystemBars(options: { color: string; dark: boolean }): Promise<void>
   /** Adds base64 data to the copy kept for sharing; `first` starts a new copy. */
   appendShareFile(options: { name: string; data: string; first: boolean }): Promise<void>
-  shareFile(options: { name: string }): Promise<void>
+  shareFile(options: { name: string; type: string }): Promise<void>
+  /** Asks where to save the copy `appendShareFile` made; `name` is absent when the user cancelled. */
+  saveFile(options: { name: string; type: string }): Promise<{ name?: string }>
 }
 
 const native = registerPlugin<AwPdfNative>('AwPdfNative')
@@ -50,13 +52,24 @@ function pdfFileFromNative({ id, name, size, source }: OpenedFile): PdfFile {
   }
 }
 
-/** Android gives other apps a file, so the PDF is copied to the cache piece by piece first. */
-async function share(file: PdfFile): Promise<void> {
-  for (let begin = 0; begin < file.size; begin += SHARE_CHUNK_BYTES) {
-    const data = toBase64(await file.read(begin, Math.min(begin + SHARE_CHUNK_BYTES, file.size)))
-    await native.appendShareFile({ name: file.name, data, first: begin === 0 })
+/** The bridge carries text, so a file reaches the native side's cache piece by piece. */
+async function copyToNative(name: string, size: number, read: (begin: number, end: number) => Promise<Uint8Array>): Promise<void> {
+  for (let begin = 0; begin < size || begin === 0; begin += SHARE_CHUNK_BYTES) {
+    const data = toBase64(await read(begin, Math.min(begin + SHARE_CHUNK_BYTES, size)))
+    await native.appendShareFile({ name, data, first: begin === 0 })
   }
-  await native.shareFile({ name: file.name })
+}
+
+/** Android gives other apps a file, so it is copied to the cache first. */
+async function share(file: PdfFile, type: FileType = PDF_TYPE): Promise<void> {
+  await copyToNative(file.name, file.size, file.read)
+  await native.shareFile({ name: file.name, type: type.mime })
+}
+
+/** The system's own "save" screen makes a new file; it never writes over the open one. */
+async function saveFile(name: string, data: Uint8Array, _original?: PdfFile, type: FileType = PDF_TYPE): Promise<string | null> {
+  await copyToNative(name, data.length, async (begin, end) => data.subarray(begin, end))
+  return (await native.saveFile({ name, type: type.mime })).name ?? null
 }
 
 export function androidPlatform(): Platform {
@@ -78,6 +91,7 @@ export function androidPlatform(): Platform {
     openExternal: url => { window.location.href = url },
     print: () => { void native.print({ name: 'awPDF' }).catch(console.error) },
     share,
+    saveFile,
     setSystemBars: ({ color, dark }) => { void native.setSystemBars({ color: sixDigitHex(color), dark }).catch(console.error) },
     get isFullscreen() {
       return isFullscreen

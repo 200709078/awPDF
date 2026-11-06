@@ -122,13 +122,83 @@ Yazı tipleri için Carlito/Caladea gibi ölçüsü aynı serbest yazı tipleri 
 ## Sonraki araçlar (önerilen sıra)
 
 1. İşaretleme, not ve kalem
-2. Form doldurma
-3. Sayfa işlemleri: birleştirme, bölme, silme, sıralama, kalıcı döndürme
-4. Görsel ↔ PDF dönüştürme ve küçültme
+2. Form doldurma — **yapıldı (2026-11-06)**
+3. Sayfa işlemleri: birleştirme, bölme, silme, sıralama, kalıcı döndürme — **yapıldı (2026-11-06)**
+4. Görsel ↔ PDF dönüştürme — **yapıldı (2026-11-06)**; küçültme ayrı iş olarak kaldı
 5. Taranmış PDF'ler için Türkçe OCR
 6. İmza ve parola koyma
 
+**Kolaydan zora sıra (2026-11-06, kullanıcıya önerildi):** 1. sayfa aralığıyla yazdırma, 2. form doldurma (ilk
+kez kaydetme gelir), 3. sayfa işlemleri, 4. görsel ↔ PDF, 5. Word → PDF, 6. işaretleme/not/kalem, 7. imza,
+8. PDF küçültme, 9. parola koyma, 10. PDF → Word, 11. Türkçe OCR (dil verisi uygulamaya girer, APK büyür;
+Play yayınından sonraya). Hepsi cihazda çalışır, internet ve yeni izin gerektirmez. Kapalı test sırasında her
+sürüm tek bir araç getirir ve okuma akışına dokunmaz. Kullanıcı ilk üçünü istedi (2026-11-06).
+
+## Görsel ↔ PDF (2026-11-06, kullanıcı isteği)
+
+**Yapıldı (2026-11-06), sürüm bekliyor.** Telefonda denenecek.
+
+- **Görsellerden PDF** (araç çubuğu ve ilk ekrandaki düğme; pencereye görsel bırakmak da olur): sayfa boyutu
+  sorulur (A4 kenar boşluklu, A4 kenarsız, görselin kendi boyutunda). Geniş görselde A4 yan döner. Oluşan PDF
+  "Sayfaları Düzenle" ekranında açılır; orada sıralanır, döndürülür, silinir, sonra kaydedilir; kaydetmeden
+  çıkmak sorulur. Telefonun yan kaydedip EXIF ile "dik" işaretlediği fotoğraf dik sayfa olur. Görseller
+  JPEG olarak, en uzun kenarı 3508 piksel (A4, 300 DPI) olacak kadar küçültülerek girer. Okunamayan görsel
+  (ör. HEIC) adıyla bildirilir.
+- **Düzenleyicide "PDF / Görsel Ekle":** var olan bir PDF'e fotoğraf da eklenir.
+- **Görsel Olarak Kaydet:** bu sayfa, tüm sayfalar ya da aralık; PNG ya da JPG; 150 ya da 300 DPI. Tek sayfa
+  görsel dosyası, birden çok sayfa tek ZIP olur (telefonun kaydet ekranı tek dosya alır). Form alanlarının
+  doldurulmuş hâli görsele çıkar.
+- **Bölgeyi Görsel Al:** belgenin üstüne bir katman açılır, parmakla ya da fareyle dikdörtgen çizilir; o bölüm
+  300 DPI görsel olur, önizlemeyle Kaydet, Kopyala (tarayıcı izin verirse) ve Android'de Paylaş (WhatsApp'a
+  soru göndermek için) sunulur. Bölge almak Esc, Vazgeç ya da geri düğmesiyle biter; kaydırmak için önce
+  kapatılır. Görünümün döndürmesi görsele de uygulanır.
+- **Telefonda denendi (2026-11-06, Xiaomi, "awPDF Deneme" kopyası):** Android'in fotoğraf seçicisi açılıyor
+  (izin istemiyor), çoklu seçim çalışıyor; A4 sayfalar doğru; kaydet ekranı PDF, PNG ve ZIP'i yazıyor;
+  bölgeyi paylaşınca PNG olarak paylaşma ekranı açılıyor (WhatsApp listede; gönderilmedi); Kopyala
+  "kopyalandı" diyor (başka uygulamaya yapıştırmak denenmedi). Bulunup düzeltilenler: fotoğraf seçicinin
+  verdiği adlar numara olduğu için PDF "Görseller <tarih>.pdf" adını alıyor; bölge çevrilirken "Bölge
+  hazırlanıyor…" yazıyor.
+- **WebView'de `toBlob` yavaş (2026-11-06, telefonda ölçüldü):** `canvas.toBlob` PNG ve JPEG'i boş zamana
+  bırakıyor, her sayfa ~4 sn bekliyordu (WebP 0,5 sn); `toDataURL` 0,1-0,2 sn. Artık her yerde `toDataURL`
+  (`app/images.ts` `canvasBytes`): 5 sayfayı görsele çevirmek 17 sn'den 0,8 sn'ye indi. Android'de yazdırma
+  hazırlığı da aynı yoldan geçtiği için o da hızlandı.
+
+## Sayfa aralığıyla yazdırma, form doldurma, sayfa işlemleri (2026-11-06, kullanıcı isteği)
+
+**Yapıldı (2026-11-06), sürüm bekliyor.**
+
+- **Yazdırma:** "Yazdır" önce sorar: tüm sayfalar, bu sayfa ya da "1-5, 8, 11-" gibi bir aralık (`core/page-range.ts`).
+  Okunamayan aralıkta pencere açık kalır, nedenini söyler. Doldurulmuş form alanları kâğıda çıkar. 410
+  sayfalık kitabın birkaç sayfası artık bütün kitabı hazırlamadan yazdırılır.
+- **Form doldurma:** pdf.js alanları zaten çiziyordu; eklenen "Farklı Kaydet" (ctrl+s) doldurulmuş kopyayı
+  yeni bir dosyaya yazar ("ad (doldurulmuş).pdf"). Kaydedilmemiş değişikliği olan sekmenin adında nokta çıkar;
+  kapatırken (✕, Belgeyi Kapat, geri düğmesi, telefonda yeni belge açma) "Kaydet / Kaydetmeden kapat /
+  Vazgeç" sorulur; pencereyi kapatırken tarayıcı ve Electron da sorar. Alana yazılan harfler kısayol olmaz;
+  tahtada ekran klavyesi çok satırlı alanlarda da açılır, onay kutusunda açılmaz.
+- **Sayfaları Düzenle:** tam ekran sayfa kartları. Dokununca seçilir; Sola/Sağa Döndür, Sola/Sağa Taşı, Sil,
+  PDF Ekle (birleştirme), Seçilenleri Kaydet (bölme), Kaydet. Fareyle sürükleyip bırakma; parmakla bir an
+  basılı tutup sürükleme. Kaydedilen yeni dosya açılır (masaüstünde yeni sekme, telefonda belgenin yerine).
+  Değişiklik varken çıkmak (Kapat, Esc, geri düğmesi) sorulur.
+- **Kaydetme:** her zaman yeni dosya, açık dosyanın üzerine yazılmaz. Web'de Chromium sorar, ötekilerde
+  İndirilenler'e iner; Electron kendi kaydet penceresini açar, açık bir dosya seçilirse reddeder; Android
+  sistemin "kaydet" ekranını açar (izin gerekmez).
+- **Parola:** pdf.js'in kuralı: yalnız açık belgenin sayfaları kaydedilirse aynı parola kalır; başka PDF
+  eklenince yeni dosya parolasız olur (düzenleyici bunu parolalı belgede yazar). Parolalı ek dosya parolası
+  sorularak eklenir.
+- **Telefonda denendi (2026-11-06):** kaydet ekranı, parmakla basılı tutup sürükleme, form doldurup geri
+  düğmesinde "Kaydet" ile kaydetme (değerler dosyada doğru), sayfa aralığı. **Elle bakılacak:** Electron'un
+  kaydet penceresi ve pencereyi kapatırken sorusu.
+
 ## Denenmesi gerekenler
+
+- **Menünün altındaki bağlantı (2026-11-04, testçi bildirdi; 2026-11-06 düzeltildi, sürüm bekliyor):** içindekiler
+  sayfası açıkken ☰ menüsündeki bir maddeye dokununca madde değil, altındaki PDF bağlantısı çalışıyordu (video:
+  menüden Yakınlaştır seçilince sayfa 27-28'e atladı). Neden: pdf.js her bağlantıya ve form alanına artan bir
+  z-index veriyor (o belgede 64'e kadar); belge alanı bunları içine almadığı için saydam bağlantılar menünün
+  (z-index 20) üstüne çıkıyordu. Yalnız Yakınlaştır değil, menünün bütün maddeleri, dar ekranda belgenin üstüne
+  açılan sayfa paneli ve sunumdan çıkış düğmesi de etkileniyordu; bağlantı sayısı çok olan sayfalarda olur.
+  Düzeltme: `.document-area { isolation: isolate }`. Test: `toolbar.spec.ts` "belgedeki bağlantılar…" (düzeltme
+  olmadan düşüyor). Telefonda testçinin PDF'iyle denendi: bağlantının üstündeki menü maddesi çalışıyor.
 
 - **Arama vurgusu (2026-11-03, düzeltildi):** vurgu sözcüğün sağına ve altına kayıyordu, telefonda çok
   belirgindi. Asıl neden bizim stilimizdi: `* { box-sizing: border-box }` pdf.js'in sayfasına da uyuyor,

@@ -46,8 +46,54 @@ export const closeTabTool: Tool = {
   shortcuts: ['ctrl+w'],
   needsDocument: true,
   run: ({ tabs }) => {
-    if (tabs.active) tabs.close(tabs.active)
+    if (tabs.active) void tabs.requestClose(tabs.active)
   },
+}
+
+/** A copy under a new name, with the filled-in form fields; the open file is never written over. */
+export const saveAsTool: Tool = {
+  id: 'saveAs',
+  label: 'Farklı Kaydet',
+  icon: '<path d="M5 3h11l5 5v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M7 3v5h8V3M7 21v-7h10v7"/>',
+  shortcuts: ['ctrl+s'],
+  needsDocument: true,
+  run: ({ saveAs }) => saveAs(),
+}
+
+/** Pictures become pages of a new PDF; no document needs to be open. */
+export const imagesToPdfTool: Tool = {
+  id: 'imagesToPdf',
+  label: 'Görsellerden PDF',
+  icon: '<rect x="3" y="4" width="12" height="10" rx="1"/><path d="M3 12l3.5-3.5 3 3 2-2L15 12"/><path d="M14 20h7M18 17l3 3-3 3"/>',
+  run: ({ pdfFromImages }) => pdfFromImages(),
+}
+
+/** Pages as PNG or JPG files; several in one ZIP. */
+export const saveImagesTool: Tool = {
+  id: 'saveImages',
+  label: 'Görsel Olarak Kaydet',
+  icon: '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
+  needsDocument: true,
+  run: ({ saveImages }) => saveImages(),
+}
+
+/** A rectangle drawn over a page becomes a picture, to save, copy or share. */
+export const captureRegionTool: Tool = {
+  id: 'captureRegion',
+  label: 'Bölgeyi Görsel Al',
+  icon: '<path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4"/><rect x="8" y="8" width="8" height="8" rx="1"/>',
+  needsDocument: true,
+  isActive: ({ regionCapture }) => regionCapture.isActive,
+  run: ({ regionCapture }) => regionCapture.toggle(),
+}
+
+/** Removes, turns and moves pages and joins other PDFs, then saves a new file. */
+export const editPagesTool: Tool = {
+  id: 'editPages',
+  label: 'Sayfaları Düzenle',
+  icon: '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="9" rx="1"/><rect x="3" y="15" width="7" height="6" rx="1"/><path d="M17.5 15v6M14.5 18h6"/>',
+  needsDocument: true,
+  run: ({ editPages }) => editPages(),
 }
 
 export const nextTabTool: Tool = {
