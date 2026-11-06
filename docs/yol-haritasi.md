@@ -51,7 +51,10 @@ geçilir. Kullanıcının henüz geliştirici hesabı yok.
    Testçi geri bildirimleri (2026-11-04): belgeyi kapatıp ilk ekrana dönmek (Android geri düğmesi,
    "Belgeyi Kapat" düğmesi); arama vurgusunun renkleri; Word → PDF ve PDF → Word dönüştürme.
    0.0.4 (sürüm kodu 4) 2026-11-04'te yayımlandı: ilk iki geri bildirim ve sistem çubuğu rengi düzeltmesi.
-   GitHub sürümü, web (madematik.com/awPDF/) ve Projelerim sayfası güncel; AAB kapalı teste yüklenecek.
+   GitHub sürümü, web (madematik.com/awPDF/) ve Projelerim sayfası güncel; AAB kapalı teste yüklendi, telefonda
+   denendi.
+   0.0.5 (sürüm kodu 5) 2026-11-06: sayfa aralığıyla yazdırma, form doldurma, Sayfaları Düzenle, görsel ↔ PDF;
+   testçinin bildirdiği menü-bağlantı hatası düzeltildi; Android'de görsele çevirme ve yazdırma hızlandı.
 7. Üretim erişimi başvurusu ve yayın
 
 ## Belgeyi kapatıp ilk ekrana dönmek (2026-11-04, kullanıcı isteği)
