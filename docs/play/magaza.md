@@ -54,6 +54,22 @@ awPDF ücretsiz ve açık kaynaklıdır (MIT lisansı). Öneri ve sorunlar için
 - **Telefon:** boş bırakılır (isteğe bağlı).
 - **Gizlilik politikası:** https://madematik.com/awPDF/gizlilik.html (kaynağı `public/gizlilik.html`)
 
+## Sürüm notları ("Bu sürümdeki yenilikler", en çok 500 karakter)
+
+Play Console'da sürüm oluşturulurken `<tr-TR>` ile `</tr-TR>` arasına yazılır. En yenisi üstte.
+
+### 0.0.5
+
+<!-- not-0.0.5 -->
+Sayfa aralığıyla yazdırma, form doldurma ve Farklı Kaydet, Sayfaları Düzenle (sil, döndür, taşı, birleştir), görsellerden PDF, sayfayı ya da bir bölgesini görsel olarak kaydetme ve paylaşma. Menüdeki dokunuşun arkadaki bağlantıya gitmesi düzeltildi.
+<!-- /not-0.0.5 -->
+
+### 0.0.4
+
+<!-- not-0.0.4 -->
+Belgeyi kapatıp ilk ekrana dönme (geri düğmesi ve Belgeyi Kapat düğmesi), sarı-turuncu arama vurgusu, açık temada durum çubuğu rengi düzeltmesi.
+<!-- /not-0.0.4 -->
+
 ## Görseller (`docs/play/`)
 
 | Play alanı | Dosya | Ölçü |
