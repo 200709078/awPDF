@@ -55,6 +55,14 @@ geçilir. Kullanıcının henüz geliştirici hesabı yok.
    denendi.
    0.0.5 (sürüm kodu 5) 2026-11-06: sayfa aralığıyla yazdırma, form doldurma, Sayfaları Düzenle, görsel ↔ PDF;
    testçinin bildirdiği menü-bağlantı hatası düzeltildi; Android'de görsele çevirme ve yazdırma hızlandı.
+   AAB kapalı teste yüklendi (2026-11-06), Google incelemesinde. Üretim başvurusunda "geri bildirimle neyi
+   değiştirdiniz" için: menü-bağlantı düzeltmesi, belgeyi kapatma, arama renkleri, görsel ↔ PDF, sayfa işlemleri.
+   Kısa açıklama 2026-11-06'da "… koyu tema. Tamamen reklamsız." oldu (kullanıcı isteği; "Sade ve hızlı" → "Sade,
+   hızlı", 80 karakter sınırı için). Mağaza metni sürümden bağımsız: Play Console → Mağazadaki varlık → Ana mağaza
+   girişi'nden değiştirilip incelemeye gönderilir.
+   Satıcı statüsü (AB Dijital Hizmetler Yasası) 2026-11-07'de "tacir değil" olarak beyan edildi. Reklam, ücretli
+   sürüm ya da uygulama içi satın alma gelmeden önce Hesabı yönetme'den "tacir" olarak güncellenmeli; o zaman
+   adres, telefon ve e-posta Play'de herkese açık olur.
 7. Üretim erişimi başvurusu ve yayın
 
 ## Belgeyi kapatıp ilk ekrana dönmek (2026-11-04, kullanıcı isteği)
@@ -191,6 +199,12 @@ sürüm tek bir araç getirir ve okuma akışına dokunmaz. Kullanıcı ilk üç
 - **Telefonda denendi (2026-11-06):** kaydet ekranı, parmakla basılı tutup sürükleme, form doldurup geri
   düğmesinde "Kaydet" ile kaydetme (değerler dosyada doğru), sayfa aralığı. **Elle bakılacak:** Electron'un
   kaydet penceresi ve pencereyi kapatırken sorusu.
+
+## Menü düğmesi açıkken ✕ olsun (2026-11-06, kullanıcı isteği)
+
+**Sonraki sürüm (0.0.6) için.** Araç çubuğundaki ☰ düğmesi menü açıkken ✕'e dönüşsün; menü kapanınca (✕'e
+dokunmak, dışarıya dokunmak, Esc, geri düğmesi, bir madde seçmek) yeniden ☰ olsun. Düğmenin adı da
+"Menüyü aç" / "Menüyü kapat" olarak değişsin.
 
 ## Denenmesi gerekenler
 

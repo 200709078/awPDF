@@ -15,7 +15,7 @@ awPDF: PDF Okuyucu
 - **Kısa açıklama** (en çok 80 karakter):
 
 <!-- kisa -->
-Sade ve hızlı PDF okuyucu. Türkçe arama, sunum modu, koyu tema. Reklamsız.
+Sade, hızlı PDF okuyucu. Türkçe arama, sunum modu, koyu tema. Tamamen reklamsız.
 <!-- /kisa -->
 
 - **Tam açıklama** (en çok 4000 karakter):
