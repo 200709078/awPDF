@@ -34,6 +34,18 @@ awPDF, telefonda, tablette ve sınıftaki akıllı tahtada rahatça kullanılmak
 • Parolalı PDF'leri açabilir, yazdırabilir ve paylaşabilirsiniz.
 • Başka uygulamalardan "Birlikte aç" ile gelen PDF'leri doğrudan açar.
 
+PDF araçları
+• Kalem, fosforlu kalem ve metin notu: sayfaya parmağınızla ya da tahta kalemiyle yazın, çizin, vurgulayın.
+• İmza: parmakla çizin, adınızı yazın ya da kâğıttaki imzanızın fotoğrafını kullanın; sayfada istediğiniz yere koyun.
+• Form doldurma ve "Farklı Kaydet": doldurduğunuz ya da işaretlediğiniz belge yeni bir dosya olur, aslı değişmez.
+• Sayfaları düzenleme: silin, döndürün, taşıyın, başka PDF'lerle birleştirin.
+• Word'den PDF ve PDF'ten Word: Word belgesini PDF yapın, PDF'i düzenlenebilir Word belgesine çevirin.
+• Görsellerden PDF; sayfayı ya da bir bölümünü görsel olarak kaydetme ve paylaşma.
+• PDF küçültme: fotoğraflı belgeler küçülür, yazılar yazı olarak kalır.
+• Parola koyma, değiştirme ve kaldırma (AES-256).
+• Türkçe yazı tanıma (OCR): taranmış belgede arama yapın, yazıyı seçip kopyalayın.
+Bütün araçlar cihazınızda çalışır; belgeniz hiçbir yere gönderilmez.
+
 Gizliliğiniz önce gelir
 PDF'leriniz yalnızca cihazınızda okunur; hiçbir dosya internete ya da bir sunucuya gönderilmez. Uygulama hiçbir izin istemez, internet izni bile yoktur. PDF içindeki betikler çalıştırılmaz, internet bağlantılarına dokunduğunuzda adres size gösterilir ve onayınız istenir.
 
@@ -57,6 +69,12 @@ awPDF ücretsiz ve açık kaynaklıdır (MIT lisansı). Öneri ve sorunlar için
 ## Sürüm notları ("Bu sürümdeki yenilikler", en çok 500 karakter)
 
 Play Console'da sürüm oluşturulurken `<tr-TR>` ile `</tr-TR>` arasına yazılır. En yenisi üstte.
+
+### 0.0.6
+
+<!-- not-0.0.6 -->
+Yeni araçlar: kalem, fosforlu kalem ve metin notu; imza (çizerek, yazarak ya da fotoğraftan); Word'den PDF ve PDF'ten Word; PDF küçültme; parola koyma, değiştirme ve kaldırma; Türkçe yazı tanıma (OCR) ile taranmış belgede arama. Menü açıkken düğmesi ✕ olur. Hepsi cihazda çalışır, belge hiçbir yere gönderilmez.
+<!-- /not-0.0.6 -->
 
 ### 0.0.5
 
