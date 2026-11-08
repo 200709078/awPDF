@@ -27,6 +27,7 @@ Web, masaüstü ve Android için **PDF görüntüleme** uygulaması.
   telefonda ve web'de kendi çizimiyle (.docx, sayfalar görsel olarak girer). PDF'e Word belgesi ekleme
 - PDF'ten Word: yazı düzenlenebilir metin olur (paragraf, kalın/eğik, punto, üs/alt simge, iki sütun); resim,
   şekil, tablo ve formüller sayfadan kesilip resim olarak yerine konur
+- Türkçe yazı tanıma (OCR): taranmış sayfalara görünmez metin katmanı; kopya aranır, yazısı seçilip kopyalanır
 - Parola koyma (AES-256), parolalı belgenin parolasını değiştirme ya da kaldırma
 - PDF küçültme (az / orta / çok): fotoğraf ve taranmış sayfalar küçültülür, yazı yazı olarak kalır
 - Sayfaları PNG/JPG olarak kaydetme (birden çok sayfa tek ZIP), sayfadan bir bölgeyi görsel olarak alma
@@ -52,4 +53,6 @@ Komutların tamamı `package.json` dosyasındadır.
 ## Lisans
 
 [MIT](LICENSE). PDF motoru [pdf.js](https://github.com/mozilla/pdf.js) ve Word belgelerini çizen
-[docx-preview](https://github.com/VolodymyrBaydalka/docxjs) Apache 2.0, [JSZip](https://github.com/Stuk/jszip) MIT lisanslıdır.
+[docx-preview](https://github.com/VolodymyrBaydalka/docxjs) Apache 2.0, [JSZip](https://github.com/Stuk/jszip) MIT,
+[pdf-lib](https://github.com/Hopding/pdf-lib) MIT, [docx](https://github.com/dolanmiu/docx) MIT,
+[tesseract.js](https://github.com/naptha/tesseract.js) ve Türkçe tanıma modeli ([tessdata](https://github.com/tesseract-ocr/tessdata_best)) Apache 2.0 lisanslıdır.

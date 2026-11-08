@@ -37,6 +37,8 @@ export interface ToolContext {
   protect(): void
   /** Saves the active document as a Word document. */
   pdfToWord(): void
+  /** Recognises the text of scanned pages and saves a copy that can be searched. */
+  recognizeText(): void
 }
 
 /**

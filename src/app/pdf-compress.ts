@@ -1,4 +1,5 @@
 import type { PDFDict, PDFObject, PDFRawStream, PDFRef } from 'pdf-lib'
+import { giveNewId } from '../core/pdf-encrypt'
 import { canvasBytes } from './images'
 
 /**
@@ -192,6 +193,7 @@ export async function compressPdf(bytes: Uint8Array, level: CompressLevel, progr
     await new Promise(resolve => setTimeout(resolve, 0))
   }
   progress(pictures.length, pictures.length)
+  giveNewId(lib, document)
   const data = await document.save({ useObjectStreams: true, updateFieldAppearances: false })
   return { data, images: pictures.length, changed }
 }

@@ -163,3 +163,11 @@ export const pdfToWordTool: Tool = {
   needsDocument: true,
   run: context => context.pdfToWord(),
 }
+
+export const ocrTool: Tool = {
+  id: 'ocr',
+  label: 'Metni Tanı (OCR)',
+  icon: '<path d="M4 8V5a1 1 0 011-1h3"/><path d="M16 4h3a1 1 0 011 1v3"/><path d="M20 16v3a1 1 0 01-1 1h-3"/><path d="M8 20H5a1 1 0 01-1-1v-3"/><path d="M8 9h8"/><path d="M8 12h8"/><path d="M8 15h5"/>',
+  needsDocument: true,
+  run: context => context.recognizeText(),
+}

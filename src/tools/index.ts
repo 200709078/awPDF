@@ -1,4 +1,4 @@
-import { annotateTool, compressTool, protectTool, pdfToWordTool, captureRegionTool, closeTabTool, editPagesTool, imagesToPdfTool, saveImagesTool, wordToPdfTool, goToPageTool, nextTabTool, printTool, recentTool, saveAsTool, searchTool, shareTool } from './document'
+import { annotateTool, compressTool, protectTool, pdfToWordTool, ocrTool, captureRegionTool, closeTabTool, editPagesTool, imagesToPdfTool, saveImagesTool, wordToPdfTool, goToPageTool, nextTabTool, printTool, recentTool, saveAsTool, searchTool, shareTool } from './document'
 import { openTool } from './open'
 import { nextPageTool, previousPageTool, twoPagesTool } from './pages'
 import { sidePanelTool } from './side-panel'
@@ -42,6 +42,7 @@ export const TOOLS: readonly Tool[] = [
   compressTool,
   protectTool,
   pdfToWordTool,
+  ocrTool,
   goToPageTool,
   nextTabTool,
 ]

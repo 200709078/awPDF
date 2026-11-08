@@ -82,6 +82,15 @@ try {
   await bar.getByRole('button', { name: 'Bitti', exact: true }).click()
   await page.waitForFunction(() => !document.querySelector('.inkEditor') && !document.querySelector('.tab.is-modified'))
 
+  // Text recognition's worker, WebAssembly core and Turkish model come from the app's own origin.
+  assert.deepEqual(await page.evaluate(() => Promise.all(['ocr/worker.min.js', 'ocr/tesseract-core-simd-lstm.wasm.js', 'ocr/tur.traineddata.gz']
+    .map(file => fetch(file).then(response => response.ok, () => false)))), [true, true, true])
+  assert.equal(await page.evaluate(() => new Promise(resolve => {
+    const worker = new Worker('ocr/worker.min.js')
+    worker.onerror = () => resolve('hata')
+    setTimeout(() => { worker.terminate(); resolve('çalışıyor') }, 500)
+  })), 'çalışıyor')
+
   // Where LibreOffice is installed it writes the PDF from a Word document, text and all.
   if (await page.evaluate(() => window.awPDFDesktop.office.available())) {
     const made = await page.evaluate(async bytes => {

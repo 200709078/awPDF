@@ -1,4 +1,4 @@
-import { cpSync } from 'node:fs'
+import { cpSync, mkdirSync } from 'node:fs'
 import { defineConfig, type Plugin } from 'vite'
 
 /** pdf.js reads these at run time; they ship with the app so nothing needs the network. */
@@ -13,10 +13,26 @@ function pdfjsAssets(): Plugin {
   }
 }
 
+/**
+ * Text recognition (OCR) runs on the device too: tesseract.js's worker, its WebAssembly core (the
+ * SIMD build only, 4 MB; one per CPU feature set would be 12) and the Turkish model (best_int, 2 MB).
+ */
+function ocrAssets(): Plugin {
+  return {
+    name: 'ocr-assets',
+    buildStart() {
+      mkdirSync('public/ocr', { recursive: true })
+      cpSync('node_modules/tesseract.js/dist/worker.min.js', 'public/ocr/worker.min.js')
+      cpSync('node_modules/tesseract.js-core/tesseract-core-simd-lstm.wasm.js', 'public/ocr/tesseract-core-simd-lstm.wasm.js')
+      cpSync('node_modules/@tesseract.js-data/tur/4.0.0_best_int/tur.traineddata.gz', 'public/ocr/tur.traineddata.gz')
+    },
+  }
+}
+
 export default defineConfig({
   // The same output runs on a static web server, in Electron and in the Android WebView.
   base: './',
-  plugins: [pdfjsAssets()],
+  plugins: [pdfjsAssets(), ocrAssets()],
   build: {
     rolldownOptions: {
       output: {
@@ -30,7 +46,7 @@ export default defineConfig({
   server: {
     host: '127.0.0.1',
     watch: {
-      ignored: ['**/dist-electron/**', '**/release/**', '**/public/pdfjs/**'],
+      ignored: ['**/dist-electron/**', '**/release/**', '**/public/pdfjs/**', '**/public/ocr/**'],
     },
   },
   preview: {

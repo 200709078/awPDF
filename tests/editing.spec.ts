@@ -934,6 +934,9 @@ test.describe('PDF küçültme', () => {
     expect(saved.name).toBe('deneme (küçültülmüş).pdf');
     expect(saved.bytes.length).toBeLessThan(original.length / 2);
     expect(await pagesOf(saved.bytes)).toEqual(['Kucult 1@0', 'Kucult 2@0']);
+    // A new file: opened, it is not taken for the original.
+    const [before, after] = await Promise.all([original, Buffer.from(saved.bytes)].map(bytes => getDocument({ data: new Uint8Array(bytes), verbosity: 0 }).promise));
+    expect(after.fingerprints[0]).not.toBe(before.fingerprints[0]);
     // The photo is scaled to the medium level's 1754 px; the PNG keeps its size under its soft mask.
     const { PDFDocument, PDFName, PDFRawStream, PDFNumber } = await import('pdf-lib');
     const smaller = await PDFDocument.load(new Uint8Array(saved.bytes));
@@ -1105,5 +1108,58 @@ test.describe('PDF → Word', () => {
     expect(xml).toMatch(/<w:cols[^>]*w:num="2"/);
     // A4 pages, one section per page at least.
     expect(xml).toMatch(/<w:pgSz w:w="11900" w:h="16840"/);
+  });
+});
+
+test.describe('yazı tanıma (OCR)', () => {
+  async function runTool(page: Page, id: string) {
+    if (await page.locator(`#toolbarMenu #tool-${id}`).count()) await page.locator('#toolbarMenuButton').click();
+    await page.locator(`#tool-${id}`).click();
+  }
+
+  /** A "scan": Turkish text drawn on a picture, the picture alone on an A4 page. */
+  async function scannedPdf(page: Page) {
+    const jpeg = await page.evaluate(() => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 2480;
+      canvas.height = 3508;
+      const context = canvas.getContext('2d')!;
+      context.fillStyle = '#ffffff';
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.fillStyle = '#111111';
+      context.font = '64px serif';
+      const lines = ['Işık ve gölge çalışması', 'Öğrenciler ödevlerini şimdi teslim etsin.', 'Ağaçların yaprakları düştü.'];
+      lines.forEach((line, index) => context.fillText(line, 240, 400 + index * 120));
+      return canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
+    });
+    const { PDFDocument } = await import('pdf-lib');
+    const document = await PDFDocument.create();
+    const image = await document.embedJpg(Buffer.from(jpeg, 'base64'));
+    document.addPage([595, 842]).drawImage(image, { x: 0, y: 0, width: 595, height: 842 });
+    return Buffer.from(await document.save());
+  }
+
+  test('taranmış sayfanın Türkçe yazısı tanınır; kopya aranabilir olarak kaydedilip açılır', async ({ page }) => {
+    test.setTimeout(120000);
+    await openPdf(page, await scannedPdf(page), 'tarama.pdf');
+    await runTool(page, 'ocr');
+    await expect(page.locator('#workDialog')).toBeVisible();
+    // Recognition takes some seconds a page.
+    await expect.poll(() => saves(page).then(list => list.length), { timeout: 90000 }).toBe(1);
+    const saved = await lastSave(page);
+    expect(saved.name).toBe('tarama (metinli).pdf');
+    const pdf = await getDocument({ data: new Uint8Array(saved.bytes), verbosity: 0 }).promise;
+    const text = (await (await pdf.getPage(1)).getTextContent()).items.map(item => ('str' in item ? item.str : '')).join(' ');
+    for (const word of ['Işık', 'gölge', 'çalışması', 'Öğrenciler', 'şimdi', 'Ağaçların']) expect(text).toContain(word);
+    // The copy is open, ready to be searched; the original stays open as it was.
+    await expect(page.locator('.tab.is-active .tab__title')).toHaveText('tarama (metinli).pdf');
+    await expect(page.locator('.page[data-page-number="1"] .textLayer')).toContainText('Öğrenciler');
+  });
+
+  test('yazısı olan belgede tanınacak sayfa yok denir', async ({ page }) => {
+    await openPdf(page, makePdf({ pages: 2 }));
+    await runTool(page, 'ocr');
+    await expect(page.locator('#toast')).toHaveText('Bu belgenin sayfalarında yazı zaten var; tanınacak taranmış sayfa yok.');
+    expect(await saves(page)).toHaveLength(0);
   });
 });

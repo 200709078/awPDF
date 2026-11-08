@@ -35,6 +35,7 @@ import { printDocument } from './print'
 import { COMPRESS_LEVELS, CompressCancelled, compressPdf, type CompressResult } from './pdf-compress'
 import { protectPdf } from '../core/pdf-encrypt'
 import { pdfToWord, WordCancelled } from './pdf-to-word'
+import { OcrCancelled, OcrUnsupported, recognizePdf, type OcrResult } from './ocr'
 
 const APP_TITLE = 'awPDF | mADEMatik'
 
@@ -97,6 +98,7 @@ export function startApp(): void {
     compress: () => void compress(),
     protect: () => void protect(),
     pdfToWord: () => void toWord(),
+    recognizeText: () => void recognizeText(),
     saveImages: () => {
       view.finishEditing()
       if (view.pdf && view.file) void savePagesAsImages(view.pdf, view.file, view.page, platform)
@@ -215,6 +217,53 @@ export function startApp(): void {
     } catch (error) {
       console.error(error)
       showToast('Kaydedilemedi.')
+    }
+  }
+
+  /**
+   * Turkish OCR (`app/ocr.ts`): the scanned pages get an invisible text layer; the copy is saved
+   * and opened, ready to be searched. Pages that have text already are left as they are.
+   */
+  async function recognizeText(): Promise<void> {
+    const tab = tabs.active
+    if (!tab) return
+    view.finishEditing()
+    const wasModified = Boolean(tab.modified)
+    const work = startWork('Yazı tanınıyor')
+    let result: OcrResult | null = null
+    try {
+      const encrypted = await isEncrypted(tab.document).catch(() => false)
+      const source = encrypted
+        ? await tab.document.extractPages([{ document: null }, { document: blankPdf() }])
+        : tab.document.annotationStorage.size > 0 ? await tab.document.saveDocument() : await tab.document.getData()
+      result = await recognizePdf(source, text => work.progress(text), () => work.cancelled, { dropLastPage: encrypted })
+    } catch (error) {
+      if (error instanceof OcrUnsupported) showToast('Bu cihazın tarayıcısı yazı tanımayı desteklemiyor (WebView güncellenmeli).')
+      else if (!(error instanceof OcrCancelled)) {
+        console.error(error)
+        showToast('Yazı tanınamadı.')
+      }
+    } finally {
+      work.done()
+      if (wasModified) tabs.markUnsaved(tab)
+    }
+    if (!result) return
+    if (result.recognized === 0) {
+      showToast('Bu belgenin sayfalarında yazı zaten var; tanınacak taranmış sayfa yok.')
+      return
+    }
+    try {
+      const name = nameWithSuffix(tab.file.name, 'metinli')
+      const saved = await platform.saveFile(name, result.data, tab.file)
+      if (saved === null) return
+      void open(pdfFileFromBlob(new File([result.data as Uint8Array<ArrayBuffer>], saved, { type: 'application/pdf' })), { replacing: true })
+      showToast(`${result.recognized} sayfanın yazısı tanındı. Kaydedildi ve açıldı: ${saved}`)
+    } catch (error) {
+      if (error instanceof SameFileError) showToast('Açık bir belgenin üzerine kaydedilemez; başka bir ad seçin.')
+      else {
+        console.error(error)
+        showToast('Kaydedilemedi.')
+      }
     }
   }
 

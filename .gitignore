@@ -24,6 +24,7 @@ dist/
 dist-electron/
 # vite.config.ts node_modules içinden kopyalar
 public/pdfjs/
+public/ocr/
 release/
 test-results/
 playwright-report/

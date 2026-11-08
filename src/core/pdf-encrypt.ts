@@ -95,6 +95,15 @@ async function securityValues(password: Bytes, fileKey: Bytes) {
 type PdfLib = typeof import('pdf-lib')
 
 /**
+ * A new file gets a new ID: pdf.js tells documents apart by it, and a copy with its original's
+ * ID would be taken for the original (its tab would come up instead of the copy).
+ */
+export function giveNewId(lib: PdfLib, document: PDFDocument): void {
+  const id = lib.PDFHexString.of(hex(random(16)))
+  document.context.trailerInfo.ID = document.context.obj([id, id])
+}
+
+/**
  * The PDF with its last page dropped (the blank one joined to take a password off, see
  * `blankPdf`) and, with a password, encrypted; without one it is written plain.
  */
@@ -102,6 +111,7 @@ export async function protectPdf(bytes: Uint8Array, password: string | null, { d
   const lib = await import('pdf-lib')
   const document = await lib.PDFDocument.load(bytes, { updateMetadata: false })
   if (dropLastPage) document.removePage(document.getPageCount() - 1)
+  giveNewId(lib, document)
   if (password !== null) await encrypt(lib, document, passwordBytes(password))
   return document.save({ useObjectStreams: false, updateFieldAppearances: false })
 }
@@ -150,7 +160,4 @@ async function encrypt(lib: PdfLib, document: PDFDocument, password: Bytes): Pro
   })
   for (const [name, value] of Object.entries(values)) encryptDict.set(PDFName.of(name), PDFHexString.of(hex(value)))
   context.trailerInfo.Encrypt = context.register(encryptDict)
-  // An encrypted file must have an ID; a new one for the new file.
-  const id = PDFHexString.of(hex(random(16)))
-  context.trailerInfo.ID = context.obj([id, id])
 }

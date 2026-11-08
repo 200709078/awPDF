@@ -153,18 +153,19 @@ pencereye bırakılan Word belgesi de dönüştürülür; Sayfaları Düzenle'de
 2. Form doldurma — **yapıldı (2026-11-06)**
 3. Sayfa işlemleri: birleştirme, bölme, silme, sıralama, kalıcı döndürme — **yapıldı (2026-11-06)**
 4. Görsel ↔ PDF dönüştürme — **yapıldı (2026-11-06)**; küçültme ayrı iş olarak kaldı
-5. Taranmış PDF'ler için Türkçe OCR
+5. Taranmış PDF'ler için Türkçe OCR — **yapıldı (2026-11-08)**, aşağıda
 6. İmza ve parola koyma — ikisi de **yapıldı (2026-11-08)**, aşağıda
 
 **Kolaydan zora sıra (2026-11-06, kullanıcıya önerildi):** 1. sayfa aralığıyla yazdırma, 2. form doldurma (ilk
 kez kaydetme gelir), 3. sayfa işlemleri, 4. görsel ↔ PDF, 5. Word → PDF, 6. işaretleme/not/kalem, 7. imza,
-8. PDF küçültme (**yapıldı 2026-11-08**), 9. parola koyma (**yapıldı 2026-11-08**), 10. PDF → Word (**yapıldı 2026-11-08**), 11. Türkçe OCR (dil verisi uygulamaya girer, APK büyür;
-Play yayınından sonraya). Hepsi cihazda çalışır, internet ve yeni izin gerektirmez. Kapalı test sırasında her
-sürüm tek bir araç getirir ve okuma akışına dokunmaz. Kullanıcı ilk üçünü istedi (2026-11-06).
+8. PDF küçültme, 9. parola koyma, 10. PDF → Word, 11. Türkçe OCR (dil verisi uygulamaya girer, APK büyür). Hepsi
+cihazda çalışır, internet ve yeni izin gerektirmez. Kapalı test sırasında her sürüm tek bir araç getirir ve okuma
+akışına dokunmaz. Kullanıcı ilk üçünü istedi (2026-11-06). 6-11 hepsi **2026-11-08'de yapıldı** (aşağıdaki karar).
 
 **Karar (2026-11-08, kullanıcı):** sürüm yükseltmeden önce kalan bütün araçlar eklenir (işaretleme/not/kalem,
 imza, küçültme, parola, PDF → Word, OCR). Word → PDF, menü ✕ ve giriş ekranı commit'lenip gönderildi; 0.0.6 araçlar
-bitince çıkar. Bu süreçte her biten adım commit + push edilir (kullanıcı izni); sürüm ve canlıya alma sorulur.
+bitince çıkar. Bu süreçte her biten adım commit + push edilir (kullanıcı izni). **Durum (2026-11-08):** araçların
+hepsi yapıldı ve gönderildi; 0.0.6 için sürüm, canlıya alma, AAB ve mağaza metinleri kaldı.
 
 ## İşaretleme, not ve kalem (2026-11-08, kullanıcı kararı: bütün araçlar)
 
@@ -198,6 +199,19 @@ boyutlandırılır, silinir.
 - PDF'e pdf.js'in imza biçimiyle yazılır (çizgi görünümlü damga notu); bu bir **elektronik imza değildir**
   (sertifikalı, e-İmza gibi doğrulanan imza ayrı ve büyük bir iş).
 - **Denenecek:** tahtada ve telefonda parmakla imza.
+
+## Türkçe yazı tanıma (OCR) (2026-11-08, kullanıcı kararı: bütün araçlar)
+
+**Yapıldı (2026-11-08), sürüm bekliyor.** "Metni Tanı (OCR)" (dizüstünde ☰ menüsünde): taranmış (yalnız resim olan)
+sayfaların yazısı Türkçe tanınır, sayfanın üstüne görünmez bir metin katmanı konur. Kopya "… (metinli).pdf" olarak
+kaydedilir ve açılır: içinde arama yapılır, yazı seçilip kopyalanır. Zaten yazısı olan sayfalara dokunulmaz.
+- Her şey cihazda: tesseract.js ve Türkçe model uygulamanın içinde, internet gerekmez, sayfa hiçbir yere gitmez
+  (gizlilik metni ve Play beyanı değişmez). Test: "Işık", "gölge", "çalışması", "Öğrenciler", "şimdi", "Ağaçların"
+  doğru tanınıyor; A4 sayfa bilgisayarda ~5-10 sn.
+- **Uygulama yaklaşık 6 MB büyüdü** (tanıma çekirdeği 4 MB, Türkçe model 2 MB); web sitesinde bu dosyalar yalnız OCR
+  kullanılınca indirilir. Çok eski WebView'larda (Chrome 91'den önce, 2021) "desteklemiyor" denir.
+- **Denenecek:** telefonda gerçek taranmış belgeyle (süre, bellek); tahtada.
+- İleride (istenirse): PDF → Word'de taranmış sayfanın yazısını da tanımak.
 
 ## PDF → Word (2026-11-08, kullanıcı kararı: bütün araçlar)
 
