@@ -1120,32 +1120,44 @@ test.describe('yazı tanıma (OCR)', () => {
   /** A "scan": Turkish text drawn on a picture, the picture alone on an A4 page. */
   async function scannedPdf(page: Page) {
     const jpeg = await page.evaluate(() => {
+      // A strip of paper, not a whole A4 page: recognition is slow on CI's two shared cores.
       const canvas = document.createElement('canvas');
       canvas.width = 2480;
-      canvas.height = 3508;
+      canvas.height = 900;
       const context = canvas.getContext('2d')!;
       context.fillStyle = '#ffffff';
       context.fillRect(0, 0, canvas.width, canvas.height);
       context.fillStyle = '#111111';
       context.font = '64px serif';
       const lines = ['Işık ve gölge çalışması', 'Öğrenciler ödevlerini şimdi teslim etsin.', 'Ağaçların yaprakları düştü.'];
-      lines.forEach((line, index) => context.fillText(line, 240, 400 + index * 120));
+      lines.forEach((line, index) => context.fillText(line, 240, 250 + index * 120));
       return canvas.toDataURL('image/jpeg', 0.9).split(',')[1];
     });
     const { PDFDocument } = await import('pdf-lib');
     const document = await PDFDocument.create();
     const image = await document.embedJpg(Buffer.from(jpeg, 'base64'));
-    document.addPage([595, 842]).drawImage(image, { x: 0, y: 0, width: 595, height: 842 });
+    document.addPage([595, 216]).drawImage(image, { x: 0, y: 0, width: 595, height: 216 });
     return Buffer.from(await document.save());
   }
 
   test('taranmış sayfanın Türkçe yazısı tanınır; kopya aranabilir olarak kaydedilip açılır', async ({ page }) => {
-    test.setTimeout(120000);
+    test.slow();
+    test.setTimeout(240000);
+    // What went wrong, should it: the page's errors and its last message.
+    const problems: string[] = [];
+    page.on('console', message => { if (message.type() === 'error') problems.push(message.text()); });
+    page.on('pageerror', error => problems.push(error.message));
     await openPdf(page, await scannedPdf(page), 'tarama.pdf');
     await runTool(page, 'ocr');
     await expect(page.locator('#workDialog')).toBeVisible();
     // Recognition takes some seconds a page.
-    await expect.poll(() => saves(page).then(list => list.length), { timeout: 90000 }).toBe(1);
+    try {
+      await expect.poll(() => saves(page).then(list => list.length), { timeout: 200000 }).toBe(1);
+    } catch (error) {
+      const progress = await page.locator('#workProgress').textContent().catch(() => '');
+      const toast = await page.locator('#toast').textContent().catch(() => '');
+      throw new Error(`Kayıt yok. İlerleme: "${progress}", bildirim: "${toast}", hatalar: ${problems.join(' | ') || 'yok'}`, { cause: error });
+    }
     const saved = await lastSave(page);
     expect(saved.name).toBe('tarama (metinli).pdf');
     const pdf = await getDocument({ data: new Uint8Array(saved.bytes), verbosity: 0 }).promise;
