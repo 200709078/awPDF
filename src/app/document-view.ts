@@ -1,6 +1,6 @@
 import '../core/pdfjs-global'
-import type { PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
-import { EventBus, FindState, PDFFindController, PDFLinkService, PDFViewer, ScrollMode, SpreadMode } from 'pdfjs-dist/legacy/web/pdf_viewer.mjs'
+import { AnnotationEditorParamsType, AnnotationEditorType, type PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
+import { EventBus, FindState, GenericL10n, PDFFindController, PDFLinkService, PDFViewer, ScrollMode, SpreadMode } from 'pdfjs-dist/legacy/web/pdf_viewer.mjs'
 import type { PdfFile } from '../core/pdf-file'
 import { foldTurkish } from '../core/turkish-search'
 
@@ -12,6 +12,8 @@ const ZOOM_STEP = 1.25
 const MIN_SCALE = 0.25
 const MAX_SCALE = 8
 const REFIT_DELAY_MS = 100
+/** The highlighter's colours, as pdf.js names them (its colour menu and saved marks use these). */
+export const HIGHLIGHT_COLORS = 'yellow=#FFFF98,green=#53FFBC,blue=#80EBFF,pink=#FFCBE6,red=#FF4F5F'
 /** While a pinch goes on the page is only stretched; it is drawn sharp this long after it stops. */
 const GESTURE_REDRAW_DELAY_MS = 300
 
@@ -20,6 +22,38 @@ export interface ViewState {
   page: number
   scale?: number | string
   rotation?: number
+}
+
+/** What the pen of the marking bar does: nothing, draw, highlight, or write text. */
+export type EditorMode = 'none' | 'ink' | 'highlight' | 'text'
+
+/** What the marking bar shows as possible. */
+export interface EditingState {
+  canUndo: boolean
+  canRedo: boolean
+  hasSelection: boolean
+  /** Whether the document has any marks of this session. */
+  hasMarks: boolean
+}
+
+const EDITOR_TYPES: Readonly<Record<EditorMode, number>> = {
+  none: AnnotationEditorType.NONE,
+  ink: AnnotationEditorType.INK,
+  highlight: AnnotationEditorType.HIGHLIGHT,
+  text: AnnotationEditorType.FREETEXT,
+}
+
+/** A setting of the marks drawn from now on, and of the selected ones. */
+export type EditorSetting =
+  | { kind: 'inkColor' | 'textColor' | 'highlightColor'; value: string }
+  | { kind: 'inkThickness' | 'textSize'; value: number }
+
+const SETTING_TYPES: Readonly<Record<EditorSetting['kind'], number>> = {
+  inkColor: AnnotationEditorParamsType.INK_COLOR,
+  inkThickness: AnnotationEditorParamsType.INK_THICKNESS,
+  textColor: AnnotationEditorParamsType.FREETEXT_COLOR,
+  textSize: AnnotationEditorParamsType.FREETEXT_SIZE,
+  highlightColor: AnnotationEditorParamsType.HIGHLIGHT_COLOR,
 }
 
 export type OutlineItem = Awaited<ReturnType<PDFDocumentProxy['getOutline']>>[number]
@@ -75,13 +109,61 @@ export class DocumentView {
   private readonly listeners = new Set<() => void>()
   private readonly pageListeners = new Set<(page: number) => void>()
   private readonly searchListeners = new Set<(progress: SearchProgress) => void>()
+  private readonly editingListeners = new Set<(state: EditingState) => void>()
+  private mode: EditorMode = 'none'
+  /** Resolves `setEditorMode`'s promise once pdf.js has finished switching. */
+  private modeSwitched: (() => void) | null = null
+  /** pdf.js's editing manager of the document on screen; a new one comes with each document. */
+  private editorManager: EditorManager | null = null
+  /** The marks as they were on the page when their document left the screen (see `redrawMarks`). */
+  private readonly markCopies = new WeakMap<object, object | null>()
+  /** Whether the document on screen has unsaved changes; given by whoever opens it. */
+  private isModified: () => boolean = () => false
+  private editing: EditingState = { canUndo: false, canRedo: false, hasSelection: false, hasMarks: false }
 
   constructor(container: HTMLDivElement, viewerElement: HTMLDivElement, onExternalLink: (url: string) => void) {
     const { eventBus } = this
     this.links = new ConfirmingLinkService({ eventBus }, onExternalLink)
     this.finder = new TurkishFindController({ linkService: this.links, eventBus })
-    this.viewer = new PDFViewer({ container, viewer: viewerElement, eventBus, linkService: this.links, findController: this.finder })
+    // The editing layer's own words (its buttons, the text box's hint) in Turkish, from
+    // public/pdfjs-l10n; pdf.js translates only what is under the container it is given.
+    const l10n = new GenericL10n('tr')
+    this.viewer = new PDFViewer({
+      container, viewer: viewerElement, eventBus, linkService: this.links, findController: this.finder, l10n,
+      annotationEditorHighlightColors: HIGHLIGHT_COLORS,
+    })
+    void l10n.translate(container)
     this.links.setViewer(this.viewer)
+    eventBus.on('annotationeditoruimanager', ({ uiManager }: { uiManager: EditorManager }) => {
+      this.editorManager = uiManager
+    })
+    eventBus.on('annotationeditorlayerrendered', ({ source }: { source: PageViewWithEditor }) => {
+      void this.redrawMarks(source)
+    })
+    // pdf.js switches the mode itself, to the kind of a mark that is selected or tapped twice. Only
+    // while the marking bar is open: reading stays reading (a text box that closes as the bar does
+    // asks for its own mode back).
+    eventBus.on('switchannotationeditormode', ({ source: _, ...change }: ModeChange) => {
+      if (this.mode === 'none' || !this.document) return
+      this.viewer.annotationEditorMode = change
+    })
+    eventBus.on('annotationeditormodechanged', ({ mode }: { mode: number }) => {
+      const name = (Object.keys(EDITOR_TYPES) as EditorMode[]).find(key => EDITOR_TYPES[key] === mode)
+      if (name === this.mode) this.settleModeSwitch()
+      if (name && name !== this.mode) {
+        this.mode = name
+        this.reportEditing()
+      }
+    })
+    eventBus.on('editingstateschanged', ({ details }: { details: EditingDetails }) => {
+      this.editing = {
+        canUndo: details.hasSomethingToUndo ?? false,
+        canRedo: details.hasSomethingToRedo ?? false,
+        hasSelection: details.hasSelectedEditor ?? false,
+        hasMarks: !(details.isEmpty ?? true),
+      }
+      this.reportEditing()
+    })
     eventBus.on('pagesinit', () => {
       // pdf.js forgets the layout with each document; the choice carries over to the next one.
       this.applyLayout()
@@ -188,13 +270,77 @@ export class DocumentView {
     this.searchListeners.add(listener)
   }
 
+  get editorMode(): EditorMode {
+    return this.mode
+  }
+
+  get editingState(): EditingState {
+    return this.editing
+  }
+
+  /** Runs when the editing mode or what can be undone, redone or deleted changes. */
+  onEditingChange(listener: (state: EditingState) => void): void {
+    this.editingListeners.add(listener)
+  }
+
+  /**
+   * Draws, highlights or writes on the pages from now on; `none` goes back to reading. Resolves
+   * when pdf.js has switched, which also unselects the marks: settings sent before that would
+   * change the selected mark instead of the new ones.
+   */
+  setEditorMode(mode: EditorMode): Promise<void> {
+    if (mode === this.mode || !this.document) {
+      this.mode = mode
+      return Promise.resolve()
+    }
+    this.settleModeSwitch()
+    const switched = new Promise<void>(resolve => { this.modeSwitched = resolve })
+    this.mode = mode
+    this.applyEditorMode(EDITOR_TYPES[mode])
+    this.reportEditing()
+    return switched
+  }
+
+  private settleModeSwitch(): void {
+    this.modeSwitched?.()
+    this.modeSwitched = null
+  }
+
+  /**
+   * Puts the pen's strokes on the page. pdf.js gathers them into one drawing until the pen stops
+   * (another mode, or reading again); until then they are not in the document, so saving, printing
+   * or closing would miss them and the tab would not show as changed.
+   */
+  finishEditing(): void {
+    this.editorManager?.endCurrentEditing()
+  }
+
+  changeEditor(setting: EditorSetting): void {
+    this.eventBus.dispatch('switchannotationeditorparams', { source: this, type: SETTING_TYPES[setting.kind], value: setting.value })
+  }
+
+  undo(): void {
+    this.eventBus.dispatch('editingaction', { source: this, name: 'undo' })
+  }
+
+  redo(): void {
+    this.eventBus.dispatch('editingaction', { source: this, name: 'redo' })
+  }
+
+  /** Removes the selected marks. */
+  deleteSelected(): void {
+    this.eventBus.dispatch('editingaction', { source: this, name: 'delete' })
+  }
+
   /** Where the reader is now, to come back to with `open`. */
   get state(): ViewState {
     return { page: this.page, scale: this.viewer.currentScaleValue, rotation: this.rotation }
   }
 
   /** Shows a document. The caller owns it: closing the previous one is not done here. */
-  open(document: PDFDocumentProxy, file: PdfFile, state: ViewState = { page: 1 }): void {
+  open(document: PDFDocumentProxy, file: PdfFile, state: ViewState = { page: 1 }, isModified: () => boolean = () => false): void {
+    this.leaveEditing()
+    this.isModified = isModified
     this.document = document
     this.openFile = file
     this.startState = { ...state, page: Math.min(state.page, document.numPages) }
@@ -208,6 +354,8 @@ export class DocumentView {
 
   /** Empties the view after its last document closed. */
   clear(): void {
+    this.leaveEditing()
+    this.isModified = () => false
     const none = null as unknown as PDFDocumentProxy
     this.document = null
     this.openFile = null
@@ -329,6 +477,78 @@ export class DocumentView {
     })
   }
 
+  /** Before another document comes: the strokes on the page, and reading again. */
+  private leaveEditing(): void {
+    this.finishEditing()
+    this.settleModeSwitch()
+    this.copyMarks()
+    this.editorManager = null
+    if (this.mode !== 'none') {
+      this.mode = 'none'
+      // Synchronous in pdf.js, so the next document starts in reading mode.
+      this.applyEditorMode(AnnotationEditorType.NONE)
+      this.reportEditing()
+    }
+  }
+
+  /** Copies of the marks on screen, taken while they are still on their pages and measure right. */
+  private copyMarks(): void {
+    if (!this.document || !this.editorManager) return
+    for (const [key, value] of this.document.annotationStorage as unknown as MarkStorage) {
+      if (!key.startsWith(EDITOR_PREFIX) || !isEditor(value) || value._uiManager !== this.editorManager) continue
+      this.markCopies.set(value, value.deleted ? null : value.serialize(value.mode !== AnnotationEditorType.HIGHLIGHT))
+    }
+  }
+
+  /**
+   * Marks made before the reader went to another tab. pdf.js makes a new editing manager with each
+   * document, and the marks' editors of the old one stay in the document's storage (where they
+   * still save and print correctly) but no longer show. When a page's editing layer is drawn, its
+   * old marks are made again on it, the way pdf.js copies marks to another page, and the old
+   * editors leave the storage. Unsaved stays as it was: a saved document is not marked changed.
+   */
+  private async redrawMarks(pageView: PageViewWithEditor): Promise<void> {
+    const layer = pageView.annotationEditorLayer?.annotationEditorLayer
+    const manager = this.editorManager
+    const document = this.document
+    if (!layer || !manager || !document) return
+    const storage = document.annotationStorage as unknown as MarkStorage
+    const stale = [...storage].flatMap(([key, value]) => key.startsWith(EDITOR_PREFIX) && isEditor(value)
+      && value._uiManager !== manager && value.pageIndex === layer.pageIndex && !value.annotationElementId
+      ? [[key, value] as const] : [])
+    if (stale.length === 0) return
+    const wasModified = this.isModified()
+    for (const [key, editor] of stale) {
+      // As pdf.js copies a page's marks (`clonePage`): a clone stays where it was instead of being
+      // moved aside as a pasted copy is.
+      const data = this.markCopies.has(editor) ? this.markCopies.get(editor) : editor.serialize(editor.mode !== AnnotationEditorType.HIGHLIGHT)
+      const made = data && !editor.deleted ? await layer.deserialize(data) : null
+      if (document !== this.document || manager !== this.editorManager) return
+      storage.remove(key)
+      if (made) {
+        made.isClone = true
+        layer.addOrRebuild(made)
+        // pdf.js places a copied text box a line higher than it was; it goes back to its place.
+        made.x = editor.x
+        made.y = editor.y
+        made.fixAndSetPosition()
+      }
+    }
+    // The layer hid itself when it was drawn empty.
+    if (layer.div) layer.div.hidden = layer.isEmpty
+    if (!wasModified) storage.resetModified()
+  }
+
+  private applyEditorMode(mode: number): void {
+    // The getter gives the number, though the typings say otherwise.
+    if (!this.document || (this.viewer.annotationEditorMode as unknown as number) === AnnotationEditorType.DISABLE) return
+    this.viewer.annotationEditorMode = { mode }
+  }
+
+  private reportEditing(): void {
+    for (const listener of this.editingListeners) listener(this.editing)
+  }
+
   private clampScale(scale: number): number {
     return Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale))
   }
@@ -345,6 +565,64 @@ export class DocumentView {
   private reportSearch(progress: SearchProgress): void {
     for (const listener of this.searchListeners) listener(progress)
   }
+}
+
+const EDITOR_PREFIX = 'pdfjs_internal_editor_'
+
+/** The parts of pdf.js's editing classes used here; they are not in its typings. */
+interface EditorManager {
+  endCurrentEditing(): void
+}
+
+/** Where a mark sits, as fractions of its page. */
+interface PlacedMark {
+  x: number
+  y: number
+  isClone?: boolean
+  fixAndSetPosition(): void
+}
+
+interface MarkEditor extends PlacedMark {
+  _uiManager: EditorManager
+  pageIndex: number
+  mode: number
+  deleted?: boolean
+  annotationElementId?: string | null
+  serialize(isForCopying: boolean): object | null
+}
+
+interface MarkLayer {
+  pageIndex: number
+  div: HTMLElement | null
+  isEmpty: boolean
+  deserialize(data: object): Promise<PlacedMark | null>
+  addOrRebuild(editor: object): void
+}
+
+interface PageViewWithEditor {
+  annotationEditorLayer?: { annotationEditorLayer?: MarkLayer | null } | null
+}
+
+type MarkStorage = Iterable<[string, unknown]> & { remove(key: string): void; resetModified(): void }
+
+function isEditor(value: unknown): value is MarkEditor {
+  return typeof value === 'object' && value !== null && typeof (value as MarkEditor).serialize === 'function' && '_uiManager' in value
+}
+
+interface ModeChange {
+  source: unknown
+  mode: number
+  editId?: string | null
+  isFromKeyboard?: boolean
+  mustEnterInEditMode?: boolean
+  editComment?: boolean
+}
+
+interface EditingDetails {
+  hasSomethingToUndo?: boolean
+  hasSomethingToRedo?: boolean
+  hasSelectedEditor?: boolean
+  isEmpty?: boolean
 }
 
 interface FindUpdate {

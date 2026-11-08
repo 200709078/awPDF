@@ -130,6 +130,7 @@ export function mountToolbar(root: HTMLElement, tools: readonly Tool[], context:
   context.view.onChange(update)
   context.sidePanel.onChange(update)
   context.searchBar.onChange(update)
+  context.annotateBar.onChange(update)
   context.theme.onChange(update)
   context.platform.onFullscreenChange(update)
   context.regionCapture.onChange(update)

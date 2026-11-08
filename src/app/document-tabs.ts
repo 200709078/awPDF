@@ -36,11 +36,13 @@ export class DocumentTabs {
   }
 
   get hasUnsaved(): boolean {
+    this.view.finishEditing()
     return this.items.some(tab => tab.modified)
   }
 
   /** Closes the tab, asking first when it has unsaved changes. Resolves whether it closed. */
   async requestClose(tab: DocumentTab): Promise<boolean> {
+    if (tab === this.current) this.view.finishEditing()
     if (tab.modified && !await this.guard(tab)) return false
     this.close(tab)
     return true
@@ -48,6 +50,7 @@ export class DocumentTabs {
 
   /** On a phone a new document takes the open one's place, which may have unsaved changes. */
   async mayReplace(): Promise<boolean> {
+    this.view.finishEditing()
     return this.allowsSeveral || !this.current?.modified || this.guard(this.current)
   }
 
@@ -82,7 +85,7 @@ export class DocumentTabs {
   show(tab: DocumentTab): void {
     if (this.current && this.current !== tab) this.current.state = this.view.state
     this.current = tab
-    this.view.open(tab.document, tab.file, tab.state)
+    this.view.open(tab.document, tab.file, tab.state, () => Boolean(tab.modified))
     this.notify()
   }
 

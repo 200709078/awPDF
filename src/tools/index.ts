@@ -1,4 +1,4 @@
-import { captureRegionTool, closeTabTool, editPagesTool, imagesToPdfTool, saveImagesTool, wordToPdfTool, goToPageTool, nextTabTool, printTool, recentTool, saveAsTool, searchTool, shareTool } from './document'
+import { annotateTool, captureRegionTool, closeTabTool, editPagesTool, imagesToPdfTool, saveImagesTool, wordToPdfTool, goToPageTool, nextTabTool, printTool, recentTool, saveAsTool, searchTool, shareTool } from './document'
 import { openTool } from './open'
 import { nextPageTool, previousPageTool, twoPagesTool } from './pages'
 import { sidePanelTool } from './side-panel'
@@ -13,6 +13,7 @@ export const TOOLS: readonly Tool[] = [
   previousPageTool,
   nextPageTool,
   searchTool,
+  annotateTool,
   recentTool,
   zoomOutTool,
   zoomInTool,

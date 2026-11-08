@@ -1,5 +1,4 @@
 import type { Platform } from '../platform/platform'
-import type { SearchBar } from '../ui/search-bar'
 import type { SidePanel } from '../ui/side-panel'
 import type { DocumentView, ViewState } from './document-view'
 
@@ -32,7 +31,8 @@ export class Presentation {
     private readonly container: HTMLElement,
     private readonly view: DocumentView,
     private readonly sidePanel: SidePanel,
-    private readonly searchBar: SearchBar,
+    /** The bars under the toolbar, closed for the presentation. */
+    private readonly bars: readonly { close(): void }[],
     private readonly platform: Platform,
   ) {
     window.addEventListener('keydown', event => this.onKey(event), true)
@@ -54,7 +54,7 @@ export class Presentation {
     if (this.before) return
     const { view, platform } = this
     this.before = { state: view.state, singlePage: view.singlePage, twoPages: view.twoPages, wasFullscreen: platform.isFullscreen }
-    this.searchBar.close()
+    for (const bar of this.bars) bar.close()
     if (this.sidePanel.isOpen) this.sidePanel.toggle()
     document.body.classList.add('is-presenting')
     this.exitButton.hidden = false

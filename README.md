@@ -17,6 +17,8 @@ Web, masaüstü ve Android için **PDF görüntüleme** uygulaması.
 - Akıllı tahta için sunum modu ve ekran klavyesi
 - Yazdırma (bütün belge, bu sayfa ya da "1-5, 8" gibi bir aralık), Android'de paylaşma
 - Form doldurma: PDF'teki alanlar doldurulur, doldurulmuş hâli yeni bir dosyaya kaydedilir
+- İşaretleme: kalemle çizme, fosforlu kalemle vurgulama, metin kutusu; renk ve kalınlık seçimi, geri al/yinele;
+  işaretler PDF'e not (annotation) olarak kaydedilir, yazdırılır, parmakla ve tahta kalemiyle çizilir
 - Sayfaları düzenleme: silme, döndürme, taşıma, başka PDF'lerle birleştirme, seçilen sayfaları ayrı kaydetme
 - Görsellerden PDF (fotoğraflar A4 ya da kendi boyutunda sayfalar olur), PDF'e görsel ekleme
 - Word'den PDF: masaüstünde LibreOffice kuruluysa onunla (Word'deki düzen, seçilebilir metin, .doc da olur);

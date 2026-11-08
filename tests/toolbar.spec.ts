@@ -34,7 +34,7 @@ test('geniş ekranda bütün düğmeler sırada, menü düğmesi görünmez', as
   await page.setViewportSize(WIDE);
   await openPdf(page);
   await expect(toggle(page)).toBeHidden();
-  await expect(toolbar(page).locator(':scope > .toolbar__button:visible')).toHaveCount(25);
+  await expect(toolbar(page).locator(':scope > .toolbar__button:visible')).toHaveCount(26);
   await expect(page.locator('.toolbar__label:visible')).toHaveCount(0);
   await expectOneLine(page);
 });
@@ -143,7 +143,13 @@ test.describe('belgedeki bağlantılar üstteki düğmelerin dokunuşunu almaz',
   const hitsOverLinks = (page: Page, selector: string) => page.evaluate(selected => {
     const links = [...document.querySelectorAll('.linkAnnotation')].map(link => link.getBoundingClientRect());
     return [...document.querySelectorAll<HTMLElement>(selected)].filter(element => element.offsetParent !== null).flatMap(element => {
-      const box = element.getBoundingClientRect();
+      // Only the part on screen: a long menu scrolls, and its hidden end may lie over a link.
+      const shown = element.closest('#toolbarMenu')?.getBoundingClientRect() ?? new DOMRect(0, 0, innerWidth, innerHeight);
+      const full = element.getBoundingClientRect();
+      const top = Math.max(full.top, shown.top);
+      const bottom = Math.min(full.bottom, shown.bottom);
+      if (bottom <= top) return [];
+      const box = { left: full.left, right: full.right, top, bottom };
       const link = links.find(area => area.left < box.right && area.right > box.left && area.top < box.bottom && area.bottom > box.top);
       if (!link) return [];
       const x = (Math.max(box.left, link.left) + Math.min(box.right, link.right)) / 2;

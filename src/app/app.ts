@@ -1,3 +1,4 @@
+import type { PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { isOpenableLink } from '../core/links'
 import { needsLargeFileWarning } from '../core/open-policy'
 import { imagesToPdf } from '../core/images-to-pdf'
@@ -14,6 +15,7 @@ import { PageEditor } from '../ui/page-editor'
 import { RegionCapture } from '../ui/region-capture'
 import { RecentList } from '../ui/recent-list'
 import { connectScreenKeyboard } from '../ui/screen-keyboard'
+import { AnnotateBar } from '../ui/annotate-bar'
 import { SearchBar } from '../ui/search-bar'
 import { SidePanel } from '../ui/side-panel'
 import { mountTabBar } from '../ui/tab-bar'
@@ -41,10 +43,11 @@ export function startApp(): void {
   const view = new DocumentView(container, viewer, url => void openLink(url))
   const sidePanel = new SidePanel(document.querySelector('#sidePanel')!)
   const searchBar = new SearchBar(document.querySelector('#searchBar')!, view)
+  const annotateBar = new AnnotateBar(document.querySelector('#annotateBar')!, view)
   const recent = new RecentFiles(deviceStore())
   const recentList = new RecentList(recent, file => void openRecent(file))
   const tabs = new DocumentTabs(view, !platform.singleDocument)
-  const presentation = new Presentation(container, view, sidePanel, searchBar, platform)
+  const presentation = new Presentation(container, view, sidePanel, [searchBar, annotateBar], platform)
   const pageEditor = new PageEditor(document.querySelector('#pageEditor')!, {
     platform,
     openSaved: file => void open(file, { replacing: true }),
@@ -72,6 +75,7 @@ export function startApp(): void {
     presentation,
     sidePanel,
     searchBar,
+    annotateBar,
     theme: new Theme(),
     platform,
     pickFile: () => platform.pickFile(),
@@ -81,11 +85,13 @@ export function startApp(): void {
       if (tabs.active) void saveTab(tabs.active)
     },
     editPages: () => {
+      view.finishEditing()
       if (tabs.active) void pageEditor.open(tabs.active.document, tabs.active.file)
     },
     pdfFromImages: () => imageInput.click(),
     pdfFromWord: () => wordInput.click(),
     saveImages: () => {
+      view.finishEditing()
       if (view.pdf && view.file) void savePagesAsImages(view.pdf, view.file, view.page, platform)
     },
   }
@@ -95,6 +101,7 @@ export function startApp(): void {
   async function print(): Promise<void> {
     const { pdf } = view
     if (!pdf) return
+    view.finishEditing()
     const pages = await askPrintPages(view.page, view.pageCount)
     if (pages && pdf === view.pdf) await printDocument(pdf, platform, pages).catch((error: unknown) => {
       console.error(error)
@@ -108,11 +115,13 @@ export function startApp(): void {
    */
   async function saveTab(tab: DocumentTab): Promise<boolean> {
     // pdf.js clears its own "modified" when it writes the data, before the user has chosen a place.
+    if (tab === tabs.active) view.finishEditing()
     const wasModified = Boolean(tab.modified)
+    const suffix = hasMarks(tab.document) ? 'işaretli' : wasModified ? 'doldurulmuş' : 'kopya'
     let saved: string | null = null
     try {
       const data = await tab.document.saveDocument()
-      saved = await platform.saveFile(nameWithSuffix(tab.file.name, wasModified ? 'doldurulmuş' : 'kopya'), data, tab.file)
+      saved = await platform.saveFile(nameWithSuffix(tab.file.name, suffix), data, tab.file)
       if (saved !== null) showToast(`Kaydedildi: ${saved}`)
     } catch (error) {
       if (error instanceof SameFileError) showToast('Açık bir belgenin üzerine kaydedilemez; başka bir ad seçin.')
@@ -272,6 +281,7 @@ export function startApp(): void {
     container.hidden = !name
     emptyState.hidden = Boolean(name)
     searchBar.close()
+    annotateBar.close()
     if (!name && sidePanel.isOpen) sidePanel.toggle()
   })
   tabs.setCloseGuard(async tab => {
@@ -311,4 +321,12 @@ export function startApp(): void {
   document.querySelector('#emptyOpen')!.addEventListener('click', context.pickFile)
   document.querySelector('#emptyImages')!.addEventListener('click', context.pdfFromImages)
   document.querySelector('#emptyWord')!.addEventListener('click', context.pdfFromWord)
+}
+
+/** Whether the document has marks of the marking bar (pdf.js keeps them under this prefix). */
+function hasMarks(document: PDFDocumentProxy): boolean {
+  for (const [key] of document.annotationStorage as unknown as Iterable<[string, unknown]>) {
+    if (key.startsWith('pdfjs_internal_editor_')) return true
+  }
+  return false
 }

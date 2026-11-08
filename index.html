@@ -8,6 +8,8 @@
 	<meta name="description" content="awPDF — PDF görüntüleme uygulaması. mADEMatik Solutions">
 	<meta name="author" content="mADEMatik Solutions">
 	<link rel="shortcut icon" href="img/favicon.svg" />
+	<!-- pdf.js'in düzenleme katmanının Türkçe yazıları. -->
+	<link rel="resource" type="application/l10n" href="pdfjs-l10n/locale.json" />
 	<!-- Stiller ilk çizimden önce yüklenir. -->
 	<link rel="stylesheet" href="/node_modules/pdfjs-dist/legacy/web/pdf_viewer.css" />
 	<link rel="stylesheet" href="/src/styles/app.css" />
@@ -24,6 +26,7 @@
 		<button id="searchNext" class="secondary-button" type="button" aria-label="Sonraki eşleşme" title="Sonraki eşleşme">↓</button>
 		<button id="searchClose" class="secondary-button" type="button" aria-label="Aramayı kapat" title="Aramayı kapat">✕</button>
 	</div>
+	<div id="annotateBar" class="annotate-bar" role="toolbar" aria-label="İşaretleme" hidden></div>
 	<main id="workspace" class="workspace">
 		<aside id="sidePanel" class="side-panel" aria-label="Sayfa paneli" hidden>
 			<div id="sidePanelTabs" class="side-panel__tabs" role="tablist" hidden>

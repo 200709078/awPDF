@@ -1,3 +1,4 @@
+import { PEN_ICON } from '../ui/annotate-bar'
 import { askPageNumber, showToast } from '../ui/messages'
 import type { Tool } from './tool'
 
@@ -9,6 +10,15 @@ export const searchTool: Tool = {
   needsDocument: true,
   isActive: ({ searchBar }) => searchBar.isOpen,
   run: ({ searchBar }) => searchBar.toggle(),
+}
+
+export const annotateTool: Tool = {
+  id: 'annotate',
+  label: 'İşaretle',
+  icon: PEN_ICON,
+  needsDocument: true,
+  isActive: ({ annotateBar }) => annotateBar.isOpen,
+  run: ({ annotateBar }) => annotateBar.toggle(),
 }
 
 export const printTool: Tool = {

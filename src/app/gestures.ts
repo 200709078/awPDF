@@ -21,12 +21,14 @@ export function bindGestures(container: HTMLElement, view: DocumentView): void {
   let pinchGap = 0
   let swipeStart: { x: number; y: number } | null = null
   let lastFlip = 0
+  // A finger that draws or highlights does not turn the page.
+  const drawing = () => view.editorMode === 'ink' || view.editorMode === 'highlight'
 
   container.addEventListener('touchstart', event => {
     if (event.touches.length === 2) {
       pinchGap = fingerGap(event.touches)
       swipeStart = null
-    } else if (event.touches.length === 1) {
+    } else if (event.touches.length === 1 && !drawing()) {
       swipeStart = { x: event.touches[0].clientX, y: event.touches[0].clientY }
     }
   }, { passive: true })

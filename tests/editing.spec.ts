@@ -529,3 +529,227 @@ test.describe('Word → PDF', () => {
     await expect(page.locator('#workDialog')).toBeHidden();
   });
 });
+
+test.describe('işaretleme', () => {
+  const bar = (page: Page) => page.locator('#annotateBar');
+  const barButton = (page: Page, name: string) => bar(page).getByRole('button', { name, exact: true });
+
+  /** A pen stroke on the first page, from (x, y) in page pixels. */
+  async function stroke(page: Page, x: number, y: number) {
+    const box = (await page.locator('.page').first().boundingBox())!;
+    await page.mouse.move(box.x + x, box.y + y);
+    await page.mouse.down();
+    for (let step = 1; step <= 10; step += 1) await page.mouse.move(box.x + x + step * 15, box.y + y + step * 5);
+    await page.mouse.up();
+  }
+
+  /** The saved PDF's annotations on page 1, as pdf.js reads them. */
+  async function annotationsOf(bytes: number[]) {
+    const pdf = await getDocument({ data: new Uint8Array(bytes), verbosity: 0 }).promise;
+    return (await pdf.getPage(1)).getAnnotations();
+  }
+
+  test('kalemle çizilen, kalem bırakılmadan kaydedilse de PDF\'e girer', async ({ page }) => {
+    await openPdf(page, makePdf());
+    await page.locator('#tool-annotate').click();
+    await expect(bar(page)).toBeVisible();
+    await expect(page.locator('#tool-annotate')).toHaveAttribute('aria-pressed', 'true');
+    await expect(barButton(page, 'Kalem')).toHaveAttribute('aria-pressed', 'true');
+    await expect(barButton(page, 'Geri Al')).toBeDisabled();
+    await barButton(page, 'Mavi').click();
+    await stroke(page, 100, 200);
+    await stroke(page, 100, 260);
+    await expect(barButton(page, 'Geri Al')).toBeEnabled();
+    // Still drawing: pdf.js has not put the strokes in the document yet; saving does.
+    await page.keyboard.press('Control+s');
+    const saved = await lastSave(page);
+    expect(saved.name).toBe('deneme (işaretli).pdf');
+    const ink = (await annotationsOf(saved.bytes)).filter(annotation => annotation.subtype === 'Ink');
+    expect(ink).toHaveLength(1);
+    expect(ink[0].inkLists).toHaveLength(2);
+    expect([...ink[0].color]).toEqual([0x1d, 0x4e, 0xd8]);
+    // The editing layer speaks Turkish (public/pdfjs-l10n).
+    await expect(page.locator('.annotationEditorLayer .inkEditor')).toHaveAttribute('aria-label', 'Çizim');
+  });
+
+  test('fosforlu kalem metni vurgular, metin kutusuna yazı yazılır', async ({ page }) => {
+    await openPdf(page, makePdf({ text: () => 'Vurgulanacak satır burada' }));
+    await page.locator('#tool-annotate').click();
+    await barButton(page, 'Fosforlu').click();
+    await expect(page.locator('.annotationEditorLayer').first()).toHaveClass(/highlightEditing/);
+    const words = (await page.locator('.page[data-page-number="1"] .textLayer span').first().boundingBox())!;
+    await page.mouse.move(words.x + 2, words.y + words.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(words.x + words.width - 2, words.y + words.height / 2, { steps: 10 });
+    await page.mouse.up();
+    await expect(page.locator('.highlightEditor')).toHaveCount(1);
+
+    await barButton(page, 'Metin').click();
+    await barButton(page, 'Büyük').click();
+    const box = (await page.locator('.page').first().boundingBox())!;
+    await page.mouse.click(box.x + 150, box.y + 400);
+    const textBox = page.locator('.freeTextEditor .internal');
+    await expect(textBox).toBeFocused();
+    await page.keyboard.type('Ödev: Işık ve gölge');
+    await barButton(page, 'Bitti').click();
+    await expect(bar(page)).toBeHidden();
+    await expect(page.locator('.annotationEditorLayer').first()).not.toHaveClass(/(ink|highlight|freetext)Editing/);
+    await expect(page.locator('.tab.is-modified')).toHaveCount(1);
+
+    await page.keyboard.press('Control+s');
+    const annotations = await annotationsOf((await lastSave(page)).bytes);
+    const highlight = annotations.find(annotation => annotation.subtype === 'Highlight');
+    expect([...highlight!.color]).toEqual([0xff, 0xff, 0x98]);
+    const freeText = annotations.find(annotation => annotation.subtype === 'FreeText');
+    expect(freeText!.textContent?.join('') ?? freeText!.contentsObj?.str).toContain('Ödev: Işık ve gölge');
+  });
+
+  test('geri al ve yinele çizgi çizgi çalışır; kapatırken kaydedilmemiş çizim sorulur', async ({ page }) => {
+    await openPdf(page, makePdf());
+    await page.locator('#tool-annotate').click();
+    await stroke(page, 100, 200);
+    await stroke(page, 100, 260);
+    await barButton(page, 'Geri Al').click();
+    await barButton(page, 'Geri Al').click();
+    await expect(barButton(page, 'Geri Al')).toBeDisabled();
+    await barButton(page, 'Yinele').click();
+    await barButton(page, 'Bitti').click();
+    await expect(page.locator('.inkEditor')).toHaveCount(1);
+
+    // Drawn but the pen not put down: closing still asks.
+    await page.locator('#tool-annotate').click();
+    await stroke(page, 100, 400);
+    await page.locator('.tab__close').click();
+    await expect(page.locator('#unsavedDialog')).toBeVisible();
+    await page.locator('#unsavedDialog').getByRole('button', { name: 'Kaydet', exact: true }).click();
+    const ink = (await annotationsOf((await lastSave(page)).bytes)).filter(annotation => annotation.subtype === 'Ink');
+    expect(ink).toHaveLength(2);
+    await expect(page.locator('#emptyOpen')).toBeVisible();
+    await expect(bar(page)).toBeHidden();
+  });
+
+  test('seçilen çizim silinir; Esc ile çubuk kapanır', async ({ page }) => {
+    await openPdf(page, makePdf());
+    await page.locator('#tool-annotate').click();
+    await stroke(page, 100, 200);
+    await barButton(page, 'Metin').click();
+    await barButton(page, 'Kalem').click();
+    await expect(page.locator('.inkEditor')).toHaveCount(1);
+    await expect(barButton(page, 'Seçileni Sil')).toBeDisabled();
+    await page.locator('.inkEditor').click();
+    await expect(barButton(page, 'Seçileni Sil')).toBeEnabled();
+    await barButton(page, 'Seçileni Sil').click();
+    await expect(page.locator('.inkEditor')).toHaveCount(0);
+    await page.locator('#viewerContainer').focus();
+    await page.keyboard.press('Escape');
+    await expect(bar(page)).toBeHidden();
+  });
+});
+
+test.describe('işaretlerin yolları', () => {
+  async function drawRed(page: Page) {
+    await page.locator('#tool-annotate').click();
+    await page.locator('#annotateBar').getByRole('button', { name: 'Kırmızı', exact: true }).click();
+    await page.locator('#annotateBar').getByRole('button', { name: 'Kalın', exact: true }).click();
+    const box = (await page.locator('.page').first().boundingBox())!;
+    await page.mouse.move(box.x + 100, box.y + 300);
+    await page.mouse.down();
+    for (let step = 1; step <= 10; step += 1) await page.mouse.move(box.x + 100 + step * 30, box.y + 300);
+    await page.mouse.up();
+  }
+
+  test('Sayfaları Düzenle işaretleri yeni belgeye taşır', async ({ page }) => {
+    await openPdf(page, makePdf({ pages: 3, text }));
+    await drawRed(page);
+    await page.locator('#tool-editPages').click();
+    await expect(page.locator('#pageEditorGrid .page-card')).toHaveCount(3);
+    await page.locator('#pageEditorGrid .page-card').nth(1).click();
+    await page.locator('#pageEditor-delete').click();
+    await page.locator('#pageEditor-save').click();
+    const saved = await lastSave(page);
+    expect(await pagesOf(saved.bytes)).toEqual(['S1@0', 'S3@0']);
+    const pdf = await getDocument({ data: new Uint8Array(saved.bytes), verbosity: 0 }).promise;
+    const ink = (await (await pdf.getPage(1)).getAnnotations()).filter(annotation => annotation.subtype === 'Ink');
+    expect(ink).toHaveLength(1);
+  });
+
+  test('başka sekmeye geçip dönünce işaretler yerinde durur, kaydedilmiş belge değişmiş sayılmaz', async ({ page }) => {
+    await openPdf(page, makePdf({ pages: 2, text: index => `A${index + 1}` }), 'a.pdf');
+    await drawRed(page);
+    await page.locator('#annotateBar').getByRole('button', { name: 'Metin', exact: true }).click();
+    const box = (await page.locator('.page').first().boundingBox())!;
+    await page.mouse.click(box.x + 100, box.y + 450);
+    await page.keyboard.type('Not burada');
+    await page.locator('#annotateBar').getByRole('button', { name: 'Bitti', exact: true }).click();
+    const place = (selector: string) => page.locator(selector).first().evaluate(element => {
+      const { x, y, width } = element.getBoundingClientRect();
+      return [Math.round(x), Math.round(y), Math.round(width)];
+    });
+    const before = [await place('.inkEditor'), await place('.freeTextEditor')];
+    await page.keyboard.press('Control+s');
+    await lastSave(page);
+    await expect(page.locator('.tab.is-modified')).toHaveCount(0);
+
+    await page.locator('#pdfInput').setInputFiles({ name: 'b.pdf', mimeType: 'application/pdf', buffer: makePdf({ pages: 1, text: () => 'B1' }) });
+    await expect(page.locator('.tab__title')).toHaveText(['a.pdf', 'b.pdf']);
+    await expect(page.locator('.inkEditor')).toHaveCount(0);
+    await page.locator('.tab__title', { hasText: 'a.pdf' }).click();
+    await expect(page.locator('.inkEditor')).toHaveCount(1);
+    await expect(page.locator('.freeTextEditor')).toContainText('Not burada');
+    await expect(page.locator('.freeTextEditor')).toBeVisible();
+    expect([await place('.inkEditor'), await place('.freeTextEditor')]).toEqual(before);
+    await expect(page.locator('.tab.is-modified')).toHaveCount(0);
+
+    // Saved again, the marks are there once each.
+    await page.keyboard.press('Control+s');
+    await expect.poll(() => saves(page).then(list => list.length)).toBe(2);
+    const pdf = await getDocument({ data: new Uint8Array((await saves(page))[1].bytes), verbosity: 0 }).promise;
+    const kinds = (await (await pdf.getPage(1)).getAnnotations()).map(annotation => annotation.subtype).sort();
+    expect(kinds).toEqual(['FreeText', 'Ink']);
+  });
+
+  test('yazdırılan sayfada kalemin çizgisi vardır', async ({ page }) => {
+    await page.evaluate(() => { window.print = () => {}; });
+    await openPdf(page, makePdf({ pages: 1 }));
+    await drawRed(page);
+    await page.locator('#tool-print').click();
+    await page.locator('#printRangeDialog').getByRole('button', { name: 'Yazdır' }).click();
+    const image = page.locator('#printContainer .print-page img');
+    await expect(image).toHaveCount(1);
+    const redPixels = await image.evaluate(async (element: HTMLImageElement) => {
+      await element.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = element.naturalWidth;
+      canvas.height = element.naturalHeight;
+      const context = canvas.getContext('2d')!;
+      context.drawImage(element, 0, 0);
+      const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+      let count = 0;
+      for (let index = 0; index < data.length; index += 4) {
+        if (data[index] > 180 && data[index + 1] < 90 && data[index + 2] < 90) count += 1;
+      }
+      return count;
+    });
+    expect(redPixels).toBeGreaterThan(500);
+  });
+});
+
+test.describe('işaretleme (dokunmatik)', () => {
+  test.use({ hasTouch: true });
+
+  test('tek sayfa görünümünde parmakla çizmek sayfayı çevirmez, çizer', async ({ page }) => {
+    await openPdf(page, makePdf());
+    await page.locator('#tool-fitPage').click();
+    await page.locator('#tool-singlePage').click();
+    await page.locator('#tool-annotate').click();
+    await page.waitForTimeout(300);
+    const client = await page.context().newCDPSession(page);
+    await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 900, y: 400 }] });
+    for (const x of [850, 800, 750, 700, 650, 600]) await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: 400 }] });
+    await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await page.waitForTimeout(300);
+    await expect(status(page)).toHaveText('1 / 3');
+    await page.locator('#annotateBar').getByRole('button', { name: 'Bitti', exact: true }).click();
+    await expect(page.locator('.inkEditor')).toHaveCount(1);
+  });
+});

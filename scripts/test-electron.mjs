@@ -66,6 +66,22 @@ try {
     return canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data.some((value, index) => index % 4 !== 3 && value < 128)
   })
 
+  // The marking bar: pdf.js's editing layer, with its Turkish words read from the app's own origin.
+  const bar = page.locator('#annotateBar')
+  await page.locator('#tool-annotate').click()
+  const pageBox = await page.locator('.page').first().boundingBox()
+  await page.mouse.move(pageBox.x + 100, pageBox.y + 200)
+  await page.mouse.down()
+  for (let step = 1; step <= 10; step += 1) await page.mouse.move(pageBox.x + 100 + step * 20, pageBox.y + 200)
+  await page.mouse.up()
+  await bar.getByRole('button', { name: 'Bitti', exact: true }).click()
+  await page.waitForFunction(() => document.querySelector('.inkEditor')?.getAttribute('aria-label') === 'Çizim')
+  // Undone, so the document has nothing unsaved when the app closes.
+  await page.locator('#tool-annotate').click()
+  await bar.getByRole('button', { name: 'Geri Al', exact: true }).click()
+  await bar.getByRole('button', { name: 'Bitti', exact: true }).click()
+  await page.waitForFunction(() => !document.querySelector('.inkEditor') && !document.querySelector('.tab.is-modified'))
+
   // Where LibreOffice is installed it writes the PDF from a Word document, text and all.
   if (await page.evaluate(() => window.awPDFDesktop.office.available())) {
     const made = await page.evaluate(async bytes => {
@@ -149,4 +165,4 @@ try {
   await started.close()
   rmSync(folder, { recursive: true, force: true })
 }
-console.log('Electron kontrolü geçti: uygulama adresi, başlık çubuğu, PDF açma ve çizim, Birlikte aç, CSP ve renderer yalıtımı.')
+console.log('Electron kontrolü geçti: uygulama adresi, başlık çubuğu, PDF açma ve çizim, işaretleme, Birlikte aç, CSP ve renderer yalıtımı.')

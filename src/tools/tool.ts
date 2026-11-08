@@ -3,6 +3,7 @@ import type { DocumentView } from '../app/document-view'
 import type { Presentation } from '../app/presentation'
 import type { RegionCapture } from '../ui/region-capture'
 import type { Platform } from '../platform/platform'
+import type { AnnotateBar } from '../ui/annotate-bar'
 import type { SearchBar } from '../ui/search-bar'
 import type { SidePanel } from '../ui/side-panel'
 import type { Theme } from '../ui/theme'
@@ -14,6 +15,7 @@ export interface ToolContext {
   readonly presentation: Presentation
   readonly sidePanel: SidePanel
   readonly searchBar: SearchBar
+  readonly annotateBar: AnnotateBar
   readonly theme: Theme
   readonly platform: Platform
   readonly regionCapture: RegionCapture

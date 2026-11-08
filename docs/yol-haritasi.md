@@ -149,7 +149,7 @@ pencereye bırakılan Word belgesi de dönüştürülür; Sayfaları Düzenle'de
 
 ## Sonraki araçlar (önerilen sıra)
 
-1. İşaretleme, not ve kalem
+1. İşaretleme, not ve kalem — **yapıldı (2026-11-08)**, aşağıda
 2. Form doldurma — **yapıldı (2026-11-06)**
 3. Sayfa işlemleri: birleştirme, bölme, silme, sıralama, kalıcı döndürme — **yapıldı (2026-11-06)**
 4. Görsel ↔ PDF dönüştürme — **yapıldı (2026-11-06)**; küçültme ayrı iş olarak kaldı
@@ -165,6 +165,24 @@ sürüm tek bir araç getirir ve okuma akışına dokunmaz. Kullanıcı ilk üç
 **Karar (2026-11-08, kullanıcı):** sürüm yükseltmeden önce kalan bütün araçlar eklenir (işaretleme/not/kalem,
 imza, küçültme, parola, PDF → Word, OCR). Word → PDF, menü ✕ ve giriş ekranı commit'lenip gönderildi; 0.0.6 araçlar
 bitince çıkar. Bu süreçte her biten adım commit + push edilir (kullanıcı izni); sürüm ve canlıya alma sorulur.
+
+## İşaretleme, not ve kalem (2026-11-08, kullanıcı kararı: bütün araçlar)
+
+**Yapıldı (2026-11-08), sürüm bekliyor.** Araç çubuğunda "İşaretle" (kalem simgesi); altında bir çubuk açılır:
+**Kalem** (serbest çizim), **Fosforlu** (metni seçerek ya da sürükleyerek vurgulama), **Metin** (sayfaya dokununca metin
+kutusu). Kalem ve metin için siyah, mavi, kırmızı, yeşil; fosforlu için sarı, yeşil, mavi, pembe. Kalem kalınlığı
+ince/orta/kalın, yazı küçük/orta/büyük. Geri Al ve Yinele çizgi çizgi çalışır, Seçileni Sil seçilen işareti siler,
+**Bitti** (ya da Esc, Android'de geri) okumaya döner. Seçilen bir işaretin rengi ve boyutu da sonradan değişir; işaret
+sürüklenerek taşınır.
+- pdf.js'in kendi düzenleme katmanı kullanıldı (Firefox'un PDF görüntüleyicisindeki); işaretler PDF'e standart not
+  (annotation) olarak yazılır, başka PDF okuyucularda da görünür. Kaydetme yine "Farklı Kaydet": ad "… (işaretli).pdf".
+- Yazdırma, görsel olarak kaydetme ve Sayfaları Düzenle işaretleri taşır. Sekme değiştirip dönünce işaretler yerinde
+  durur. Kaydedilmemiş işaret varken kapatırken sorulur.
+- Kalem veya fosforlu açıkken tek sayfa görünümünde parmakla yana çekmek sayfa çevirmez, çizer; iki parmakla
+  yakınlaştırma çalışır.
+- Telefonda çubuk iki satır, yalnız simgeler.
+- **Denenecek:** tahtada gerçek kalem ve parmakla çizim (ETAP), telefonda parmakla çizim.
+- İleride (istenirse): silgi (şimdilik seçip silme), şekiller (ok, dikdörtgen), yapışkan not (yorum).
 
 ## Görsel ↔ PDF (2026-11-06, kullanıcı isteği)
 

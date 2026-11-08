@@ -287,6 +287,102 @@ body {
 	padding: 0 16px;
 }
 
+.annotate-bar {
+	display: flex;
+	flex: none;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px 12px;
+	padding: 4px 8px;
+	border-bottom: 1px solid var(--border);
+	background: var(--surface);
+}
+
+.annotate-bar[hidden] {
+	display: none;
+}
+
+.annotate-bar__group {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+.annotate-bar__group[hidden] {
+	display: none;
+}
+
+.annotate-bar__button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	min-width: 48px;
+	height: 48px;
+	padding: 0 8px;
+	border: 0;
+	border-radius: 8px;
+	background: none;
+	color: inherit;
+	font: inherit;
+	touch-action: manipulation;
+	cursor: pointer;
+}
+
+.annotate-bar__button svg {
+	width: 24px;
+	height: 24px;
+}
+
+.annotate-bar__button:hover:not(:disabled) {
+	background: var(--surface-muted);
+}
+
+.annotate-bar__mode[aria-pressed="true"],
+.annotate-bar__mode[aria-pressed="true"]:hover {
+	background: var(--accent);
+	color: #ffffff;
+}
+
+/* A chosen colour or size gets a ring, so its own colour stays visible. */
+.annotate-bar__choice[aria-pressed="true"] {
+	box-shadow: inset 0 0 0 3px var(--accent);
+}
+
+.annotate-bar__button:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
+
+.annotate-bar__swatch {
+	width: 26px;
+	height: 26px;
+	border: 1px solid var(--border);
+	border-radius: 50%;
+}
+
+.annotate-bar__dot {
+	border-radius: 50%;
+	background: currentColor;
+}
+
+.annotate-bar__letter {
+	font-weight: 700;
+	line-height: 1;
+}
+
+.annotate-bar__done {
+	margin-left: auto;
+}
+
+/* On a phone only the pictures of the modes: their names make the bar two rows. */
+@media (max-width: 600px) {
+	.annotate-bar__mode span,
+	.annotate-bar__done span {
+		display: none;
+	}
+}
+
 .workspace {
 	position: relative;
 	display: flex;
@@ -1086,6 +1182,7 @@ body {
 .is-presenting .toolbar,
 .is-presenting .tab-bar,
 .is-presenting .search-bar,
+.is-presenting .annotate-bar,
 .is-presenting .side-panel,
 .is-presenting .titlebar {
 	display: none;
