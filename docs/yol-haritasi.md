@@ -327,8 +327,53 @@ dokunmak, dışarıya dokunmak, Esc, geri düğmesi, bir madde seçmek) yeniden 
 
 ## Giriş ekranında yalnız logo (2026-11-08, kullanıcı isteği)
 
-**Yapıldı (2026-11-08), sürüm bekliyor.** İlk ekranda logonun altındaki "awPDF" yazısı kaldırıldı; logoda ad
+**Yapıldı (2026-11-08), 0.0.6'da.** İlk ekranda logonun altındaki "awPDF" yazısı kaldırıldı; logoda ad
 zaten yazıyor. Ekran okuyucular adı logonun alt metninden ("awPDF") okur.
+
+## İlk ekranda dönüştürme düğmeleri (2026-11-08, kullanıcı isteği; sonraki sürüm)
+
+**Yapıldı (2026-11-08), sürüm bekliyor.** Kullanıcı öneriyi onayladı: düğmeler PDF Aç, PDF → Word, Word → PDF,
+Görsel → PDF; ilk ekrandan PDF → Word seçilen PDF'i açar ve dönüştürür. Seçiciden vazgeçilirse bekleyen dönüştürme
+3 sn içinde düşer (sonra açılan PDF dönüştürülmez). Araç çubuğundaki adlar değişmedi.
+
+
+Kullanıcı: ilk ekranda Word'e dönüştürme düğmesi de olsun; düğmeler "PDF Aç", "PDF → Word", "Word → PDF" biçiminde.
+Görsellerden PDF için kısa bir ad bulamadı.
+- **Öneri (Claude):** sıra PDF Aç (ana düğme), **PDF → Word**, **Word → PDF**, **Görsel → PDF** ("görsel" uygulamanın
+  öbür yerlerinde de kullanılıyor: "Görsel Olarak Kaydet"; "Fotoğraf" taranmış sayfa ve ekran görüntüsü için dar).
+- İlk ekranda PDF → Word: önce PDF seçilir, belge açılır, sonra dönüştürülüp .docx kaydedilir (kullanıcı neyi
+  dönüştürdüğünü görür; parolalı PDF'te parola sorulmuş olur).
+- Ekran okuyucu için düğmelere açık ad ("PDF'i Word'e dönüştür" gibi); "→" "sağa ok" diye okunur.
+- İsteğe bağlı: araç çubuğundaki adlar da aynı kalıba ("Word'e Dönüştür" → "PDF → Word" gibi).
+
+## Telefon testi: 0.0.6 araçları (2026-11-08, "awPDF Deneme", Xiaomi, Android 13)
+
+Gerçek parmak dokunuşuyla (adb) ve kullanıcının telefonundaki dosyalarla denendi:
+- **Çalışanlar:** ilk ekranın dört düğmesi; ilk ekrandan PDF → Word (kompozisyon 6 sn, 41 sayfalık 3,9 MB'lık
+  kitapçık 35 sn, bellek ~320 MB); Word → PDF (4 sn); Görsel → PDF (Google Fotoğraflar seçicisi); kalem, geri al /
+  yinele (çubuk kapanıp açılınca da); imza (parmakla çizme, saklama, dokunarak yerleştirme, sürükleyerek taşıma);
+  küçültme (3,3 MB → 150 KB, 2 sn); parola (telefon klavyesiyle; dosya AES-256, poppler açıyor); OCR (taranmış
+  sayfa 16 sn, Türkçe harfler doğru, kopyada arama buluyor); Android'in kaydetme ekranı.
+- **Bulunan ve düzeltilen hatalar** (hepsi telefonda yeniden denendi):
+  1. Metin kipinde dokunulan yerde metin kutusu açılmıyordu: klavye açılınca görünüm "genişliğe sığdır"a yeniden
+     ayarlanıyor, odağı kaybeden boş kutuyu pdf.js siliyordu. Artık yalnız genişlik değişince yeniden sığdırılır.
+  2. Fosforlu kalem parmakla yazının üstünden geçince boyamıyordu (dokunuş metin seçimine gidiyordu). Dokunmatik
+     ekranlarda artık parmağın geçtiği yer boyanır (serbest vurgu); farede metin seçerek vurgulama sürer.
+  3. Seçili bir işaret varken imza eklenince çubuk "Fosforlu"ya geçiyordu (pencere kapanınca odak işarete dönüyordu).
+  4. OCR telefonda "hazırlanıyor"da takılıyordu: Android paketi `.gz` dosyalarını açıp uzantıyı siliyor; Türkçe
+     model artık hangisi varsa ondan okunur. Tanıma 60 sn'de başlamazsa hata söylenir, beklemez.
+  5. Yatay tutulan telefonda ilk ekran sığmıyordu: kısa ekranda logo ve aralıklar küçülür.
+  6. Vurgunun renk/sil düğmeleri dar ekranda sol kenardan taşıyordu: taşan düğmeler işaretin kenarına alınır.
+- **PDF → Word, tasarım ağırlıklı belgeler** (kullanıcı kararı 2026-11-08: "otomatik seçsin"): broşür, kapak gibi
+  sayfalar (arka plan resmi, yazının yanında büyük resimler ya da çoğu yaygın olmayan yazı tipinde) artık
+  "düzen korunarak" yazılır: yazı sayfadaki yerinde metin kutularında (Word çerçevesi), resimler ve arka plan
+  (yazısız çizilmiş) yerinde; yazı rengi sayfadan okunur. Yaygın olmayan yazı tipi yerine Arial / Times New Roman
+  konur ve yazı yerine sığacak kadar küçültülür. Düz belgeler (kompozisyon, sınav) eskisi gibi paragraf olur.
+  Deneme: 41 sayfalık spor kitapçığı 75 yerine 49 sayfa (LibreOffice ile bakıldı; çoğu sayfa aslının aynı, bazı
+  sayfalardan sonra LibreOffice boş sayfa açıyor; Word'de bakılmalı). Kapaktaki dar ve büyük başlık hâlâ tam
+  sığmıyor (yazısı çizim olarak gelen başlık resmin içinde kalıyor).
+- İlk ekrandaki oklar kalın çizimli ok oldu (kullanıcı isteği, 2026-11-08).
+- Tahtada (Pardus ETAP) henüz denenmedi.
 
 ## Denenmesi gerekenler
 

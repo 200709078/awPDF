@@ -174,6 +174,7 @@ export class DocumentView {
       this.editorManager = uiManager
     })
     container.addEventListener('pointerdown', () => { this.tapUnselects = this.editing.hasSelection }, true)
+    keepEditButtonsOnScreen(container, viewerElement)
     container.addEventListener('click', event => this.signAtTap(event))
     eventBus.on('annotationeditorlayerrendered', ({ source }: { source: PageViewWithEditor }) => {
       void this.redrawMarks(source)
@@ -231,11 +232,18 @@ export class DocumentView {
     // Waiting for the size to settle spares a page redraw on every frame of a resize or of the
     // side panel's slide.
     let refit: ReturnType<typeof setTimeout> | undefined
+    // Fitting to the width needs doing again only when the width changed. A phone's keyboard only
+    // makes the view shorter, and fitting again then takes the focus from a text box being typed
+    // in, which pdf.js removes while still empty (a phone, 2026-11-08).
+    let fitted = { width: 0, height: 0 }
     new ResizeObserver(() => {
       clearTimeout(refit)
       refit = setTimeout(() => {
         const scale = this.viewer.currentScaleValue
-        if (this.isOpen && FIT_MODES.has(scale)) this.viewer.currentScaleValue = scale
+        const size = { width: container.clientWidth, height: container.clientHeight }
+        const changed = scale === FIT_WIDTH ? size.width !== fitted.width : size.width !== fitted.width || size.height !== fitted.height
+        fitted = size
+        if (this.isOpen && FIT_MODES.has(scale) && changed) this.viewer.currentScaleValue = scale
       }, REFIT_DELAY_MS)
     }).observe(container)
   }
@@ -639,6 +647,8 @@ export class DocumentView {
   }
 
   private reportEditing(): void {
+    // On a touch screen the highlighter paints where the finger goes, over the words too (see app.css).
+    this.viewer.container.classList.toggle('is-highlighting', this.mode === 'highlight')
     for (const listener of this.editingListeners) listener(this.editing)
   }
 
@@ -661,6 +671,39 @@ export class DocumentView {
 }
 
 const EDITOR_PREFIX = 'pdfjs_internal_editor_'
+
+/**
+ * pdf.js puts a mark's buttons (colour, delete) by the end of its stroke, inside the mark; near
+ * the page's edge on a narrow screen they hung off it (a phone, 2026-11-08). Each time they are
+ * shown or placed again, buttons off the view are moved to the mark's own edge.
+ */
+function keepEditButtonsOnScreen(container: HTMLElement, viewer: HTMLElement): void {
+  const fit = (buttons: HTMLElement, watch: MutationObserver) => {
+    const { style } = buttons
+    // pdf.js placed them again: its place first, then the check.
+    if (style.left && style.insetInlineEnd !== 'auto') style.left = ''
+    const box = buttons.getBoundingClientRect()
+    const view = container.getBoundingClientRect()
+    if (box.width > 0 && box.left < view.left) {
+      style.insetInlineEnd = 'auto'
+      style.left = '0'
+    } else if (box.width > 0 && box.right > view.right) {
+      style.left = ''
+      style.insetInlineEnd = '0'
+    }
+    watch.takeRecords()
+  }
+  new MutationObserver(records => {
+    for (const record of records) {
+      for (const node of record.addedNodes) {
+        if (!(node instanceof HTMLElement) || !node.classList.contains('editToolbar')) continue
+        const watch = new MutationObserver(() => fit(node, watch))
+        watch.observe(node, { attributes: true, attributeFilter: ['style'] })
+        requestAnimationFrame(() => fit(node, watch))
+      }
+    }
+  }).observe(viewer, { subtree: true, childList: true })
+}
 
 /** The parts of pdf.js's editing classes used here; they are not in its typings. */
 interface EditorManager {

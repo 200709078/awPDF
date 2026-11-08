@@ -17,6 +17,8 @@ export interface TextStyle {
   italic: boolean
   /** Signs of a formula font (MathType, Symbol, MathMagic…), often coded oddly: kept as a picture. */
   math: boolean
+  /** The PDF's font was one few computers have; `family` is a common one in its place. */
+  unusual?: boolean
 }
 
 /** One run of text as pdf.js gives it: horizontal, left to right. */
@@ -29,6 +31,8 @@ export interface Glyphs {
   width: number
   style: TextStyle
   underline?: boolean
+  /** As #RRGGBB, read from the page as drawn; black when not known. */
+  color?: string
 }
 
 export interface Graphic {
@@ -48,6 +52,7 @@ export interface Run {
   size: number
   position: 'normal' | 'super' | 'sub'
   underline: boolean
+  color?: string
 }
 
 export type LinePart = { kind: 'text'; run: Run } | { kind: 'picture'; region: Region }
@@ -75,6 +80,12 @@ export interface PageLayout {
   /** The columns' horizontal extents, for the gap between them. */
   columnBoxes: Box[]
   content: Box
+  /**
+   * A designed page (a cover, a brochure: pictures under and beside the text) is kept as it looks:
+   * the text in blocks at their places (frames in Word), the pictures and the background where
+   * they are. Running text would not fit around them and spill onto more pages.
+   */
+  framed?: { blocks: Block[]; pictures: Region[]; backgrounds: Region[] }
 }
 
 const width = (box: Box) => box.x1 - box.x0
@@ -108,13 +119,18 @@ interface Piece {
  * (a rule, a border) is no picture; a grid of them is a table. A picture covering most of a page
  * that has text is its background (or the scan under recognised text) and is left out.
  */
-export function findRegions(glyphs: readonly Glyphs[], graphics: readonly Graphic[], page: Box): { regions: Region[]; absorbed: Set<Glyphs> } {
+export function findRegions(glyphs: readonly Glyphs[], graphics: readonly Graphic[], page: Box): { regions: Region[]; absorbed: Set<Glyphs>; backgrounds: Region[] } {
   const pageArea = width(page) * height(page)
   const textLength = glyphs.reduce((sum, item) => sum + item.text.trim().length, 0)
   const pieces: Piece[] = []
+  const backgrounds: Region[] = []
   for (const graphic of graphics) {
     const area = width(graphic.box) * height(graphic.box)
-    if (area > pageArea * 0.7 && (textLength > 20 || graphic.kind === 'path')) continue
+    if (area > pageArea * 0.7 && (textLength > 20 || graphic.kind === 'path')) {
+      // Under the text: a background (kept for a designed page), or the scan under recognised text.
+      if (graphic.kind === 'image') backgrounds.push({ box: graphic.box, photo: true })
+      continue
+    }
     if (width(graphic.box) < 0.5 && height(graphic.box) < 0.5) continue
     pieces.push({ box: graphic.box, kind: graphic.kind })
   }
@@ -158,7 +174,7 @@ export function findRegions(glyphs: readonly Glyphs[], graphics: readonly Graphi
     absorbed.add(item)
     region.box = union(region.box, box)
   }
-  return { regions, absorbed }
+  return { regions, absorbed, backgrounds }
 }
 
 /**
@@ -246,10 +262,11 @@ function buildLines(glyphs: readonly Glyphs[], inline: readonly Region[]): Line[
         text = ' '.repeat(Math.min(60, Math.max(1, Math.round(gap / (glyphs.size * 0.28))))) + text
       }
       const last = previous?.kind === 'text' ? previous.run : null
-      if (last && last.style === glyphs.style && last.size === glyphs.size && last.position === position && last.underline === Boolean(glyphs.underline)) {
+      if (last && last.style === glyphs.style && last.size === glyphs.size && last.position === position
+        && last.underline === Boolean(glyphs.underline) && last.color === glyphs.color) {
         last.text += text
       } else {
-        parts.push({ kind: 'text', run: { text, style: glyphs.style, size: glyphs.size, position, underline: Boolean(glyphs.underline) } })
+        parts.push({ kind: 'text', run: { text, style: glyphs.style, size: glyphs.size, position, underline: Boolean(glyphs.underline), color: glyphs.color } })
       }
       end = right
     }
@@ -351,13 +368,73 @@ function isPageNumber(item: Glyphs, pageHeight: number): boolean {
   return (item.y > pageHeight * 0.93 || item.y < pageHeight * 0.06) && /^\s*(sayfa\s*)?[-–—(]?\s*\d{1,4}\s*[-–—)]?\s*$/i.test(item.text)
 }
 
+/**
+ * Whether the page is designed rather than written: a picture under the text, or pictures taking
+ * a good part of the page with text beside them (not only above and below).
+ */
+function isDesigned(text: readonly Glyphs[], regions: readonly Region[], backgrounds: readonly Region[], pageArea: number): boolean {
+  if (backgrounds.length > 0 && text.length > 0) return true
+  // Mostly in fonts that other computers seldom have (a brochure's): running text in another
+  // font would not fit its pages.
+  const letters = text.reduce((sum, item) => sum + item.text.length, 0)
+  const unusual = text.reduce((sum, item) => sum + (item.style.unusual ? item.text.length : 0), 0)
+  if (letters > 40 && unusual > letters * 0.5) return true
+  const pictureArea = regions.reduce((sum, region) => sum + width(region.box) * height(region.box), 0)
+  if (pictureArea < pageArea * 0.25) return false
+  return regions.some(region => width(region.box) * height(region.box) > pageArea * 0.03 && text.some(item => {
+    const box = glyphBox(item)
+    return box.y0 < region.box.y1 && box.y1 > region.box.y0 && (box.x0 >= region.box.x1 || box.x1 <= region.box.x0)
+  }))
+}
+
+/** Fonts that Windows, Office and Pardus have (or have one of the same measures). */
+const COMMON_FONTS = /times|arial|helvetica|calibri|cambria|georgia|verdana|tahoma|courier|liberation|dejavu|segoe|trebuchet|garamond|book antiqua|palatino|century|comic sans|candara|corbel|consolas|lucida|carlito|caladea|noto|symbol|wingdings/i
+
+/** Text in groups that belong together: runs close on a line, lines close above each other. */
+function textClusters(text: readonly Glyphs[]): Glyphs[][] {
+  const groups = text.map(item => ({ box: glyphBox(item), size: item.size, items: [item] }))
+  for (let merged = true; merged;) {
+    merged = false
+    for (let first = 0; first < groups.length; first += 1) {
+      for (let second = first + 1; second < groups.length; second += 1) {
+        const a = groups[first]
+        const b = groups[second]
+        const size = Math.max(a.size, b.size)
+        const overlapX = Math.min(a.box.x1, b.box.x1) - Math.max(a.box.x0, b.box.x0)
+        const overlapY = Math.min(a.box.y1, b.box.y1) - Math.max(a.box.y0, b.box.y0)
+        const sameLine = overlapY > 0 && Math.max(a.box.x0 - b.box.x1, b.box.x0 - a.box.x1) < size * 1.5
+        const stacked = overlapX > 0 && Math.max(a.box.y0 - b.box.y1, b.box.y0 - a.box.y1) < size * 0.9
+        if (!sameLine && !stacked) continue
+        a.box = union(a.box, b.box)
+        a.size = Math.max(a.size, b.size)
+        a.items.push(...b.items)
+        groups.splice(second, 1)
+        second -= 1
+        merged = true
+      }
+    }
+  }
+  return groups.map(group => group.items)
+}
+
 /** The page read as a document. */
 export function layoutPage(glyphs: readonly Glyphs[], graphics: readonly Graphic[], page: { width: number; height: number }): PageLayout {
   const pageBox = { x0: 0, y0: 0, x1: page.width, y1: page.height }
-  const { regions, absorbed } = findRegions(glyphs, graphics, pageBox)
+  const { regions, absorbed, backgrounds } = findRegions(glyphs, graphics, pageBox)
   const text = glyphs.filter(item => !absorbed.has(item) && item.text.trim() !== '' && !isPageNumber(item, page.height))
   const boxes = [...text.map(glyphBox), ...regions.map(region => region.box)]
   const content = boxes.length > 0 ? boxes.reduce(union) : { x0: 36, y0: 36, x1: page.width - 36, y1: page.height - 36 }
+
+  if (isDesigned(text, regions, backgrounds, page.width * page.height)) {
+    const blocks = textClusters(text).flatMap(cluster => {
+      const area = cluster.map(glyphBox).reduce(union)
+      return buildBlocks(buildLines(cluster, []), [], area)
+    })
+    return {
+      width: page.width, height: page.height, before: [], columns: [[]], after: [], columnBoxes: [content], content,
+      framed: { blocks, pictures: regions, backgrounds },
+    }
+  }
 
   // Regions as tall as a line or two go into a line when they sit in one; the rest are blocks.
   const lineBands = text.map(item => ({ y0: item.y - item.size * 0.9, y1: item.y + item.size * 0.3, size: item.size }))
@@ -410,6 +487,9 @@ export function fontStyle(name: string | undefined, fallback: string): TextStyle
     Courier: 'Courier New', ArialNarrow: 'Arial Narrow',
   }
   family = known[family] ?? family.replace(/([a-z])([A-Z])/g, '$1 $2').trim()
-  if (!family) family = fallback === 'serif' ? 'Times New Roman' : fallback === 'monospace' ? 'Courier New' : 'Arial'
+  const usual = fallback === 'serif' ? 'Times New Roman' : fallback === 'monospace' ? 'Courier New' : 'Arial'
+  // A font few computers have (a brochure's) becomes a common one of its kind: Word would put
+  // some other font in its place anyway, and with a known one the text can be fitted to its room.
+  if (!family || (!COMMON_FONTS.test(family) && !math)) return { family: usual, bold, italic, math, unusual: Boolean(family) }
   return { family, bold, italic, math }
 }

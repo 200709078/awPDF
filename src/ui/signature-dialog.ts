@@ -173,6 +173,9 @@ export function askSignature(store: SignatureStore, onRemoved: (id: string) => v
   $('#signatureImagePreview').innerHTML = ''
   listSaved()
   dialog.returnValue = ''
+  // A closing dialog gives the focus back to what had it: a mark on the page would be selected
+  // again, and pdf.js would switch to its kind (a phone, 2026-11-08: the highlighter, not İmza).
+  if (document.activeElement instanceof HTMLElement && document.activeElement.closest('.pdfViewer')) document.activeElement.blur()
   dialog.showModal()
   choose('draw')
 

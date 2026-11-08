@@ -35,9 +35,11 @@ import { printDocument } from './print'
 import { COMPRESS_LEVELS, CompressCancelled, compressPdf, type CompressResult } from './pdf-compress'
 import { protectPdf } from '../core/pdf-encrypt'
 import { pdfToWord, WordCancelled } from './pdf-to-word'
-import { OcrCancelled, OcrUnsupported, recognizePdf, type OcrResult } from './ocr'
+import { OcrCancelled, OcrNotStarted, OcrUnsupported, recognizePdf, type OcrResult } from './ocr'
 
 const APP_TITLE = 'awPDF | mADEMatik'
+/** After the picker closes, a file it gives arrives within this; a later one was not picked for Word. */
+const PICK_LAPSE_MS = 3000
 
 /** The composition root: connects the platform, the document view and the tools. */
 export function startApp(): void {
@@ -239,6 +241,7 @@ export function startApp(): void {
       result = await recognizePdf(source, text => work.progress(text), () => work.cancelled, { dropLastPage: encrypted })
     } catch (error) {
       if (error instanceof OcrUnsupported) showToast('Bu cihazın tarayıcısı yazı tanımayı desteklemiyor (WebView güncellenmeli).')
+      else if (error instanceof OcrNotStarted) showToast('Yazı tanıma başlatılamadı.')
       else if (!(error instanceof OcrCancelled)) {
         console.error(error)
         showToast('Yazı tanınamadı.')
@@ -392,30 +395,55 @@ export function startApp(): void {
     else if (await confirmExternalLink(url)) platform.openExternal(url)
   }
 
-  /** `replacing`: a file the app has just made from the open one, which may take its place. */
-  function open(file: PdfFile, { replacing = false } = {}): Promise<void> {
-    opening = opening.then(() => openNow(file, replacing))
+  /**
+   * `replacing`: a file the app has just made from the open one, which may take its place.
+   * `thenWord`: once open, the document is converted to Word (the first screen's PDF → Word).
+   */
+  function open(file: PdfFile, { replacing = false, thenWord = false } = {}): Promise<void> {
+    opening = opening.then(async () => {
+      if (await openNow(file, replacing) && thenWord) await toWord()
+    })
     return opening
   }
 
-  async function openNow(file: PdfFile, replacing: boolean): Promise<void> {
+  /**
+   * The first screen's PDF → Word: the PDF chosen next opens and is converted, so the user sees
+   * what is converted (and gives its password first). A picker closed without a file leaves
+   * nothing pending: the wish lapses a little after the app is back in front.
+   */
+  let wordAfterPick = false
+  function pickForWord(): void {
+    wordAfterPick = true
+    const lapse = () => {
+      if (document.visibilityState !== 'visible') return
+      window.removeEventListener('focus', lapse)
+      document.removeEventListener('visibilitychange', lapse)
+      setTimeout(() => { wordAfterPick = false }, PICK_LAPSE_MS)
+    }
+    window.addEventListener('focus', lapse)
+    document.addEventListener('visibilitychange', lapse)
+    platform.pickFile()
+  }
+
+  /** Resolves whether the document is open (now, or already in a tab). */
+  async function openNow(file: PdfFile, replacing: boolean): Promise<boolean> {
     // A picture dropped on the window becomes a PDF.
     if (isImageFile(new File([], file.name))) {
       const picture = new File([await file.read(0, file.size) as Uint8Array<ArrayBuffer>], file.name)
       file.close?.()
       await pdfFromImages([picture])
-      return
+      return false
     }
     // So does a Word document.
     if (isWordFile(file.name) || isOldWordFile(file.name)) {
       const document_ = new File([await file.read(0, file.size) as Uint8Array<ArrayBuffer>], file.name)
       file.close?.()
       await pdfFromWord(document_)
-      return
+      return false
     }
     if (needsLargeFileWarning(file.size) && !await confirmLargeFile(file.name, file.size)) {
       file.close?.()
-      return
+      return false
     }
     try {
       const document_ = await loadPdf(file, wasWrong => askPassword(file.name, wasWrong))
@@ -426,22 +454,24 @@ export function startApp(): void {
         void document_.loadingTask.destroy()
         file.close?.()
         tabs.show(alreadyOpen)
-        return
+        return true
       }
       if (!replacing && !await tabs.mayReplace()) {
         void document_.loadingTask.destroy()
         file.close?.()
-        return
+        return false
       }
       const page = recent.pageOf(fingerprint)
       tabs.add({ document: document_, file, fingerprint, state: { page } })
       recent.remember(fingerprint, file.name, file.source)
       if (page > 1) showToast(`Kaldığınız yer: sayfa ${page}`)
+      return true
     } catch (error) {
       file.close?.()
-      if (error instanceof OpenCancelled) return
+      if (error instanceof OpenCancelled) return false
       console.error(error)
       showToast('Bu PDF açılamadı.')
+      return false
     }
   }
 
@@ -492,7 +522,11 @@ export function startApp(): void {
   view.onPageChange(page => {
     if (tabs.active) recent.setPage(tabs.active.fingerprint, page)
   })
-  platform.onFile(file => void open(file))
+  platform.onFile(file => {
+    const thenWord = wordAfterPick
+    wordAfterPick = false
+    void open(file, { thenWord })
+  })
   platform.onBack?.(() => closeTopmost(context, toolbarMenu))
   // On a phone the status bar sits on top of the toolbar, so it takes the toolbar's colour.
   const colourSystemBars = () => platform.setSystemBars?.({
@@ -502,6 +536,7 @@ export function startApp(): void {
   context.theme.onChange(colourSystemBars)
   colourSystemBars()
   document.querySelector('#emptyOpen')!.addEventListener('click', context.pickFile)
+  document.querySelector('#emptyPdfToWord')!.addEventListener('click', pickForWord)
   document.querySelector('#emptyImages')!.addEventListener('click', context.pdfFromImages)
   document.querySelector('#emptyWord')!.addEventListener('click', context.pdfFromWord)
 }

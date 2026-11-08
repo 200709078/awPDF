@@ -1,6 +1,6 @@
 import { AnnotationMode, getDocument, OPS, type PDFDocumentProxy, type PDFPageProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import type { Paragraph as DocxParagraph } from 'docx'
-import { fontStyle, layoutPage, type Block, type Box, type Glyphs, type Graphic, type Line, type PageLayout, type Region, type Run, type TextStyle } from '../core/page-layout'
+import { fontStyle, glyphBox, layoutPage, type Block, type Box, type Glyphs, type Graphic, type Line, type PageLayout, type Region, type Run, type TextStyle } from '../core/page-layout'
 import { pdfAssets } from '../core/pdf-document'
 import { canvasBytes } from './images'
 
@@ -152,7 +152,70 @@ export interface WordPage {
   pictures: Map<Region, { data: Uint8Array; type: 'png' | 'jpg' }>
 }
 
-/** One page read: its layout and its pictures. */
+/** The page drawn at the pictures' resolution; without its text when `textless` (for a background). */
+async function drawPage(page: PDFPageProxy, textless = false): Promise<HTMLCanvasElement> {
+  const drawn = page.getViewport({ scale: PICTURE_SCALE })
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.ceil(drawn.width)
+  canvas.height = Math.ceil(drawn.height)
+  const context = canvas.getContext('2d', { willReadFrequently: true })!
+  context.fillStyle = '#ffffff'
+  context.fillRect(0, 0, canvas.width, canvas.height)
+  // pdf.js draws the PDF's own fonts with fillText; without it the page is its pictures and shapes.
+  if (textless) context.fillText = context.strokeText = () => undefined
+  await page.render({ canvas, canvasContext: context, viewport: drawn, annotationMode: AnnotationMode.ENABLE }).promise
+  return canvas
+}
+
+/**
+ * A run's colour as drawn: within its box, the colour farthest from the box's most common one
+ * (the ground). Near-black is left as the default.
+ */
+function colorOf(context: CanvasRenderingContext2D, glyphs: Glyphs): string | undefined {
+  const box = glyphBox(glyphs)
+  const x = Math.max(0, Math.floor(box.x0 * PICTURE_SCALE))
+  const y = Math.max(0, Math.floor(box.y0 * PICTURE_SCALE))
+  const w = Math.min(context.canvas.width - x, Math.ceil((box.x1 - box.x0) * PICTURE_SCALE))
+  const h = Math.min(context.canvas.height - y, Math.ceil((box.y1 - box.y0) * PICTURE_SCALE))
+  if (w < 1 || h < 1) return undefined
+  const data = context.getImageData(x, y, w, h).data
+  const counts = new Map<number, number>()
+  for (let index = 0; index < data.length; index += 4) {
+    const key = (data[index] >> 4) << 8 | (data[index + 1] >> 4) << 4 | data[index + 2] >> 4
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+  const ground = [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0]
+  const [gr, gg, gb] = [(ground >> 8) * 17, (ground >> 4 & 15) * 17, (ground & 15) * 17]
+  let best = -1
+  let color = [0, 0, 0]
+  for (let index = 0; index < data.length; index += 4) {
+    const distance = Math.abs(data[index] - gr) + Math.abs(data[index + 1] - gg) + Math.abs(data[index + 2] - gb)
+    if (distance > best) {
+      best = distance
+      color = [data[index], data[index + 1], data[index + 2]]
+    }
+  }
+  if (best < 90 || color.every(channel => channel < 70)) return undefined
+  return `#${color.map(channel => channel.toString(16).padStart(2, '0')).join('')}`
+}
+
+function cutOut(canvas: HTMLCanvasElement, region: Region): { data: Uint8Array; type: 'png' | 'jpg' } | null {
+  const x0 = Math.max(0, Math.floor((region.box.x0 - 1) * PICTURE_SCALE))
+  const y0 = Math.max(0, Math.floor((region.box.y0 - 1) * PICTURE_SCALE))
+  const x1 = Math.min(canvas.width, Math.ceil((region.box.x1 + 1) * PICTURE_SCALE))
+  const y1 = Math.min(canvas.height, Math.ceil((region.box.y1 + 1) * PICTURE_SCALE))
+  if (x1 - x0 < 2 || y1 - y0 < 2) return null
+  const cut = document.createElement('canvas')
+  cut.width = x1 - x0
+  cut.height = y1 - y0
+  cut.getContext('2d')!.drawImage(canvas, x0, y0, cut.width, cut.height, 0, 0, cut.width, cut.height)
+  const type = region.photo ? 'jpg' : 'png'
+  const data = canvasBytes(cut, type === 'jpg' ? 'image/jpeg' : 'image/png', PHOTO_QUALITY)
+  cut.width = cut.height = 0
+  return { data, type }
+}
+
+/** One page read: its layout (with the text's colours) and its pictures. */
 async function readPage(page: PDFPageProxy): Promise<WordPage> {
   const viewport = page.getViewport({ scale: 1 })
   const view = viewport.transform as Matrix
@@ -160,34 +223,27 @@ async function readPage(page: PDFPageProxy): Promise<WordPage> {
   const text = await page.getTextContent()
   const { glyphs, turned } = glyphsOf(page, text.items as TextItemLike[], view)
   const graphics = takeUnderlines(glyphs, [...graphicsOf(operators.fnArray, operators.argsArray, view), ...turned])
+  const canvas = await drawPage(page)
+  const context = canvas.getContext('2d', { willReadFrequently: true })!
+  for (const item of glyphs) item.color = colorOf(context, item)
   const layout = layoutPage(glyphs, graphics, { width: viewport.width, height: viewport.height })
-  const regions = [...layout.before, ...layout.columns.flat(), ...layout.after].flatMap(regionsOf)
+  const regions = layout.framed ? layout.framed.pictures
+    : [...layout.before, ...layout.columns.flat(), ...layout.after].flatMap(regionsOf)
   const pictures = new Map<Region, { data: Uint8Array; type: 'png' | 'jpg' }>()
-  if (regions.length > 0) {
-    const drawn = page.getViewport({ scale: PICTURE_SCALE })
-    const canvas = document.createElement('canvas')
-    canvas.width = Math.ceil(drawn.width)
-    canvas.height = Math.ceil(drawn.height)
-    const context = canvas.getContext('2d')!
-    context.fillStyle = '#ffffff'
-    context.fillRect(0, 0, canvas.width, canvas.height)
-    await page.render({ canvas, canvasContext: context, viewport: drawn, annotationMode: AnnotationMode.ENABLE }).promise
-    for (const region of regions) {
-      const x0 = Math.max(0, Math.floor((region.box.x0 - 1) * PICTURE_SCALE))
-      const y0 = Math.max(0, Math.floor((region.box.y0 - 1) * PICTURE_SCALE))
-      const x1 = Math.min(canvas.width, Math.ceil((region.box.x1 + 1) * PICTURE_SCALE))
-      const y1 = Math.min(canvas.height, Math.ceil((region.box.y1 + 1) * PICTURE_SCALE))
-      if (x1 - x0 < 2 || y1 - y0 < 2) continue
-      const cut = document.createElement('canvas')
-      cut.width = x1 - x0
-      cut.height = y1 - y0
-      cut.getContext('2d')!.drawImage(canvas, x0, y0, cut.width, cut.height, 0, 0, cut.width, cut.height)
-      const type = region.photo ? 'jpg' : 'png'
-      pictures.set(region, { data: canvasBytes(cut, type === 'jpg' ? 'image/jpeg' : 'image/png', PHOTO_QUALITY), type })
-      cut.width = cut.height = 0
-    }
-    canvas.width = canvas.height = 0
+  for (const region of regions) {
+    const made = cutOut(canvas, region)
+    if (made) pictures.set(region, made)
   }
+  // A background is cut from the page drawn without its text, which goes on top in frames.
+  if (layout.framed && layout.framed.backgrounds.length > 0) {
+    const bare = await drawPage(page, true)
+    for (const region of layout.framed.backgrounds) {
+      const made = cutOut(bare, region)
+      if (made) pictures.set(region, made)
+    }
+    bare.width = bare.height = 0
+  }
+  canvas.width = canvas.height = 0
   page.cleanup()
   return { layout, pictures }
 }
@@ -232,43 +288,7 @@ function paragraphs(docx: Docx, blocks: readonly Block[], column: Box, page: Wor
       }
       continue
     }
-    // The lines' runs as plain pieces first: a word broken with a hyphen at the end of a line is
-    // made whole again, other lines join with a space.
-    type Piece = { text: string; run: Run; lineSize: number } | { region: Region }
-    const pieces: Piece[] = []
-    block.lines.forEach((line: Line, index) => {
-      line.parts.forEach((part, partIndex) => {
-        if (part.kind === 'picture') {
-          pieces.push({ region: part.region })
-          return
-        }
-        let { text } = part.run
-        const previous = pieces.at(-1)
-        if (index > 0 && partIndex === 0 && previous && 'text' in previous) {
-          if (/\p{Ll}-$/u.test(previous.text) && /^\p{Ll}/u.test(text)) previous.text = previous.text.slice(0, -1)
-          else if (!previous.text.endsWith(' ') && !text.startsWith(' ')) text = ` ${text}`
-        }
-        pieces.push({ text, run: part.run, lineSize: line.size })
-      })
-    })
-    const children = pieces.flatMap((piece): (InstanceType<Docx['TextRun']> | InstanceType<Docx['ImageRun']>)[] => {
-      if ('region' in piece) {
-        const image = picture(piece.region)
-        return image ? [image] : []
-      }
-      const { run } = piece
-      const raised = run.position !== 'normal'
-      return [new TextRun({
-        text: piece.text,
-        bold: run.style.bold,
-        italics: run.style.italic,
-        font: run.style.family,
-        size: Math.max(2, Math.round((raised ? piece.lineSize : run.size) * 2)),
-        superScript: run.position === 'super',
-        subScript: run.position === 'sub',
-        underline: run.underline ? {} : undefined,
-      })]
-    })
+    const children = runsOf(docx, block, picture)
     const first = block.lines[0]
     const indentLeft = block.left - column.x0
     const firstLine = block.lines.length > 1 ? first.x0 - block.left : 0
@@ -282,6 +302,150 @@ function paragraphs(docx: Docx, blocks: readonly Block[], column: Box, page: Wor
     }))
   }
   return result
+}
+
+/** A picture of the page as an inline Word picture, or null when it could not be cut out. */
+function inlinePicture(docx: Docx, page: WordPage, region: Region) {
+  const made = page.pictures.get(region)
+  if (!made) return null
+  return new docx.ImageRun({
+    type: made.type,
+    data: made.data,
+    transformation: { width: pixels(region.box.x1 - region.box.x0 + 2), height: pixels(region.box.y1 - region.box.y0 + 2) },
+  })
+}
+
+type ParagraphChildren = (InstanceType<Docx['TextRun']> | InstanceType<Docx['ImageRun']>)[]
+
+/**
+ * A paragraph's lines as Word runs. They are plain pieces first: a word broken with a hyphen at
+ * the end of a line is made whole again, other lines join with a space.
+ */
+function runsOf(docx: Docx, block: Extract<Block, { kind: 'paragraph' }>, picture: (region: Region) => InstanceType<Docx['ImageRun']> | null): ParagraphChildren {
+  type Piece = { text: string; run: Run; lineSize: number } | { region: Region }
+  const pieces: Piece[] = []
+  block.lines.forEach((line: Line, index) => {
+    line.parts.forEach((part, partIndex) => {
+      if (part.kind === 'picture') {
+        pieces.push({ region: part.region })
+        return
+      }
+      let { text } = part.run
+      const previous = pieces.at(-1)
+      if (index > 0 && partIndex === 0 && previous && 'text' in previous) {
+        if (/\p{Ll}-$/u.test(previous.text) && /^\p{Ll}/u.test(text)) previous.text = previous.text.slice(0, -1)
+        else if (!previous.text.endsWith(' ') && !text.startsWith(' ')) text = ` ${text}`
+      }
+      pieces.push({ text, run: part.run, lineSize: line.size })
+    })
+  })
+  return pieces.flatMap((piece): ParagraphChildren => {
+    if ('region' in piece) {
+      const image = picture(piece.region)
+      return image ? [image] : []
+    }
+    const { run } = piece
+    const raised = run.position !== 'normal'
+    return [new docx.TextRun({
+      text: piece.text,
+      bold: run.style.bold,
+      italics: run.style.italic,
+      font: run.style.family,
+      size: Math.max(2, Math.round((raised ? piece.lineSize : run.size) * 2)),
+      superScript: run.position === 'super',
+      subScript: run.position === 'sub',
+      underline: run.underline ? {} : undefined,
+      color: run.color?.slice(1),
+    })]
+  })
+}
+
+const measure = document.createElement('canvas').getContext('2d')!
+
+/**
+ * A frame's text in the font this device would use for it (the PDF's own font is often missing
+ * here and in Word too): when it comes out wider than in the PDF, its size is scaled down so the
+ * lines fit their places, down to 40 % (a condensed display font is half as wide as Arial).
+ */
+function fitFonts(block: Extract<Block, { kind: 'paragraph' }>): void {
+  let factor = 1
+  for (const line of block.lines) {
+    let wide = 0
+    for (const part of line.parts) {
+      if (part.kind !== 'text') continue
+      const { run } = part
+      measure.font = `${run.style.italic ? 'italic ' : ''}${run.style.bold ? 'bold ' : ''}${run.size}px "${run.style.family}", sans-serif`
+      wide += measure.measureText(run.text).width
+    }
+    const room = line.x1 - line.x0
+    if (wide > room * 1.02 && room > 0) factor = Math.min(factor, room / wide)
+  }
+  factor = Math.max(0.4, factor)
+  if (factor >= 1) return
+  for (const line of block.lines) {
+    line.size *= factor
+    for (const part of line.parts) if (part.kind === 'text') part.run.size *= factor
+  }
+}
+
+/** EMUs, the unit of a floating picture's place: 12700 to a point. */
+const emu = (points: number) => Math.round(points * 12700)
+
+/**
+ * A designed page as it looks: its background behind, its pictures where they are (floating,
+ * anchored to the page), and each block of text in a frame at its place. The text stays text,
+ * and the page stays one page.
+ */
+function framedPage(docx: Docx, page: WordPage): DocxParagraph[] {
+  const { Paragraph, ImageRun, AlignmentType, LineRuleType, FrameAnchorType, HeightRule, HorizontalPositionRelativeFrom,
+    VerticalPositionRelativeFrom, TextWrappingType } = docx
+  const framed = page.layout.framed!
+  const floating = (region: Region, behind: boolean) => {
+    const made = page.pictures.get(region)
+    if (!made) return []
+    return [new ImageRun({
+      type: made.type,
+      data: made.data,
+      transformation: { width: pixels(region.box.x1 - region.box.x0 + 2), height: pixels(region.box.y1 - region.box.y0 + 2) },
+      floating: {
+        horizontalPosition: { relative: HorizontalPositionRelativeFrom.PAGE, offset: emu(region.box.x0 - 1) },
+        verticalPosition: { relative: VerticalPositionRelativeFrom.PAGE, offset: emu(region.box.y0 - 1) },
+        behindDocument: behind,
+        allowOverlap: true,
+        wrap: { type: TextWrappingType.NONE },
+      },
+    })]
+  }
+  const anchors = new Paragraph({
+    children: [...framed.backgrounds.flatMap(region => floating(region, true)), ...framed.pictures.flatMap(region => floating(region, false))],
+  })
+  const texts = framed.blocks.flatMap(block => {
+    if (block.kind !== 'paragraph') return []
+    fitFonts(block)
+    const right = Math.max(...block.lines.map(line => line.x1))
+    const first = block.lines[0]
+    // A little wider than in the PDF: Word's font may be a bit wider than the PDF's.
+    const width = (right - block.left) * 1.08 + 4
+    const firstLine = block.lines.length > 1 ? first.x0 - block.left : 0
+    return [new Paragraph({
+      children: runsOf(docx, block, region => inlinePicture(docx, page, region)),
+      frame: {
+        type: 'absolute',
+        position: { x: twips(block.left - 1), y: twips(block.top) },
+        width: twips(width),
+        height: twips(block.bottom - block.top),
+        rule: HeightRule.ATLEAST,
+        anchor: { horizontal: FrameAnchorType.PAGE, vertical: FrameAnchorType.PAGE },
+      },
+      alignment: block.align === 'center' ? AlignmentType.CENTER : block.align === 'right' ? AlignmentType.RIGHT
+        : block.align === 'justify' ? AlignmentType.JUSTIFIED : AlignmentType.LEFT,
+      indent: firstLine > 0 ? { firstLine: twips(firstLine) } : undefined,
+      spacing: { before: 0, after: 0, line: twips(Math.max(block.lineGap, first.size)), lineRule: LineRuleType.AT_LEAST },
+    })]
+  })
+  // The section's page break goes in a plain paragraph: put in a frame's, Word and LibreOffice
+  // carried the frames to the wrong pages.
+  return [anchors, ...texts, new Paragraph({})]
 }
 
 /** The Word document of the pages read. */
@@ -319,6 +483,13 @@ async function writeDocx(pages: readonly WordPage[], title: string): Promise<Uin
       },
     }
     const pageStart = Math.max(14, content.y0 - 2)
+    if (layout.framed) {
+      sections.push({
+        properties: { ...properties, type: SectionType.NEXT_PAGE, page: { ...properties.page, margin: { top: 0, bottom: 0, left: 0, right: 0 } } },
+        children: framedPage(docx, page),
+      })
+      continue
+    }
     if (layout.columns.length === 1) {
       sections.push({ properties: { ...properties, type: SectionType.NEXT_PAGE }, children: paragraphs(docx, layout.columns[0], content, page, pageStart) })
       continue

@@ -375,6 +375,18 @@ body {
 	margin-left: auto;
 }
 
+/*
+ * A finger on the words would start a text selection, which on a touch screen needs a long press:
+ * dragged over the text the highlighter did nothing (a phone, 2026-11-08). On touch screens the
+ * words let the finger through to the page, and pdf.js paints a free highlight where it goes. A
+ * mouse still highlights by selecting the words.
+ */
+@media (pointer: coarse) {
+	.is-highlighting .textLayer :is(span, br) {
+		pointer-events: none;
+	}
+}
+
 /* On a phone only the pictures of the modes: their names make the bar two rows. */
 @media (max-width: 600px) {
 	.annotate-bar__mode span,
@@ -1016,6 +1028,42 @@ body {
 .empty-state__actions {
 	display: grid;
 	gap: 16px;
+}
+
+/* The first screen's arrows: drawn, thick enough to read as an arrow at a glance (the user's wish). */
+.empty-state__actions button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+}
+
+.empty-state__arrow {
+	width: 28px;
+	height: 16px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 3;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+/* A phone held sideways: the logo and the four buttons fit without scrolling (a phone, 2026-11-08). */
+@media (max-height: 500px) {
+	.empty-state,
+	.empty-state__actions {
+		gap: 8px;
+	}
+
+	.empty-state img {
+		width: 64px;
+		height: 64px;
+	}
+
+	.empty-state .primary-button,
+	.empty-state .secondary-button {
+		min-height: 44px;
+	}
 }
 
 .recent-files {

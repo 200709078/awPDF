@@ -473,12 +473,19 @@ test.describe('Word → PDF', () => {
   const cards = (page: Page) => page.locator('#pageEditorGrid .page-card');
   const DOCX_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
-  test('ilk ekrandaki üç düğme aynı boyuttadır', async ({ page }) => {
+  test('ilk ekrandaki dört düğme sırayla ve aynı boyutta; adları ekran okuyucuya açık', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 760 });
-    const sizes = await page.locator('#emptyOpen, #emptyImages, #emptyWord')
-      .evaluateAll(buttons => buttons.map(button => `${button.getBoundingClientRect().width}x${button.getBoundingClientRect().height}`));
-    expect(sizes).toHaveLength(3);
+    const buttons = page.locator('.empty-state__actions button');
+    await expect(buttons).toHaveText(['PDF Aç', /^PDF\s+Word$/, /^Word\s+PDF$/, /^Görsel\s+PDF$/]);
+    await expect(page.locator('.empty-state__actions .empty-state__arrow')).toHaveCount(3);
+    await expect(page.locator('#emptyPdfToWord')).toHaveAccessibleName("PDF'i Word'e dönüştür");
+    const sizes = await buttons
+      .evaluateAll(items => items.map(button => `${button.getBoundingClientRect().width}x${button.getBoundingClientRect().height}`));
     expect(new Set(sizes).size).toBe(1);
+    // A phone held sideways: everything fits without scrolling.
+    await page.setViewportSize({ width: 873, height: 392 });
+    await expect.poll(() => page.locator('#emptyState').evaluate(state => state.scrollHeight <= state.clientHeight)).toBe(true);
+    await expect(page.locator('#emptyImages')).toBeInViewport({ ratio: 1 });
   });
 
   test('Word belgesi sayfa sayfa A4 PDF olur, düzenleyicide açılıp kaydedilir', async ({ page }) => {
@@ -820,6 +827,24 @@ test.describe('imza', () => {
     expect(await page.evaluate(() => localStorage.getItem('awpdf.imzalar'))).toBe('[]');
   });
 
+  test('seçili bir işaret varken imza eklenince çubuk İmza kipinde kalır', async ({ page }) => {
+    await openPdf(page, makePdf({ text: () => 'Vurgulanacak satir burada' }));
+    await page.locator('#tool-annotate').click();
+    await bar(page).getByRole('button', { name: 'Fosforlu', exact: true }).click();
+    const words = (await page.locator('.page[data-page-number="1"] .textLayer span').first().boundingBox())!;
+    await page.mouse.move(words.x + 2, words.y + words.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(words.x + words.width - 2, words.y + words.height / 2, { steps: 8 });
+    await page.mouse.up();
+    await expect(page.locator('.highlightEditor.selectedEditor')).toHaveCount(1);
+    await bar(page).getByRole('button', { name: 'İmza', exact: true }).click();
+    await drawSignature(page);
+    await page.locator('#signatureAdd').click();
+    await expect(page.locator('.signatureEditor')).toHaveCount(1);
+    await expect(bar(page).locator('[data-mode="signature"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.highlightEditor.selectedEditor')).toHaveCount(0);
+  });
+
   test('yazılan ad ve imza fotoğrafı da imza olur; saklanması istenmezse saklanmaz', async ({ page }) => {
     await openPdf(page, makePdf());
     await signFromBar(page);
@@ -858,8 +883,54 @@ test.describe('imza', () => {
   });
 });
 
+test.describe('işaretleme (telefon)', () => {
+  test.use({ hasTouch: true, isMobile: true, viewport: { width: 392, height: 823 } });
+
+  test('fosforlu kalem parmakla yazının üstünden geçince boyar; vurgu kaydedilir', async ({ page }) => {
+    await openPdf(page, makePdf({ text: () => 'Vurgulanacak satir burada' }));
+    await page.evaluate(() => (document.querySelector('#tool-annotate') as HTMLElement).click());
+    await page.locator('#annotateBar [data-mode="highlight"]').click();
+    const words = (await page.locator('.page[data-page-number="1"] .textLayer span').first().boundingBox())!;
+    const client = await page.context().newCDPSession(page);
+    const y = words.y + words.height / 2;
+    // Right to left: the stroke ends near the page's left edge, where pdf.js would put the buttons off screen.
+    await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: words.x + words.width - 4, y }] });
+    for (let step = 1; step <= 10; step += 1) {
+      await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: words.x + words.width - 4 - (words.width - 8) * step / 10, y }] });
+    }
+    await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await expect(page.locator('.highlightEditor')).toHaveCount(1);
+    // Its colour and delete buttons stay on the screen: placed as pdf.js did on a phone, hanging off
+    // the left edge, they come back.
+    const buttons = page.locator('.highlightEditor .editToolbar');
+    await expect(buttons).toBeVisible();
+    await buttons.evaluate(element => { (element as HTMLElement).style.insetInlineEnd = '100%'; });
+    await expect.poll(async () => (await buttons.boundingBox())!.x).toBeGreaterThanOrEqual(0);
+    await page.locator('#annotateBar .annotate-bar__done').click();
+    await page.evaluate(() => (document.querySelector('#tool-saveAs') as HTMLElement).click());
+    const saved = await lastSave(page);
+    const pdf = await getDocument({ data: new Uint8Array(saved.bytes), verbosity: 0 }).promise;
+    // pdf.js writes a free highlight as an ink annotation in the highlighter's colour.
+    expect((await (await pdf.getPage(1)).getAnnotations()).map(annotation => annotation.subtype)).toEqual(['Ink']);
+  });
+});
+
 test.describe('işaretleme (dokunmatik)', () => {
   test.use({ hasTouch: true });
+
+  test('metin kipinde parmakla dokunulan yerde metin kutusu açılır ve yazı alır', async ({ page }) => {
+    await openPdf(page, makePdf());
+    await page.locator('#tool-annotate').click();
+    await page.locator('#annotateBar').getByRole('button', { name: 'Metin', exact: true }).click();
+    const box = (await page.locator('.page').first().boundingBox())!;
+    // A real tap: after the finger lifts the browser also sends mouse events.
+    await page.touchscreen.tap(box.x + 200, box.y + 500);
+    await expect(page.locator('.freeTextEditor')).toHaveCount(1);
+    await expect(page.locator('.freeTextEditor .internal')).toBeFocused();
+    await page.keyboard.type('Parmakla not');
+    await page.locator('#annotateBar').getByRole('button', { name: 'Bitti', exact: true }).click();
+    await expect(page.locator('.freeTextEditor')).toContainText('Parmakla not');
+  });
 
   test('tek sayfa görünümünde parmakla çizmek sayfayı çevirmez, çizer', async ({ page }) => {
     await openPdf(page, makePdf());
@@ -1108,6 +1179,41 @@ test.describe('PDF → Word', () => {
     expect(xml).toMatch(/<w:cols[^>]*w:num="2"/);
     // A4 pages, one section per page at least.
     expect(xml).toMatch(/<w:pgSz w:w="11900" w:h="16840"/);
+  });
+});
+
+test.describe('ilk ekrandan PDF → Word', () => {
+  /** The browser's picker gives a real file handle (from the origin's private storage), or is cancelled. */
+  const pickerGives = (page: Page, pdf: Buffer | null) => page.evaluate(async bytes => {
+    if (!bytes) {
+      Object.assign(window, { showOpenFilePicker: async () => { throw new DOMException('Vazgeçildi', 'AbortError'); } });
+      return;
+    }
+    const folder = await navigator.storage.getDirectory();
+    const handle = await folder.getFileHandle('ders.pdf', { create: true });
+    const writer = await handle.createWritable();
+    await writer.write(new Uint8Array(bytes));
+    await writer.close();
+    Object.assign(window, { showOpenFilePicker: async () => [handle] });
+  }, pdf ? [...pdf] : null);
+
+  test('seçilen PDF açılır ve Word belgesi olarak kaydedilir', async ({ page }) => {
+    await pickerGives(page, makePdf({ pages: 2 }));
+    await page.locator('#emptyPdfToWord').click();
+    await expect(page.locator('.tab.is-active .tab__title')).toHaveText('ders.pdf');
+    const saved = await lastSave(page);
+    expect(saved.name).toBe('ders.docx');
+  });
+
+  test('seçiciden vazgeçilirse sonra açılan PDF dönüştürülmez', async ({ page }) => {
+    await pickerGives(page, null);
+    await page.locator('#emptyPdfToWord').click();
+    // The picker closed without a file: the app is in front again.
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await page.waitForTimeout(3300);
+    await openPdf(page, makePdf({ pages: 1 }));
+    await page.waitForTimeout(1500);
+    expect(await saves(page)).toHaveLength(0);
   });
 });
 

@@ -13,6 +13,23 @@ import { pdfAssets } from '../core/pdf-document'
 export class OcrCancelled extends Error {}
 /** The device's WebAssembly has no SIMD (WebViews older than Chrome 91), which the core needs. */
 export class OcrUnsupported extends Error {}
+/** The recognition engine did not start (its files missing or unreadable). */
+export class OcrNotStarted extends Error {}
+
+/**
+ * The Turkish model as shipped: gzip-compressed, except in the Android app, whose build unpacks
+ * every `.gz` asset and drops the extension (a phone, 2026-11-08: the .gz was not found and
+ * tesseract waited for ever).
+ */
+async function modelIsCompressed(): Promise<boolean> {
+  try {
+    const response = await fetch(ocrUrl('tur.traineddata.gz'))
+    void response.body?.cancel()
+    return response.ok
+  } catch {
+    return false
+  }
+}
 
 /** Recognition reads a page drawn at this resolution (the usual for OCR). */
 const OCR_DPI = 300
@@ -20,6 +37,8 @@ const OCR_DPI = 300
 const MAX_SIDE = 3508
 /** A page with fewer characters than this has no text of its own. */
 const TEXT_THRESHOLD = 10
+/** Starting tesseract (loading its core and the model) takes some seconds; longer means it failed. */
+const START_TIMEOUT_MS = 60_000
 
 const ocrUrl = (file: string) => new URL(`ocr/${file}`, document.baseURI).href
 
@@ -70,17 +89,28 @@ export async function recognizePdf(bytes: Uint8Array, progress: (text: string) =
     if (pages.length === 0) return { data: new Uint8Array(0), recognized: 0, skipped: output.getPageCount() }
     progress('Türkçe tanıma hazırlanıyor')
     let pageShare = ''
-    worker = await tesseract.createWorker('tur', tesseract.OEM.LSTM_ONLY, {
+    const starting = tesseract.createWorker('tur', tesseract.OEM.LSTM_ONLY, {
       workerPath: ocrUrl('worker.min.js'),
       corePath: ocrUrl('tesseract-core-simd-lstm.wasm.js'),
       langPath: ocrUrl('').replace(/\/$/, ''),
-      gzip: true,
+      gzip: await modelIsCompressed(),
       cacheMethod: 'none',
       workerBlobURL: false,
       logger: message => {
         if (message.status === 'recognizing text') progress(`${pageShare} %${Math.round(message.progress * 100)}`)
       },
     })
+    // tesseract.js does not always report a file it could not load; it waits instead.
+    let timer: ReturnType<typeof setTimeout> | undefined
+    worker = await Promise.race([
+      starting,
+      new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new OcrNotStarted()), START_TIMEOUT_MS) }),
+    ]).finally(() => clearTimeout(timer))
+      .catch(error => {
+        // One that starts after all is not left running.
+        void starting.then(late => late.terminate(), () => undefined)
+        throw error
+      })
     await worker.setParameters({ preserve_interword_spaces: '1' })
     for (const [index, number] of pages.entries()) {
       if (isCancelled()) throw new OcrCancelled()
