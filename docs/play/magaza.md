@@ -70,6 +70,12 @@ awPDF ücretsiz ve açık kaynaklıdır (MIT lisansı). Öneri ve sorunlar için
 
 Play Console'da sürüm oluşturulurken `<tr-TR>` ile `</tr-TR>` arasına yazılır. En yenisi üstte.
 
+### 0.0.7
+
+<!-- not-0.0.7 -->
+İlk ekranda PDF → Word, Word → PDF ve Görsel → PDF düğmeleri. Telefonda metin kutusunun açılmaması, fosforlu kalemin yazının üstünde boyamaması ve yazı tanımanın (OCR) takılması düzeltildi. PDF'ten Word'e çeviride broşür ve kapak sayfalarının düzeni korunur; yazı rengi de aktarılır.
+<!-- /not-0.0.7 -->
+
 ### 0.0.6
 
 <!-- not-0.0.6 -->
