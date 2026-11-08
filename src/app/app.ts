@@ -7,7 +7,7 @@ import { loadPdf, OpenCancelled } from '../core/pdf-document'
 import { pdfFileFromBlob, type PdfFile } from '../core/pdf-file'
 import { deviceStore, RecentFiles, type RecentFile } from '../core/recent-files'
 import { SignatureStore } from '../core/signatures'
-import { currentPlatform, SameFileError } from '../platform/platform'
+import { currentPlatform, DOCX_TYPE, SameFileError } from '../platform/platform'
 import { TOOLS } from '../tools'
 import type { ToolContext } from '../tools/tool'
 import { askCompressLevel, askProtection, askImagePageSize, askPassword, askPrintPages, askUnsavedChanges, confirmCompressed, confirmExternalLink, confirmLargeFile, showToast, startWork } from '../ui/messages'
@@ -34,6 +34,7 @@ import { Presentation } from './presentation'
 import { printDocument } from './print'
 import { COMPRESS_LEVELS, CompressCancelled, compressPdf, type CompressResult } from './pdf-compress'
 import { protectPdf } from '../core/pdf-encrypt'
+import { pdfToWord, WordCancelled } from './pdf-to-word'
 
 const APP_TITLE = 'awPDF | mADEMatik'
 
@@ -95,6 +96,7 @@ export function startApp(): void {
     pdfFromWord: () => wordInput.click(),
     compress: () => void compress(),
     protect: () => void protect(),
+    pdfToWord: () => void toWord(),
     saveImages: () => {
       view.finishEditing()
       if (view.pdf && view.file) void savePagesAsImages(view.pdf, view.file, view.page, platform)
@@ -175,6 +177,45 @@ export function startApp(): void {
       if (wasModified) tabs.markUnsaved(tab)
     }
     if (data) await saveCopy(tab, 'password' in answer ? 'parolalı' : 'parolasız', data)
+  }
+
+  /**
+   * The active document as a Word file (`app/pdf-to-word.ts`), marks and filled fields included.
+   * A document with a password is copied without it first.
+   */
+  async function toWord(): Promise<void> {
+    const tab = tabs.active
+    if (!tab) return
+    view.finishEditing()
+    const wasModified = Boolean(tab.modified)
+    const work = startWork("Word'e dönüştürülüyor")
+    let data: Uint8Array | null = null
+    try {
+      const encrypted = await isEncrypted(tab.document).catch(() => false)
+      const source = encrypted
+        ? await tab.document.extractPages([{ document: null }, { document: blankPdf() }])
+        : tab.document.annotationStorage.size > 0 ? await tab.document.saveDocument() : await tab.document.getData()
+      const title = tab.file.name.replace(/\.pdf$/i, '')
+      data = await pdfToWord(source, title, (done, total) => work.progress(`Sayfa ${Math.min(done + 1, total)} / ${total}`),
+        () => work.cancelled, { skipLast: encrypted })
+    } catch (error) {
+      if (!(error instanceof WordCancelled)) {
+        console.error(error)
+        showToast("Word'e dönüştürülemedi.")
+      }
+    } finally {
+      work.done()
+      if (wasModified) tabs.markUnsaved(tab)
+    }
+    if (!data) return
+    const name = `${tab.file.name.replace(/\.pdf$/i, '')}.docx`
+    try {
+      const saved = await platform.saveFile(name, data, tab.file, DOCX_TYPE)
+      if (saved !== null) showToast(`Kaydedildi: ${saved}`)
+    } catch (error) {
+      console.error(error)
+      showToast('Kaydedilemedi.')
+    }
   }
 
   /** A new file made from the tab's document, named after it; the open one stays as it is. */

@@ -333,6 +333,7 @@ public class AwPdfNativePlugin extends Plugin {
             case "image/png":
             case "image/jpeg":
             case "application/zip":
+            case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
                 return type;
             default:
                 return "application/pdf";

@@ -158,7 +158,7 @@ pencereye bırakılan Word belgesi de dönüştürülür; Sayfaları Düzenle'de
 
 **Kolaydan zora sıra (2026-11-06, kullanıcıya önerildi):** 1. sayfa aralığıyla yazdırma, 2. form doldurma (ilk
 kez kaydetme gelir), 3. sayfa işlemleri, 4. görsel ↔ PDF, 5. Word → PDF, 6. işaretleme/not/kalem, 7. imza,
-8. PDF küçültme (**yapıldı 2026-11-08**), 9. parola koyma (**yapıldı 2026-11-08**), 10. PDF → Word, 11. Türkçe OCR (dil verisi uygulamaya girer, APK büyür;
+8. PDF küçültme (**yapıldı 2026-11-08**), 9. parola koyma (**yapıldı 2026-11-08**), 10. PDF → Word (**yapıldı 2026-11-08**), 11. Türkçe OCR (dil verisi uygulamaya girer, APK büyür;
 Play yayınından sonraya). Hepsi cihazda çalışır, internet ve yeni izin gerektirmez. Kapalı test sırasında her
 sürüm tek bir araç getirir ve okuma akışına dokunmaz. Kullanıcı ilk üçünü istedi (2026-11-06).
 
@@ -198,6 +198,24 @@ boyutlandırılır, silinir.
 - PDF'e pdf.js'in imza biçimiyle yazılır (çizgi görünümlü damga notu); bu bir **elektronik imza değildir**
   (sertifikalı, e-İmza gibi doğrulanan imza ayrı ve büyük bir iş).
 - **Denenecek:** tahtada ve telefonda parmakla imza.
+
+## PDF → Word (2026-11-08, kullanıcı kararı: bütün araçlar)
+
+**Yapıldı (2026-11-08), sürüm bekliyor.** "Word'e Dönüştür" (dizüstünde ☰ menüsünde): belge cihazda Word'e
+(.docx) çevrilir, "Farklı Kaydet" ile "<ad>.docx". 2026-11-04'te kararlaştırılan 1. adım (otomatik dönüştürücü):
+- Yazı düzenlenebilir metin olur: satırlar paragraflara birleşir (satır sonunda tireyle bölünmüş kelime birleşir),
+  kalın, eğik, altı çizili, punto, yazı tipi (LiberationSerif → Times New Roman gibi), üs ve alt simge, ortalama /
+  sağa / iki yana yaslama, ilk satır girintisi. İki sütunlu sayfa Word'de iki sütun olur; üstteki başlık ve alttaki
+  yazılar boydan boya kalır.
+- Fotoğraf, şekil, tablo, formül (MathType, MathMagic, Symbol yazı tipleri) ve eğik yazılar sayfadan kesilip resim
+  olarak aynı yere konur (144 DPI). Sayfa numaraları alınmaz (Word kendi numaralar). Her sayfa Word'de ayrı sayfa,
+  boyutu ve kenar boşlukları PDF'teki gibi.
+- Kullanıcının dosyalarıyla denendi (yalnız yerelde, LibreOffice çıktısı PDF'ler): kompozisyon neredeyse aynı
+  (başlık, 3 paragraf, sağa yaslı imza), sınav kâğıdı 2 sayfa ve 2 sütun (sorular resim olduğu için resim kaldı).
+  Süre 2-6 sn.
+- **Bilinmeyen:** MathMagic formüllü 410 sayfalık kitap (dosya artık bilgisayarda yok); düzenlenebilir tablo ve
+  taranmış sayfalar (OCR) bu adımın dışında. 2. adım (düzeltme ekranı) gerçek kullanımdan sonra kararlaştırılır.
+- Yazı rengi şimdilik alınmıyor (hepsi siyah); işaretleme notları yalnız resim olan yerlerde görünür.
 
 ## Parola koyma (2026-11-08, kullanıcı kararı: bütün araçlar)
 

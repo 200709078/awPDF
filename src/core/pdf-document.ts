@@ -14,6 +14,16 @@ class FileRangeTransport extends PDFDataRangeTransport {
 
 const assetUrl = (folder: string) => new URL(`pdfjs/${folder}/`, document.baseURI).href
 
+/** Where pdf.js finds its character maps, colour profiles, standard fonts and decoders (in the app). */
+export function pdfAssets() {
+  return {
+    cMapUrl: assetUrl('cmaps'),
+    iccUrl: assetUrl('iccs'),
+    standardFontDataUrl: assetUrl('standard_fonts'),
+    wasmUrl: assetUrl('wasm'),
+  }
+}
+
 /** The reader declined to give a password; there is nothing to report. */
 export class OpenCancelled extends Error {}
 
@@ -29,10 +39,7 @@ export async function loadPdf(file: PdfFile, askPassword: (wasWrong: boolean) =>
     disableAutoFetch: true,
     disableStream: true,
     enableXfa: false,
-    cMapUrl: assetUrl('cmaps'),
-    iccUrl: assetUrl('iccs'),
-    standardFontDataUrl: assetUrl('standard_fonts'),
-    wasmUrl: assetUrl('wasm'),
+    ...pdfAssets(),
   })
   task.onPassword = (answer: (password: string) => void, reason: number) => {
     void askPassword(reason === PasswordResponses.INCORRECT_PASSWORD).then(password => {

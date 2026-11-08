@@ -155,3 +155,11 @@ export const protectTool: Tool = {
   needsDocument: true,
   run: context => context.protect(),
 }
+
+export const pdfToWordTool: Tool = {
+  id: 'pdfToWord',
+  label: "Word'e Dönüştür",
+  icon: '<path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><path d="M14 3v6h6"/><path d="M8 13l1.5 5 2.5-4 2.5 4 1.5-5"/>',
+  needsDocument: true,
+  run: context => context.pdfToWord(),
+}

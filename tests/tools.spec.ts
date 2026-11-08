@@ -13,6 +13,8 @@ import { imagesToPdf } from '../src/core/images-to-pdf';
 import { crc32, zip } from '../src/core/zip';
 import { isOldWordFile, isWordFile } from '../src/app/word-to-pdf';
 import { cssWithFallbacks, cssWithWordLines, plainBullets, symbolText, withFallback, wordLineHeight } from '../src/core/word-fonts';
+import { fontStyle, layoutPage, type Glyphs, type Graphic, type TextStyle } from '../src/core/page-layout';
+import { protectPdf, passwordBytes } from '../src/core/pdf-encrypt';
 import { crc32 as nodeCrc32 } from 'node:zlib';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { makePdf } from './helpers/make-pdf.mjs';
@@ -306,5 +308,108 @@ test.describe('Word → PDF', () => {
     expect(withFallback('var(--docx-minorHAnsi-font)')).toBe('var(--docx-minorHAnsi-font), sans-serif');
     expect(cssWithFallbacks('.docx { font-family: Cambria; font-size: 11pt; } p { font-family: Arial }'))
       .toBe('.docx { font-family: Cambria, serif; font-size: 11pt; } p { font-family: Arial, sans-serif}');
+  });
+});
+
+test.describe('PDF → Word sayfa düzeni', () => {
+  const plain: TextStyle = { family: 'Times New Roman', bold: false, italic: false, math: false };
+  const bold: TextStyle = { ...plain, bold: true };
+  const math: TextStyle = { ...plain, family: 'MT Extra', math: true };
+  const run = (text: string, x: number, y: number, style = plain, size = 12, width = text.length * size * 0.5): Glyphs => ({ text, x, y, size, width, style });
+  const page = { width: 595, height: 842 };
+  const texts = (blocks: ReturnType<typeof layoutPage>['columns'][number]) => blocks.map(block => block.kind === 'paragraph'
+    ? block.lines.map(line => line.parts.map(part => (part.kind === 'text' ? part.run.text : '[resim]')).join('')).join(' / ')
+    : `[${block.regions.length} resim]`);
+
+  test('ortalanmış başlık, girintili paragraflar ve sağa yaslı imza ayrı paragraflardır', () => {
+    const glyphs = [
+      run('BAŞLIK', 260, 80, bold, 12, 75),
+      run('Birinci paragrafın ilk satırı girintili ve uzun bir satırdır.', 92, 106, plain, 12, 433),
+      run('ikinci satır sütunun sonuna dek gider ve paragraf sürer.', 71, 120, plain, 12, 454),
+      run('Kısa son satır.', 71, 134, plain, 12, 90),
+      run('İkinci paragraf yine girintiyle başlar ve sağa dek uzanır.', 92, 148, plain, 12, 433),
+      run('Ad SOYAD', 470, 200, bold, 12, 55),
+      run('Okulun adı ve sınıfı', 420, 214, plain, 12, 105),
+    ];
+    const layout = layoutPage(glyphs, [], page);
+    expect(layout.columns).toHaveLength(1);
+    const blocks = layout.columns[0];
+    expect(texts(blocks)).toEqual([
+      'BAŞLIK',
+      'Birinci paragrafın ilk satırı girintili ve uzun bir satırdır. / ikinci satır sütunun sonuna dek gider ve paragraf sürer. / Kısa son satır.',
+      'İkinci paragraf yine girintiyle başlar ve sağa dek uzanır.',
+      'Ad SOYAD',
+      'Okulun adı ve sınıfı',
+    ]);
+    expect(blocks[0].kind === 'paragraph' && blocks[0].align).toBe('center');
+    expect(blocks[1].kind === 'paragraph' && blocks[1].firstLine - blocks[1].left).toBeCloseTo(21, 0);
+  });
+
+  test('üs ve alt simge satırına girer; geniş boşluk boşluk olarak kalır', () => {
+    const glyphs = [run('x', 72, 100), run('2', 78, 95, plain, 8, 4), run('+ a', 86, 100), run('n', 104, 103, plain, 8, 4), run('Sağda', 400, 100)];
+    const [line] = layoutPage(glyphs, [], page).columns[0].flatMap(block => (block.kind === 'paragraph' ? block.lines : []));
+    const runs = line.parts.flatMap(part => (part.kind === 'text' ? [part.run] : []));
+    expect(runs.map(item => item.position)).toEqual(['normal', 'super', 'normal', 'sub', 'normal']);
+    expect(runs.at(-1)!.text).toMatch(/^ {20,}Sağda$/);
+  });
+
+  test('iki sütun tanınır; başlık üstte, sütunlar soldan sağa', () => {
+    const glyphs = [run('ÜST BAŞLIK BOYDAN BOYA UZANAN SATIR', 72, 60, bold, 12, 450)];
+    for (let row = 0; row < 8; row += 1) {
+      glyphs.push(run(`Sol ${row + 1}`, 72, 100 + row * 14, plain, 12, 200), run(`Sağ ${row + 1}`, 320, 100 + row * 14, plain, 12, 200));
+    }
+    const layout = layoutPage(glyphs, [], page);
+    expect(layout.columns).toHaveLength(2);
+    expect(texts(layout.before)).toEqual(['ÜST BAŞLIK BOYDAN BOYA UZANAN SATIR']);
+    expect(texts(layout.columns[0]).join(' / ')).toContain('Sol 1');
+    expect(texts(layout.columns[0]).join(' / ')).not.toContain('Sağ');
+    expect(texts(layout.columns[1]).join(' / ')).toContain('Sağ 8');
+  });
+
+  test('tablo ızgarası ve resim resim olur, içindeki yazıyla; tek çizgi ve sayfa numarası atılır', () => {
+    const line = (x0: number, y0: number, x1: number, y1: number): Graphic => ({ kind: 'path', box: { x0, y0, x1, y1 } });
+    const graphics: Graphic[] = [
+      // A 2×2 table.
+      line(72, 200, 300, 201), line(72, 230, 300, 231), line(72, 260, 300, 261),
+      line(72, 200, 73, 261), line(186, 200, 187, 261), line(299, 200, 300, 261),
+      // A rule under the title, alone.
+      line(72, 90, 520, 91),
+      { kind: 'image', box: { x0: 72, y0: 300, x1: 272, y1: 420 } },
+    ];
+    const glyphs = [
+      run('Başlık', 72, 80), run('Hücre', 80, 220, plain, 10, 30), run('Not', 200, 250, plain, 10, 20),
+      run('Metin satırı', 72, 450), run('∫ f(x) dx', 72, 480, math, 12, 50), run('- 3 -', 290, 820, plain, 9, 18),
+    ];
+    const layout = layoutPage(glyphs, graphics, page);
+    // The table and the photo are apart; the formula stands alone; the rule and the page number are gone.
+    expect(texts(layout.columns[0])).toEqual(['Başlık', '[1 resim]', '[1 resim]', 'Metin satırı', '[1 resim]']);
+    const [table] = layout.columns[0].flatMap(block => (block.kind === 'pictures' ? block.regions : []));
+    expect(table.box).toMatchObject({ x0: 72, y0: 200, x1: 300, y1: 261 });
+  });
+
+  test('yazı tipi adından aile, kalın, eğik ve formül', () => {
+    expect(fontStyle('BAAAAA+LiberationSerif-Bold', 'serif')).toEqual({ family: 'Times New Roman', bold: true, italic: false, math: false });
+    expect(fontStyle('ABCDEF+TimesNewRomanPS-ItalicMT', 'serif')).toMatchObject({ family: 'Times New Roman', italic: true });
+    expect(fontStyle('ArialMT', 'sans-serif').family).toBe('Arial');
+    expect(fontStyle('Calibri-Bold', 'sans-serif')).toMatchObject({ family: 'Calibri', bold: true });
+    expect(fontStyle('MTExtra', 'serif').math).toBe(true);
+    expect(fontStyle('Symbol', 'serif').math).toBe(true);
+    expect(fontStyle(undefined, 'serif').family).toBe('Times New Roman');
+  });
+});
+
+test.describe('parola (AES-256)', () => {
+  test('parolasız açılmaz, Türkçe harfli parolayla açılır; parolasız kayıt son sayfayı atabilir', async () => {
+    const protectedPdf = await protectPdf(makePdf({ pages: 2, text: index => `Gizli ${index + 1}` }), 'Işık-şifre 1');
+    await expect(getDocument({ data: protectedPdf.slice(), verbosity: 0 }).promise).rejects.toThrow(/password/i);
+    const pdf = await getDocument({ data: protectedPdf.slice(), password: 'Işık-şifre 1', verbosity: 0 }).promise;
+    expect((await (await pdf.getPage(2)).getTextContent()).items.map(item => ('str' in item ? item.str : '')).join('')).toBe('Gizli 2');
+    const plainCopy = await protectPdf(makePdf({ pages: 3 }), null, { dropLastPage: true });
+    expect((await getDocument({ data: plainCopy, verbosity: 0 }).promise).numPages).toBe(2);
+  });
+
+  test('parola NFKC ile, en çok 127 bayt', () => {
+    expect(passwordBytes('ﬁ')).toEqual(new TextEncoder().encode('fi'));
+    expect(passwordBytes('ş'.repeat(100))).toHaveLength(127);
   });
 });

@@ -25,6 +25,8 @@ Web, masaüstü ve Android için **PDF görüntüleme** uygulaması.
 - Görsellerden PDF (fotoğraflar A4 ya da kendi boyutunda sayfalar olur), PDF'e görsel ekleme
 - Word'den PDF: masaüstünde LibreOffice kuruluysa onunla (Word'deki düzen, seçilebilir metin, .doc da olur);
   telefonda ve web'de kendi çizimiyle (.docx, sayfalar görsel olarak girer). PDF'e Word belgesi ekleme
+- PDF'ten Word: yazı düzenlenebilir metin olur (paragraf, kalın/eğik, punto, üs/alt simge, iki sütun); resim,
+  şekil, tablo ve formüller sayfadan kesilip resim olarak yerine konur
 - Parola koyma (AES-256), parolalı belgenin parolasını değiştirme ya da kaldırma
 - PDF küçültme (az / orta / çok): fotoğraf ve taranmış sayfalar küçültülür, yazı yazı olarak kalır
 - Sayfaları PNG/JPG olarak kaydetme (birden çok sayfa tek ZIP), sayfadan bir bölgeyi görsel olarak alma

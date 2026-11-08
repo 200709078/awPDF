@@ -1038,3 +1038,72 @@ test.describe('parola', () => {
     expect(pdf.numPages).toBe(2);
   });
 });
+
+test.describe('PDF → Word', () => {
+  async function runTool(page: Page, id: string) {
+    if (await page.locator(`#toolbarMenu #tool-${id}`).count()) await page.locator('#toolbarMenuButton').click();
+    await page.locator(`#tool-${id}`).click();
+  }
+
+  /** Page 1: a bold centred title, a paragraph, a power and a picture; page 2: two columns. */
+  async function sourcePdf(page: Page) {
+    const png = await page.evaluate(() => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 300;
+      canvas.height = 150;
+      const context = canvas.getContext('2d')!;
+      context.fillStyle = '#2563eb';
+      context.fillRect(0, 0, 300, 150);
+      context.fillStyle = '#fbbf24';
+      context.beginPath();
+      context.arc(150, 75, 50, 0, Math.PI * 2);
+      context.fill();
+      return canvas.toDataURL('image/png').split(',')[1];
+    });
+    const { PDFDocument, StandardFonts } = await import('pdf-lib');
+    const document = await PDFDocument.create();
+    const regular = await document.embedFont(StandardFonts.TimesRoman);
+    const bold = await document.embedFont(StandardFonts.TimesRomanBold);
+    const first = document.addPage([595, 842]);
+    const title = 'ODEV KAGIDI';
+    first.drawText(title, { x: (595 - bold.widthOfTextAtSize(title, 16)) / 2, y: 780, size: 16, font: bold });
+    const lines = [
+      'Bu birinci paragrafin ilk satiri biraz girintili yazilmistir ve sagdaki kenara kadar uzanir.',
+      'Ikinci satir soldaki kenardan baslar ve yine sagdaki kenara kadar uzanip paragraf surer.',
+      'Son satir kisa kalir.',
+    ];
+    lines.forEach((text, index) => first.drawText(text, { x: index === 0 ? 92 : 72, y: 740 - index * 15, size: 12, font: regular }));
+    first.drawText('Alan: x', { x: 72, y: 680, size: 12, font: regular });
+    first.drawText('2', { x: 72 + regular.widthOfTextAtSize('Alan: x', 12), y: 685, size: 8, font: regular });
+    first.drawImage(await document.embedPng(Buffer.from(png, 'base64')), { x: 72, y: 450, width: 200, height: 100 });
+    const second = document.addPage([595, 842]);
+    for (let row = 0; row < 10; row += 1) {
+      second.drawText(`Sol sutun satir ${row + 1}`, { x: 72, y: 760 - row * 15, size: 12, font: regular });
+      second.drawText(`Sag sutun satir ${row + 1}`, { x: 320, y: 760 - row * 15, size: 12, font: regular });
+    }
+    return Buffer.from(await document.save());
+  }
+
+  test('yazı yazı olur (kalın, üs, paragraf), resim resim; iki sütunlu sayfa iki sütun', async ({ page }) => {
+    await openPdf(page, await sourcePdf(page), 'odev.pdf');
+    await runTool(page, 'pdfToWord');
+    const saved = await lastSave(page);
+    expect(saved.name).toBe('odev.docx');
+    const JSZip = (await import('jszip')).default;
+    const archive = await JSZip.loadAsync(Buffer.from(saved.bytes));
+    const xml = await archive.file('word/document.xml')!.async('string');
+    const text = xml.replace(/<w:tab\/>/g, '\t').replace(/<[^>]+>/g, '');
+    expect(text).toContain('ODEV KAGIDI');
+    expect(text).toContain('Bu birinci paragrafin ilk satiri biraz girintili yazilmistir ve sagdaki kenara kadar uzanir. Ikinci satir');
+    expect(text).toContain('Sol sutun satir 10');
+    // The title is bold and centred, the power raised, the picture a picture.
+    expect(xml).toMatch(/<w:jc w:val="center"\/>.*?<w:b\/>.*?ODEV KAGIDI/s);
+    expect(xml).toMatch(/<w:vertAlign w:val="superscript"\/>.*?>2</s);
+    expect(xml).toContain('<w:drawing>');
+    // A picture from the page's image is a photo: JPEG.
+    expect(Object.keys(archive.files).filter(name => /^word\/media\/.+\.(png|jpe?g)$/.test(name))).toHaveLength(1);
+    expect(xml).toMatch(/<w:cols[^>]*w:num="2"/);
+    // A4 pages, one section per page at least.
+    expect(xml).toMatch(/<w:pgSz w:w="11900" w:h="16840"/);
+  });
+});

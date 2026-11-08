@@ -62,6 +62,7 @@ export const PDF_TYPE: FileType = { mime: 'application/pdf', extension: 'pdf', d
 export const PNG_TYPE: FileType = { mime: 'image/png', extension: 'png', description: 'PNG görseli' }
 export const JPEG_TYPE: FileType = { mime: 'image/jpeg', extension: 'jpg', description: 'JPG görseli' }
 export const ZIP_TYPE: FileType = { mime: 'application/zip', extension: 'zip', description: 'ZIP arşivi' }
+export const DOCX_TYPE: FileType = { mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', extension: 'docx', description: 'Word belgesi' }
 
 /** The user chose a file that is open in the app; nothing was written. */
 export class SameFileError extends Error {}

@@ -5,7 +5,7 @@ import path from 'node:path'
 
 const MAX_SOURCES = 100
 /** What the page may save; anything else becomes a PDF. */
-const SAVE_EXTENSIONS: ReadonlySet<string> = new Set(['pdf', 'png', 'jpg', 'zip'])
+const SAVE_EXTENSIONS: ReadonlySet<string> = new Set(['pdf', 'png', 'jpg', 'zip', 'docx'])
 
 interface SaveType {
   extension: string

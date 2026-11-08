@@ -35,6 +35,8 @@ export interface ToolContext {
   compress(): void
   /** Saves a copy with a password, another password or none. */
   protect(): void
+  /** Saves the active document as a Word document. */
+  pdfToWord(): void
 }
 
 /**
