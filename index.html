@@ -71,6 +71,42 @@
 		<div id="pageEditorGrid" class="page-editor__grid" role="listbox" aria-label="Sayfalar" aria-multiselectable="true"></div>
 		<input id="pageEditorInput" type="file" accept="application/pdf,.pdf" multiple hidden>
 	</dialog>
+	<dialog id="signatureDialog" class="dialog signature-dialog" aria-labelledby="signatureTitle">
+		<h2 id="signatureTitle">Yeni imza</h2>
+		<form method="dialog">
+			<div class="signature-dialog__tabs" role="tablist" aria-label="İmza nasıl eklensin">
+				<button id="signatureTabDraw" type="button" role="tab" aria-selected="true" aria-controls="signatureDraw">Çiz</button>
+				<button id="signatureTabType" type="button" role="tab" aria-selected="false" aria-controls="signatureType">Yaz</button>
+				<button id="signatureTabImage" type="button" role="tab" aria-selected="false" aria-controls="signatureImage">Görsel</button>
+			</div>
+			<div id="signatureDraw" class="signature-dialog__panel" role="tabpanel" aria-labelledby="signatureTabDraw">
+				<canvas id="signatureCanvas" class="signature-dialog__pad" aria-label="İmzanızı buraya parmakla, kalemle ya da fareyle çizin"></canvas>
+				<button id="signatureClear" type="button" class="secondary-button">Temizle</button>
+			</div>
+			<div id="signatureType" class="signature-dialog__panel" role="tabpanel" aria-labelledby="signatureTabType" hidden>
+				<input id="signatureText" type="text" placeholder="Adınızı yazın" aria-label="İmza olarak yazılacak ad" autocomplete="name" maxlength="60">
+				<div id="signatureTypePreview" class="signature-dialog__preview"></div>
+			</div>
+			<div id="signatureImage" class="signature-dialog__panel" role="tabpanel" aria-labelledby="signatureTabImage" hidden>
+				<p class="dialog__hint">Beyaz kâğıda atılmış imzanın fotoğrafı ya da taranmış hâli: imza çizgilere çevrilir, zemin alınmaz.</p>
+				<button id="signatureImagePick" type="button" class="secondary-button">Görsel Seç</button>
+				<input id="signatureImageInput" type="file" accept="image/*" hidden>
+				<div id="signatureImagePreview" class="signature-dialog__preview"></div>
+			</div>
+			<label class="dialog__field">Adı (PDF'te imzanın açıklaması)
+				<input id="signatureName" type="text" value="İmza" maxlength="60" autocomplete="off">
+			</label>
+			<label class="signature-dialog__keep"><input id="signatureKeep" type="checkbox" checked> Bu cihazda sakla, sonra yeniden kullanayım</label>
+			<div id="signatureSaved" class="signature-dialog__saved" hidden>
+				<h3>Saklanan imzalar</h3>
+				<ul id="signatureSavedList"></ul>
+			</div>
+			<div class="dialog__actions">
+				<button id="signatureAdd" value="add" class="primary-button" disabled>Ekle</button>
+				<button value="cancel" class="secondary-button" formnovalidate>Vazgeç</button>
+			</div>
+		</form>
+	</dialog>
 	<dialog id="largeFileDialog" class="dialog">
 		<h2>Bu dosya büyük</h2>
 		<p id="largeFileMessage"></p>

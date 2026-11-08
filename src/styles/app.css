@@ -378,9 +378,151 @@ body {
 /* On a phone only the pictures of the modes: their names make the bar two rows. */
 @media (max-width: 600px) {
 	.annotate-bar__mode span,
+	.annotate-bar__new-signature span,
 	.annotate-bar__done span {
 		display: none;
 	}
+}
+
+/* A kept signature on its button: its own picture, dark on the bar's light ground. */
+.annotate-bar__signature svg {
+	width: 72px;
+	height: 32px;
+}
+
+.annotate-bar__signature {
+	color: #111827;
+	background: #ffffff;
+	box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.signature-dialog {
+	width: min(560px, calc(100vw - 32px));
+}
+
+.signature-dialog__tabs {
+	display: flex;
+	gap: 4px;
+	margin-bottom: 12px;
+	border-bottom: 1px solid var(--border);
+}
+
+.signature-dialog__tabs button {
+	flex: 1;
+	min-height: 48px;
+	border: 0;
+	border-bottom: 3px solid transparent;
+	background: none;
+	color: inherit;
+	font: inherit;
+	font-size: 18px;
+	cursor: pointer;
+}
+
+.signature-dialog__tabs button[aria-selected="true"] {
+	border-bottom-color: var(--accent);
+	color: var(--accent);
+	font-weight: 600;
+}
+
+.signature-dialog__panel {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 8px;
+	margin-bottom: 16px;
+}
+
+.signature-dialog__panel[hidden] {
+	display: none;
+}
+
+/* The pad is paper-white in both themes: a signature is dark ink on a light page. */
+.signature-dialog__pad {
+	width: 100%;
+	height: 200px;
+	border: 2px dashed var(--border);
+	border-radius: 8px;
+	background: #ffffff;
+	color: #111827;
+	touch-action: none;
+	cursor: crosshair;
+}
+
+.signature-dialog__panel input[type="text"] {
+	width: 100%;
+	min-height: 48px;
+	padding: 0 12px;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	background: var(--surface-muted);
+	color: inherit;
+	font: inherit;
+	font-size: 18px;
+}
+
+.signature-dialog__preview {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	min-height: 96px;
+	border-radius: 8px;
+	background: #ffffff;
+	color: #111827;
+}
+
+.signature-dialog__preview svg {
+	width: 100%;
+	height: 96px;
+}
+
+.signature-dialog__keep {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 16px;
+	font-size: 16px;
+}
+
+.signature-dialog__keep input {
+	width: 22px;
+	height: 22px;
+}
+
+.signature-dialog__saved h3 {
+	margin: 0 0 8px;
+	font-size: 16px;
+}
+
+.signature-dialog__saved ul {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin: 0 0 16px;
+	padding: 0;
+	list-style: none;
+}
+
+.signature-dialog__saved li {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.signature-dialog__thumb {
+	display: flex;
+	flex: 1;
+	height: 48px;
+	border-radius: 8px;
+	background: #ffffff;
+	color: #111827;
+}
+
+.signature-dialog__thumb svg {
+	width: 100%;
+	height: 100%;
 }
 
 .workspace {

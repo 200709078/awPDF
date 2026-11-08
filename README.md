@@ -19,6 +19,8 @@ Web, masaüstü ve Android için **PDF görüntüleme** uygulaması.
 - Form doldurma: PDF'teki alanlar doldurulur, doldurulmuş hâli yeni bir dosyaya kaydedilir
 - İşaretleme: kalemle çizme, fosforlu kalemle vurgulama, metin kutusu; renk ve kalınlık seçimi, geri al/yinele;
   işaretler PDF'e not (annotation) olarak kaydedilir, yazdırılır, parmakla ve tahta kalemiyle çizilir
+- İmza: çizerek, adını yazarak ya da kâğıttaki imzanın fotoğrafından; çizgi olarak (resim değil) sayfaya konur,
+  taşınır, boyutlandırılır; istenirse yalnız bu cihazda saklanır (en çok 5)
 - Sayfaları düzenleme: silme, döndürme, taşıma, başka PDF'lerle birleştirme, seçilen sayfaları ayrı kaydetme
 - Görsellerden PDF (fotoğraflar A4 ya da kendi boyutunda sayfalar olur), PDF'e görsel ekleme
 - Word'den PDF: masaüstünde LibreOffice kuruluysa onunla (Word'deki düzen, seçilebilir metin, .doc da olur);

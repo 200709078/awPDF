@@ -6,6 +6,7 @@ import { nameWithSuffix } from '../core/pdf-build'
 import { loadPdf, OpenCancelled } from '../core/pdf-document'
 import { pdfFileFromBlob, type PdfFile } from '../core/pdf-file'
 import { deviceStore, RecentFiles, type RecentFile } from '../core/recent-files'
+import { SignatureStore } from '../core/signatures'
 import { currentPlatform, SameFileError } from '../platform/platform'
 import { TOOLS } from '../tools'
 import type { ToolContext } from '../tools/tool'
@@ -43,7 +44,7 @@ export function startApp(): void {
   const view = new DocumentView(container, viewer, url => void openLink(url))
   const sidePanel = new SidePanel(document.querySelector('#sidePanel')!)
   const searchBar = new SearchBar(document.querySelector('#searchBar')!, view)
-  const annotateBar = new AnnotateBar(document.querySelector('#annotateBar')!, view)
+  const annotateBar = new AnnotateBar(document.querySelector('#annotateBar')!, view, new SignatureStore(deviceStore()))
   const recent = new RecentFiles(deviceStore())
   const recentList = new RecentList(recent, file => void openRecent(file))
   const tabs = new DocumentTabs(view, !platform.singleDocument)

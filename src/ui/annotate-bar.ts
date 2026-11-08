@@ -1,4 +1,7 @@
 import type { DocumentView, EditingState, EditorMode, EditorSetting } from '../app/document-view'
+import { shapeSvg, type SavedSignature, type SignatureStore } from '../core/signatures'
+import { showToast } from './messages'
+import { askSignature } from './signature-dialog'
 
 type MarkMode = Exclude<EditorMode, 'none'>
 
@@ -10,8 +13,9 @@ interface Choice {
 interface ModeInfo {
   readonly label: string
   readonly icon: string
-  readonly colorKind: 'inkColor' | 'textColor' | 'highlightColor'
-  readonly colors: readonly Choice[]
+  /** None for signatures, which are drawn as they were made. */
+  readonly colorKind?: 'inkColor' | 'textColor' | 'highlightColor'
+  readonly colors?: readonly Choice[]
   readonly sizeKind?: 'inkThickness' | 'textSize'
   readonly sizes?: readonly Choice[]
   /** What the sizes look like on their buttons: a dot this many px wide, or a letter. */
@@ -34,6 +38,8 @@ const HIGHLIGHT_CHOICES: readonly Choice[] = [
 ]
 
 export const PEN_ICON = '<path d="M4 20l1-5L16 4l4 4L9 19z"/><path d="M14 6l4 4"/>'
+const SIGN_ICON = '<path d="M3 17c3-1 4-9 6-9s-1 9 1 9 3-5 4-5 1 3 2 3 2-2 3-2"/><path d="M3 21h18"/>'
+const ADD_ICON = '<path d="M12 5v14"/><path d="M5 12h14"/>'
 
 const MODES: Readonly<Record<MarkMode, ModeInfo>> = {
   ink: {
@@ -59,6 +65,10 @@ const MODES: Readonly<Record<MarkMode, ModeInfo>> = {
     sizeKind: 'textSize',
     sizes: [{ label: 'Küçük', value: 12 }, { label: 'Orta', value: 18 }, { label: 'Büyük', value: 28 }],
     sizeLook: value => `<span class="annotate-bar__letter" style="font-size:${Math.round(value * 0.8)}px">A</span>`,
+  },
+  signature: {
+    label: 'İmza',
+    icon: SIGN_ICON,
   },
 }
 
@@ -93,6 +103,9 @@ export class AnnotateBar {
   private readonly modeButtons = new Map<MarkMode, HTMLButtonElement>()
   private readonly colors = document.createElement('div')
   private readonly sizes = document.createElement('div')
+  private readonly signatureGroup = document.createElement('div')
+  /** The kept signature a tap on the page puts there. */
+  private signature: SavedSignature | null = null
   private readonly undoButton = button('annotate-bar__button', 'Geri Al', svg(UNDO_ICON))
   private readonly redoButton = button('annotate-bar__button', 'Yinele', svg(REDO_ICON))
   private readonly deleteButton = button('annotate-bar__button', 'Seçileni Sil', svg(DELETE_ICON))
@@ -102,9 +115,10 @@ export class AnnotateBar {
     ink: { color: '#DC2626', size: 4 },
     highlight: { color: '#FFFF98' },
     text: { color: '#000000', size: 18 },
+    signature: { color: '' },
   }
 
-  constructor(private readonly root: HTMLElement, private readonly view: DocumentView) {
+  constructor(private readonly root: HTMLElement, private readonly view: DocumentView, private readonly signatures: SignatureStore) {
     const modes = document.createElement('div')
     modes.className = 'annotate-bar__group'
     modes.setAttribute('role', 'group')
@@ -112,7 +126,7 @@ export class AnnotateBar {
     for (const [mode, info] of Object.entries(MODES) as [MarkMode, ModeInfo][]) {
       const modeButton = button('annotate-bar__button annotate-bar__mode', info.label, svg(info.icon), true)
       modeButton.dataset.mode = mode
-      modeButton.addEventListener('click', () => this.use(mode))
+      modeButton.addEventListener('click', () => mode === 'signature' ? this.sign() : this.use(mode))
       this.modeButtons.set(mode, modeButton)
       modes.append(modeButton)
     }
@@ -121,11 +135,15 @@ export class AnnotateBar {
     this.colors.setAttribute('aria-label', 'Renk')
     this.sizes.className = 'annotate-bar__group'
     this.sizes.setAttribute('role', 'group')
+    this.signatureGroup.className = 'annotate-bar__group annotate-bar__signatures'
+    this.signatureGroup.setAttribute('role', 'group')
+    this.signatureGroup.setAttribute('aria-label', 'İmzalar')
+    this.signatureGroup.hidden = true
     const actions = document.createElement('div')
     actions.className = 'annotate-bar__group'
     actions.append(this.undoButton, this.redoButton, this.deleteButton)
     const done = button('annotate-bar__button annotate-bar__done', 'Bitti', svg(DONE_ICON), true)
-    root.append(modes, this.colors, this.sizes, actions, done)
+    root.append(modes, this.colors, this.sizes, this.signatureGroup, actions, done)
     // The bar's buttons do not take the focus: pdf.js ends the pen's drawing when its layer loses
     // it, and the strokes would become one drawing, undone at once instead of stroke by stroke.
     root.addEventListener('mousedown', event => {
@@ -178,6 +196,17 @@ export class AnnotateBar {
     this.notify()
   }
 
+  /** Opens the bar for signing; with no signature kept yet, the new signature dialog first. */
+  sign(): void {
+    if (!this.view.isOpen) return
+    if (!this.isOpen) {
+      this.root.hidden = false
+      this.notify()
+    }
+    this.use('signature')
+    if (this.signatures.list().length === 0) void this.newSignature()
+  }
+
   close(): void {
     if (!this.isOpen) return
     this.root.hidden = true
@@ -195,7 +224,7 @@ export class AnnotateBar {
       if (!this.isOpen || this.view.editorMode !== mode) return
       const info = MODES[mode]
       const chosen = this.chosen[mode]
-      this.apply({ kind: info.colorKind, value: chosen.color })
+      if (info.colorKind) this.apply({ kind: info.colorKind, value: chosen.color })
       if (info.sizeKind && chosen.size !== undefined) this.apply({ kind: info.sizeKind, value: chosen.size })
     })
   }
@@ -206,10 +235,16 @@ export class AnnotateBar {
     const info = MODES[mode]
     const chosen = this.chosen[mode]
     for (const [other, modeButton] of this.modeButtons) modeButton.setAttribute('aria-pressed', String(other === mode))
-    this.fill(this.colors, info.colors, chosen.color, choice => {
-      chosen.color = String(choice.value)
-      this.apply({ kind: info.colorKind, value: chosen.color })
-    }, choice => `<span class="annotate-bar__swatch" style="background:${String(choice.value)}"></span>`)
+    this.signatureGroup.hidden = mode !== 'signature'
+    if (mode === 'signature') this.showSignatures()
+    this.colors.hidden = !info.colors
+    const { colorKind, colors } = info
+    if (colorKind && colors) {
+      this.fill(this.colors, colors, chosen.color, choice => {
+        chosen.color = String(choice.value)
+        this.apply({ kind: colorKind, value: chosen.color })
+      }, choice => `<span class="annotate-bar__swatch" style="background:${String(choice.value)}"></span>`)
+    }
     this.sizes.hidden = !info.sizes
     if (info.sizes && info.sizeKind && info.sizeLook) {
       const { sizeKind, sizeLook } = info
@@ -219,6 +254,48 @@ export class AnnotateBar {
         this.apply({ kind: sizeKind, value: chosen.size })
       }, choice => sizeLook(Number(choice.value)))
     }
+  }
+
+  /** The kept signatures, each put on the page with a tap, and a new one. */
+  private showSignatures(): void {
+    const kept = this.signatures.list()
+    // The one chosen last, also one not kept; the first kept one otherwise.
+    this.signature ??= kept[0] ?? null
+    this.view.useSignature(this.signature)
+    const buttons = kept.map(item => {
+      const choice = button('annotate-bar__button annotate-bar__choice annotate-bar__signature', item.description, shapeSvg(item.shape, item.description))
+      choice.title = `${item.description}: sayfaya koy (ya da sayfada bir yere dokunun)`
+      choice.setAttribute('aria-pressed', String(item.id === this.signature?.id))
+      choice.addEventListener('click', () => {
+        this.signature = item
+        for (const other of this.signatureGroup.querySelectorAll('.annotate-bar__signature')) {
+          other.setAttribute('aria-pressed', String(other === choice))
+        }
+        void this.view.addSignature(item)
+      })
+      return choice
+    })
+    const add = button('annotate-bar__button annotate-bar__new-signature', 'Yeni İmza', svg(ADD_ICON), true)
+    add.addEventListener('click', () => void this.newSignature())
+    this.signatureGroup.replaceChildren(...buttons, add)
+  }
+
+  /** Asks for a signature, keeps it if wished, and puts it on the page. */
+  private async newSignature(): Promise<void> {
+    const made = await askSignature(this.signatures, id => {
+      if (id === this.signature?.id) this.signature = null
+      if (this.mode === 'signature') this.showSignatures()
+    })
+    if (!made || !this.isOpen || !this.view.isOpen) return
+    let signature: SavedSignature | null = null
+    if (made.keep) {
+      signature = this.signatures.add(made.description, made.shape)
+      if (!signature) showToast('İmza bu cihazda saklanamadı; yalnız bu belgeye konuyor.')
+    }
+    signature ??= { id: crypto.randomUUID(), description: made.description, shape: made.shape }
+    this.signature = signature
+    this.use('signature')
+    await this.view.addSignature(signature)
   }
 
   private fill(group: HTMLElement, choices: readonly Choice[], current: string | number | undefined,

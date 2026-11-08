@@ -1,7 +1,8 @@
 import '../core/pdfjs-global'
-import { AnnotationEditorParamsType, AnnotationEditorType, type PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
+import { AnnotationEditorParamsType, AnnotationEditorType, SignatureExtractor, type PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { EventBus, FindState, GenericL10n, PDFFindController, PDFLinkService, PDFViewer, ScrollMode, SpreadMode } from 'pdfjs-dist/legacy/web/pdf_viewer.mjs'
 import type { PdfFile } from '../core/pdf-file'
+import type { SavedSignature, SignatureShape } from '../core/signatures'
 import { foldTurkish } from '../core/turkish-search'
 
 const FIT_WIDTH = 'page-width'
@@ -25,7 +26,7 @@ export interface ViewState {
 }
 
 /** What the pen of the marking bar does: nothing, draw, highlight, or write text. */
-export type EditorMode = 'none' | 'ink' | 'highlight' | 'text'
+export type EditorMode = 'none' | 'ink' | 'highlight' | 'text' | 'signature'
 
 /** What the marking bar shows as possible. */
 export interface EditingState {
@@ -41,6 +42,29 @@ const EDITOR_TYPES: Readonly<Record<EditorMode, number>> = {
   ink: AnnotationEditorType.INK,
   highlight: AnnotationEditorType.HIGHLIGHT,
   text: AnnotationEditorType.FREETEXT,
+  signature: AnnotationEditorType.SIGNATURE,
+}
+
+/** A signature's height on the page when it is placed, in points (as pdf.js's viewer). */
+const SIGNATURE_HEIGHT = 40
+/** pdf.js's `SignatureEditor._INNER_MARGIN`. */
+const SIGNATURE_MARGIN = 3
+
+/** pdf.js's signature editor takes its lines in this form (`signatureData.lines`). */
+function signatureLines(shape: SignatureShape) {
+  return { curves: shape.curves.map(points => ({ points })), thickness: shape.thickness, width: shape.width, height: shape.height }
+}
+
+/** What pdf.js's signature editor is made with; it draws the signature on its own page. */
+function signatureData(signature: SavedSignature) {
+  return {
+    lines: signatureLines(signature.shape),
+    mustSmooth: false,
+    areContours: signature.shape.areContours,
+    description: signature.description,
+    uuid: signature.id,
+    heightInPage: SIGNATURE_HEIGHT,
+  }
 }
 
 /** A setting of the marks drawn from now on, and of the selected ones. */
@@ -117,6 +141,10 @@ export class DocumentView {
   private editorManager: EditorManager | null = null
   /** The marks as they were on the page when their document left the screen (see `redrawMarks`). */
   private readonly markCopies = new WeakMap<object, object | null>()
+  /** The signature a tap on the page puts there, in signature mode. */
+  private tapSignature: SavedSignature | null = null
+  /** A tap that only unselects a mark puts nothing on the page. */
+  private tapUnselects = false
   /** Whether the document on screen has unsaved changes; given by whoever opens it. */
   private isModified: () => boolean = () => false
   private editing: EditingState = { canUndo: false, canRedo: false, hasSelection: false, hasMarks: false }
@@ -131,12 +159,22 @@ export class DocumentView {
     this.viewer = new PDFViewer({
       container, viewer: viewerElement, eventBus, linkService: this.links, findController: this.finder, l10n,
       annotationEditorHighlightColors: HIGHLIGHT_COLORS,
-    })
+      // pdf.js's own signature dialog is part of its full viewer, not of these components; the
+      // marking bar has ours. pdf.js asks this when a tap on the page makes an empty signature.
+      signatureManager: {
+        getSignature: ({ editor }: { editor: TappedSignature }) => this.signAt(editor),
+        loadSignatures: async () => undefined,
+        renderEditButton: async () => null,
+        destroy: () => undefined,
+      },
+    } as ConstructorParameters<typeof PDFViewer>[0])
     void l10n.translate(container)
     this.links.setViewer(this.viewer)
     eventBus.on('annotationeditoruimanager', ({ uiManager }: { uiManager: EditorManager }) => {
       this.editorManager = uiManager
     })
+    container.addEventListener('pointerdown', () => { this.tapUnselects = this.editing.hasSelection }, true)
+    container.addEventListener('click', event => this.signAtTap(event))
     eventBus.on('annotationeditorlayerrendered', ({ source }: { source: PageViewWithEditor }) => {
       void this.redrawMarks(source)
     })
@@ -313,6 +351,61 @@ export class DocumentView {
    */
   finishEditing(): void {
     this.editorManager?.endCurrentEditing()
+  }
+
+  /** The signature a tap on the page puts there from now on (in signature mode). */
+  useSignature(signature: SavedSignature | null): void {
+    this.tapSignature = signature
+  }
+
+  /** Puts a signature in the middle of the page in view, selected, to be moved and sized. */
+  async addSignature(signature: SavedSignature): Promise<void> {
+    await this.setEditorMode('signature')
+    this.tapSignature = signature
+    this.eventBus.dispatch('switchannotationeditorparams', {
+      source: this,
+      type: AnnotationEditorParamsType.CREATE,
+      value: { signatureData: signatureData(signature) },
+    })
+  }
+
+  /**
+   * In signature mode a tap on a page puts the chosen signature there (pdf.js itself places one
+   * only in the middle). A tap on a mark, or one that unselects a mark, does not.
+   */
+  private signAtTap(event: MouseEvent): void {
+    const signature = this.tapSignature
+    const target = event.target as HTMLElement
+    if (this.mode !== 'signature' || !signature || this.tapUnselects || !target.classList.contains('annotationEditorLayer')) return
+    const pageNumber = Number(target.closest<HTMLElement>('.page')?.dataset.pageNumber)
+    const pageView = this.viewer.getPageView(pageNumber - 1) as PageViewWithEditor | undefined
+    const layer = pageView?.annotationEditorLayer?.annotationEditorLayer
+    layer?.createAndAddNewEditor({ offsetX: event.offsetX, offsetY: event.offsetY }, false, { signatureData: signatureData(signature) })
+  }
+
+  /** A tap made an empty signature: it takes the chosen one, or goes away without one. */
+  private signAt(editor: TappedSignature): void {
+    const signature = this.tapSignature
+    if (!signature || !editor.parent) {
+      queueMicrotask(() => editor.remove())
+      return
+    }
+    const { rawDims: { pageWidth, pageHeight }, rotation } = editor.parent.viewport
+    const outline = SignatureExtractor.processDrawnLines({
+      lines: signatureLines(signature.shape),
+      pageWidth,
+      pageHeight,
+      rotation,
+      innerMargin: SIGNATURE_MARGIN,
+      mustSmooth: false,
+      areContours: signature.shape.areContours,
+    })
+    if (!outline) {
+      queueMicrotask(() => editor.remove())
+      return
+    }
+    editor.div.hidden = false
+    editor.addSignature(outline, SIGNATURE_HEIGHT, signature.description, signature.id)
   }
 
   changeEditor(setting: EditorSetting): void {
@@ -582,6 +675,13 @@ interface PlacedMark {
   fixAndSetPosition(): void
 }
 
+interface TappedSignature {
+  parent: { viewport: { rawDims: { pageWidth: number; pageHeight: number }; rotation: number } } | null
+  div: HTMLElement
+  remove(): void
+  addSignature(outline: object, heightInPage: number, description: string, uuid: string): void
+}
+
 interface MarkEditor extends PlacedMark {
   _uiManager: EditorManager
   pageIndex: number
@@ -597,6 +697,7 @@ interface MarkLayer {
   isEmpty: boolean
   deserialize(data: object): Promise<PlacedMark | null>
   addOrRebuild(editor: object): void
+  createAndAddNewEditor(at: { offsetX: number; offsetY: number }, isCentered: boolean, data: object): unknown
 }
 
 interface PageViewWithEditor {

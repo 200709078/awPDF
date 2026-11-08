@@ -734,6 +734,130 @@ test.describe('işaretlerin yolları', () => {
   });
 });
 
+test.describe('imza', () => {
+  const bar = (page: Page) => page.locator('#annotateBar');
+  const dialog = (page: Page) => page.locator('#signatureDialog');
+  /** İşaretle, then the bar's İmza. */
+  async function signFromBar(page: Page) {
+    if (!await bar(page).isVisible()) await page.locator('#tool-annotate').click();
+    await bar(page).getByRole('button', { name: 'İmza', exact: true }).click();
+  }
+
+  /** A wavy signature on the pad. */
+  async function drawSignature(page: Page) {
+    const pad = (await page.locator('#signatureCanvas').boundingBox())!;
+    await page.mouse.move(pad.x + 40, pad.y + 140);
+    await page.mouse.down();
+    for (let step = 1; step <= 30; step += 1) await page.mouse.move(pad.x + 40 + step * 12, pad.y + 120 - Math.sin(step / 3) * 60);
+    await page.mouse.up();
+  }
+
+  async function annotationsOf(bytes: number[]) {
+    const pdf = await getDocument({ data: new Uint8Array(bytes), verbosity: 0 }).promise;
+    return (await pdf.getPage(1)).getAnnotations();
+  }
+
+  test('çizilen imza sayfaya konur, bu cihazda saklanır, PDF\'e imza olarak yazılır', async ({ page }) => {
+    await openPdf(page, makePdf());
+    await signFromBar(page);
+    // No signature kept yet: the dialog comes at once.
+    await expect(dialog(page)).toBeVisible();
+    await expect(page.locator('#signatureAdd')).toBeDisabled();
+    await drawSignature(page);
+    await expect(page.locator('#signatureAdd')).toBeEnabled();
+    await page.locator('#signatureName').fill('Ayşe Işık');
+    await page.locator('#signatureAdd').click();
+    await expect(dialog(page)).toBeHidden();
+    await expect(bar(page).getByRole('button', { name: 'İmza', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    const signature = page.locator('.signatureEditor');
+    await expect(signature).toHaveCount(1);
+    await expect(signature).toHaveAttribute('aria-description', /İmza: .*Ayşe Işık/);
+    await expect(bar(page).locator('.annotate-bar__signature')).toHaveCount(1);
+    const kept = await page.evaluate(() => JSON.parse(localStorage.getItem('awpdf.imzalar') ?? '[]'));
+    expect(kept).toHaveLength(1);
+    expect(kept[0].description).toBe('Ayşe Işık');
+
+    await page.keyboard.press('Control+s');
+    const saved = await lastSave(page);
+    expect(saved.name).toBe('deneme (işaretli).pdf');
+    const stamps = (await annotationsOf(saved.bytes)).filter(annotation => annotation.subtype === 'Stamp');
+    expect(stamps).toHaveLength(1);
+  });
+
+  test('saklanan imza yeniden kullanılır: düğmeyle ortaya, dokunuşla dokunulan yere; pencereden silinir', async ({ page }) => {
+    await openPdf(page, makePdf());
+    await signFromBar(page);
+    await drawSignature(page);
+    await page.locator('#signatureAdd').click();
+    await expect(page.locator('.signatureEditor')).toHaveCount(1);
+
+    await page.reload();
+    await openPdf(page, makePdf());
+    await signFromBar(page);
+    await expect(dialog(page)).toBeHidden();
+    const kept = bar(page).locator('.annotate-bar__signature');
+    await expect(kept).toHaveCount(1);
+    await expect(kept).toHaveAttribute('aria-pressed', 'true');
+    await kept.click();
+    await expect(page.locator('.signatureEditor')).toHaveCount(1);
+
+    // The first tap unselects the signature just put; the next one signs where it is.
+    const box = (await page.locator('.page').first().boundingBox())!;
+    await page.mouse.click(box.x + 300, box.y + 700);
+    await expect(page.locator('.signatureEditor')).toHaveCount(1);
+    await page.mouse.click(box.x + 300, box.y + 700);
+    await expect(page.locator('.signatureEditor')).toHaveCount(2);
+    const placed = (await page.locator('.signatureEditor').nth(1).boundingBox())!;
+    expect(Math.abs(placed.x + placed.width / 2 - (box.x + 300))).toBeLessThan(4);
+
+    await bar(page).getByRole('button', { name: 'Yeni İmza' }).click();
+    await expect(dialog(page)).toBeVisible();
+    await expect(page.locator('#signatureSavedList li')).toHaveCount(1);
+    await page.locator('#signatureSavedList').getByRole('button', { name: /imzasını sil/ }).click();
+    await expect(page.locator('#signatureSaved')).toBeHidden();
+    await expect(kept).toHaveCount(0);
+    await dialog(page).getByRole('button', { name: 'Vazgeç' }).click();
+    expect(await page.evaluate(() => localStorage.getItem('awpdf.imzalar'))).toBe('[]');
+  });
+
+  test('yazılan ad ve imza fotoğrafı da imza olur; saklanması istenmezse saklanmaz', async ({ page }) => {
+    await openPdf(page, makePdf());
+    await signFromBar(page);
+    await page.locator('#signatureTabType').click();
+    await expect(page.locator('#signatureText')).toBeFocused();
+    await page.keyboard.type('Ömer Çelik');
+    await expect(page.locator('#signatureTypePreview svg path')).toHaveCount(1);
+    await page.locator('#signatureKeep').uncheck();
+    await page.locator('#signatureAdd').click();
+    await expect(page.locator('.signatureEditor')).toHaveCount(1);
+    await expect(bar(page).locator('.annotate-bar__signature')).toHaveCount(0);
+
+    // A dark scribble on white paper, as a phone photo would be.
+    const photo = Buffer.from(await page.evaluate(() => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 400;
+      canvas.height = 160;
+      const context = canvas.getContext('2d')!;
+      context.fillStyle = '#f4f4f0';
+      context.fillRect(0, 0, 400, 160);
+      context.strokeStyle = '#1a1a40';
+      context.lineWidth = 6;
+      context.beginPath();
+      context.moveTo(30, 110);
+      for (let x = 30; x <= 370; x += 10) context.lineTo(x, 80 - Math.sin(x / 25) * 40);
+      context.stroke();
+      return canvas.toDataURL('image/png').split(',')[1];
+    }), 'base64');
+    await bar(page).getByRole('button', { name: 'Yeni İmza' }).click();
+    await page.locator('#signatureTabImage').click();
+    await page.locator('#signatureImageInput').setInputFiles({ name: 'imza.png', mimeType: 'image/png', buffer: photo });
+    await expect(page.locator('#signatureImagePreview svg path')).toHaveCount(1);
+    await page.locator('#signatureAdd').click();
+    await expect(page.locator('.signatureEditor')).toHaveCount(2);
+    await expect(bar(page).locator('.annotate-bar__signature')).toHaveCount(1);
+  });
+});
+
 test.describe('işaretleme (dokunmatik)', () => {
   test.use({ hasTouch: true });
 

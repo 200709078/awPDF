@@ -11,7 +11,7 @@ export interface RecentFile {
   source?: string
 }
 
-type Store = Pick<Storage, 'getItem' | 'setItem'>
+export type Store = Pick<Storage, 'getItem' | 'setItem'>
 
 /**
  * The documents read lately and the page each was left on. Kept on this device only, and losing

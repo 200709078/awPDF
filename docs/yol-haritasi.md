@@ -154,7 +154,7 @@ pencereye bırakılan Word belgesi de dönüştürülür; Sayfaları Düzenle'de
 3. Sayfa işlemleri: birleştirme, bölme, silme, sıralama, kalıcı döndürme — **yapıldı (2026-11-06)**
 4. Görsel ↔ PDF dönüştürme — **yapıldı (2026-11-06)**; küçültme ayrı iş olarak kaldı
 5. Taranmış PDF'ler için Türkçe OCR
-6. İmza ve parola koyma
+6. İmza ve parola koyma — imza **yapıldı (2026-11-08)**, aşağıda
 
 **Kolaydan zora sıra (2026-11-06, kullanıcıya önerildi):** 1. sayfa aralığıyla yazdırma, 2. form doldurma (ilk
 kez kaydetme gelir), 3. sayfa işlemleri, 4. görsel ↔ PDF, 5. Word → PDF, 6. işaretleme/not/kalem, 7. imza,
@@ -183,6 +183,21 @@ sürüklenerek taşınır.
 - Telefonda çubuk iki satır, yalnız simgeler.
 - **Denenecek:** tahtada gerçek kalem ve parmakla çizim (ETAP), telefonda parmakla çizim.
 - İleride (istenirse): silgi (şimdilik seçip silme), şekiller (ok, dikdörtgen), yapışkan not (yorum).
+
+## İmza (2026-11-08, kullanıcı kararı: bütün araçlar)
+
+**Yapıldı (2026-11-08), sürüm bekliyor.** "İşaretle" çubuğunda "İmza" (araç çubuğu dizüstü ekranında dolu olduğu
+için ayrı düğmesi yok; saklanmış imza yoksa doğrudan yeni imza penceresi açılır). Yeni imza
+penceresinde üç yol: **Çiz** (parmak, tahta kalemi, fare), **Yaz** (ad el yazısına benzer bir yazı tipiyle; cihazda
+yoksa eğik yazı), **Görsel** (beyaz kâğıttaki imzanın fotoğrafı; imza çizgilere çevrilir, zemin alınmaz). İmza
+sayfaya resim olarak değil çizgi olarak konur: keskin kalır, dosyayı büyütmez. Konan imza taşınır, köşesinden
+boyutlandırılır, silinir.
+- "Bu cihazda sakla" (varsayılan açık): imza yalnız bu cihazda (tarayıcının yerel deposu) durur, en çok 5;
+  çubukta küçük resmiyle görünür. Düğmeye dokununca sayfanın ortasına, imza kipinde sayfada bir yere dokununca
+  oraya konur. Saklanan imzalar "Yeni İmza" penceresinden silinir.
+- PDF'e pdf.js'in imza biçimiyle yazılır (çizgi görünümlü damga notu); bu bir **elektronik imza değildir**
+  (sertifikalı, e-İmza gibi doğrulanan imza ayrı ve büyük bir iş).
+- **Denenecek:** tahtada ve telefonda parmakla imza.
 
 ## Görsel ↔ PDF (2026-11-06, kullanıcı isteği)
 

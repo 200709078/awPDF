@@ -2,7 +2,8 @@ import { expect, test, type Page } from '@playwright/test';
 import { makePdf } from './helpers/make-pdf.mjs';
 
 const PHONE = { width: 360, height: 640 };
-const WIDE = { width: 1440, height: 900 };
+// A class board's screen: every tool fits on the row there.
+const WIDE = { width: 1920, height: 1080 };
 
 async function openPdf(page: Page) {
   await page.locator('#pdfInput').setInputFiles({ name: 'deneme.pdf', mimeType: 'application/pdf', buffer: makePdf() });
