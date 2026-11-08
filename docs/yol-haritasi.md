@@ -63,6 +63,12 @@ geçilir. Kullanıcının henüz geliştirici hesabı yok.
    Satıcı statüsü (AB Dijital Hizmetler Yasası) 2026-11-07'de "tacir değil" olarak beyan edildi. Reklam, ücretli
    sürüm ya da uygulama içi satın alma gelmeden önce Hesabı yönetme'den "tacir" olarak güncellenmeli; o zaman
    adres, telefon ve e-posta Play'de herkese açık olur.
+   0.0.6 (sürüm kodu 6) 2026-11-08: işaretleme, imza, PDF küçültme, parola, PDF → Word, Türkçe OCR (ve Word → PDF,
+   menü ✕, giriş ekranında yalnız logo). AAB kapalı teste yüklendi, kullanıcı incelemeye gönderdi; aynı gün 14:57'de
+   test kullanıcılarına sunuldu. Tam açıklamaya "PDF araçları" bölümü eklendi ve incelemeye gönderildi (yapay zekâ
+   beyanında "öğeleri etiketleme" seçildi). Web sürümü güncel. GitHub sürümü: etiketin CI'ında OCR testi düştü
+   (Vite `public/ocr`'ı sunmadı, bkz. CLAUDE.md); düzeltildi, main'den "Run workflow" ile 0.0.6 sürümü çıkarıldı (apk, deb, AppImage, exe).
+   Yeni araçlar telefonda ve tahtada henüz denenmedi; testçi geri bildirimi beklenir.
 7. Üretim erişimi başvurusu ve yayın
 
 ## Belgeyi kapatıp ilk ekrana dönmek (2026-11-04, kullanıcı isteği)
