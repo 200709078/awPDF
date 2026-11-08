@@ -107,6 +107,32 @@
 			</div>
 		</form>
 	</dialog>
+	<dialog id="compressDialog" class="dialog">
+		<h2>PDF'i küçült</h2>
+		<form method="dialog">
+			<p class="dialog__hint">Belgedeki fotoğraf ve taranmış sayfalar küçültülür; yazılar, çizimler ve formlar olduğu gibi kalır, yazı yine seçilir ve aranır.</p>
+			<fieldset class="dialog__choices">
+				<legend>Ne kadar küçülsün</legend>
+				<label><input type="radio" name="compressLevel" value="light"> Az: baskı kalitesi korunur</label>
+				<label><input type="radio" name="compressLevel" value="medium" checked> Orta: ekranda okumak ve e-postayla göndermek için</label>
+				<label><input type="radio" name="compressLevel" value="strong"> Çok: en küçük dosya, görseller bulanıklaşabilir</label>
+			</fieldset>
+			<div class="dialog__actions">
+				<button value="compress" class="primary-button">Küçült</button>
+				<button value="cancel" class="secondary-button" formnovalidate>Vazgeç</button>
+			</div>
+		</form>
+	</dialog>
+	<dialog id="compressResultDialog" class="dialog">
+		<h2>Küçültüldü</h2>
+		<form method="dialog">
+			<p id="compressResultMessage"></p>
+			<div class="dialog__actions">
+				<button value="save" class="primary-button">Kaydet</button>
+				<button value="cancel" class="secondary-button" formnovalidate>Vazgeç</button>
+			</div>
+		</form>
+	</dialog>
 	<dialog id="largeFileDialog" class="dialog">
 		<h2>Bu dosya büyük</h2>
 		<p id="largeFileMessage"></p>

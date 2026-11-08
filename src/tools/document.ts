@@ -139,3 +139,11 @@ export const goToPageTool: Tool = {
     })
   },
 }
+
+export const compressTool: Tool = {
+  id: 'compress',
+  label: "PDF'i Küçült",
+  icon: '<path d="M4 14h6v6"/><path d="M20 10h-6V4"/><path d="M14 10l7-7"/><path d="M3 21l7-7"/>',
+  needsDocument: true,
+  run: context => context.compress(),
+}

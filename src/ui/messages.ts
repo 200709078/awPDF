@@ -1,6 +1,7 @@
 import { formatMegabytes } from '../core/open-policy'
 import type { ImagePageSize } from '../core/images-to-pdf'
 import { parsePageRange } from '../core/page-range'
+import type { CompressLevelName } from '../app/pdf-compress'
 
 const TOAST_MS = 5000
 let toastTimer: ReturnType<typeof setTimeout> | undefined
@@ -176,4 +177,27 @@ export function askUnsavedChanges(name: string): Promise<UnsavedAnswer> {
 /** Resolves true when the user leaves the page editor without saving. */
 export function confirmLeaveEditor(): Promise<boolean> {
   return ask(document.querySelector<HTMLDialogElement>('#leaveEditorDialog')!, 'leave')
+}
+
+/** How much to make a PDF smaller; null when cancelled. */
+export async function askCompressLevel(): Promise<CompressLevelName | null> {
+  const dialog = document.querySelector<HTMLDialogElement>('#compressDialog')!
+  if (!await ask(dialog, 'compress')) return null
+  const checked = dialog.querySelector<HTMLInputElement>('input[name="compressLevel"]:checked')
+  return (checked?.value ?? 'medium') as CompressLevelName
+}
+
+/** Shows the sizes before and after; resolves whether to save the smaller copy. */
+export function confirmCompressed(before: number, after: number): Promise<boolean> {
+  const dialog = document.querySelector<HTMLDialogElement>('#compressResultDialog')!
+  const saved = Math.round((1 - after / before) * 100)
+  document.querySelector('#compressResultMessage')!.textContent =
+    `${formatSize(before)} → ${formatSize(after)}: dosya %${saved} küçüldü. Küçük kopya yeni bir dosya olarak kaydedilir; açık belge değişmez.`
+  return ask(dialog, 'save')
+}
+
+/** "12,4 MB" or "840 KB". */
+export function formatSize(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toLocaleString('tr-TR', { maximumFractionDigits: 1 })} MB`
+  return `${Math.max(1, Math.round(bytes / 1024)).toLocaleString('tr-TR')} KB`
 }

@@ -31,6 +31,8 @@ export interface ToolContext {
   pdfFromWord(): void
   /** Saves pages of the active document as pictures. */
   saveImages(): void
+  /** Saves a smaller copy of the active document. */
+  compress(): void
 }
 
 /**

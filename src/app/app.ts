@@ -2,7 +2,7 @@ import type { PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { isOpenableLink } from '../core/links'
 import { needsLargeFileWarning } from '../core/open-policy'
 import { imagesToPdf } from '../core/images-to-pdf'
-import { nameWithSuffix } from '../core/pdf-build'
+import { blankPdf, isEncrypted, nameWithSuffix } from '../core/pdf-build'
 import { loadPdf, OpenCancelled } from '../core/pdf-document'
 import { pdfFileFromBlob, type PdfFile } from '../core/pdf-file'
 import { deviceStore, RecentFiles, type RecentFile } from '../core/recent-files'
@@ -10,7 +10,7 @@ import { SignatureStore } from '../core/signatures'
 import { currentPlatform, SameFileError } from '../platform/platform'
 import { TOOLS } from '../tools'
 import type { ToolContext } from '../tools/tool'
-import { askImagePageSize, askPassword, askPrintPages, askUnsavedChanges, confirmExternalLink, confirmLargeFile, showToast, startWork } from '../ui/messages'
+import { askCompressLevel, askImagePageSize, askPassword, askPrintPages, askUnsavedChanges, confirmCompressed, confirmExternalLink, confirmLargeFile, showToast, startWork } from '../ui/messages'
 import { OutlineList } from '../ui/outline'
 import { PageEditor } from '../ui/page-editor'
 import { RegionCapture } from '../ui/region-capture'
@@ -32,6 +32,7 @@ import { savePagesAsImages } from './page-images'
 import { OLD_WORD_ACCEPT, OldWordError, WORD_ACCEPT, isOldWordFile, isWordFile, wordToPdf } from './word-to-pdf'
 import { Presentation } from './presentation'
 import { printDocument } from './print'
+import { COMPRESS_LEVELS, CompressCancelled, compressPdf, type CompressResult } from './pdf-compress'
 
 const APP_TITLE = 'awPDF | mADEMatik'
 
@@ -91,6 +92,7 @@ export function startApp(): void {
     },
     pdfFromImages: () => imageInput.click(),
     pdfFromWord: () => wordInput.click(),
+    compress: () => void compress(),
     saveImages: () => {
       view.finishEditing()
       if (view.pdf && view.file) void savePagesAsImages(view.pdf, view.file, view.page, platform)
@@ -98,6 +100,60 @@ export function startApp(): void {
   }
   /** One at a time: a drop of several files must not stack up their dialogs. */
   let opening = Promise.resolve()
+
+  /**
+   * A smaller copy of the active document, marks and filled fields included, saved as a new file.
+   * A file with a password is copied without it first (pdf-lib cannot write one).
+   */
+  async function compress(): Promise<void> {
+    const tab = tabs.active
+    if (!tab) return
+    view.finishEditing()
+    const level = await askCompressLevel()
+    if (!level || tab !== tabs.active) return
+    const wasModified = Boolean(tab.modified)
+    const work = startWork('PDF küçültülüyor')
+    let result: CompressResult | null = null
+    try {
+      const encrypted = await isEncrypted(tab.document).catch(() => false)
+      const source = encrypted
+        ? await tab.document.extractPages([{ document: null }, { document: blankPdf() }])
+        // With nothing filled in or marked the file's own bytes; pdf.js warns otherwise.
+        : tab.document.annotationStorage.size > 0 ? await tab.document.saveDocument() : await tab.document.getData()
+      result = await compressPdf(source, COMPRESS_LEVELS[level], (done, total) => {
+        work.progress(total > 0 ? `Görsel ${done} / ${total}` : '')
+      }, () => work.cancelled, { dropLastPage: encrypted })
+    } catch (error) {
+      if (!(error instanceof CompressCancelled)) {
+        console.error(error)
+        showToast('Bu PDF küçültülemedi.')
+      }
+    } finally {
+      work.done()
+      // pdf.js forgets its changes once it has written them; the open document still has them.
+      if (wasModified) tabs.markUnsaved(tab)
+    }
+    if (!result) return
+    const before = tab.file.size
+    // Written tighter, a file can shrink with no picture changed too.
+    if (result.data.length >= before * 0.97) {
+      showToast(result.images === 0
+        ? 'Bu belgede küçültülecek görsel yok; dosya daha küçük olmuyor.'
+        : 'Bu belge daha fazla küçülmüyor: görselleri zaten küçük.')
+      return
+    }
+    if (!await confirmCompressed(before, result.data.length)) return
+    try {
+      const saved = await platform.saveFile(nameWithSuffix(tab.file.name, 'küçültülmüş'), result.data, tab.file)
+      if (saved !== null) showToast(`Kaydedildi: ${saved}`)
+    } catch (error) {
+      if (error instanceof SameFileError) showToast('Açık bir belgenin üzerine kaydedilemez; başka bir ad seçin.')
+      else {
+        console.error(error)
+        showToast('Kaydedilemedi.')
+      }
+    }
+  }
 
   async function print(): Promise<void> {
     const { pdf } = view

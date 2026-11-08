@@ -17,7 +17,8 @@ export default defineConfig({
   use: {
     baseURL: externalBaseURL ?? `http://127.0.0.1:${port}`,
     browserName: 'chromium',
-    viewport: { width: 1440, height: 900 },
+    // A class board's screen, where every tool fits on the row; narrow screens have their own tests.
+    viewport: { width: 1920, height: 1080 },
     launchOptions: { executablePath },
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',

@@ -158,7 +158,7 @@ pencereye bırakılan Word belgesi de dönüştürülür; Sayfaları Düzenle'de
 
 **Kolaydan zora sıra (2026-11-06, kullanıcıya önerildi):** 1. sayfa aralığıyla yazdırma, 2. form doldurma (ilk
 kez kaydetme gelir), 3. sayfa işlemleri, 4. görsel ↔ PDF, 5. Word → PDF, 6. işaretleme/not/kalem, 7. imza,
-8. PDF küçültme, 9. parola koyma, 10. PDF → Word, 11. Türkçe OCR (dil verisi uygulamaya girer, APK büyür;
+8. PDF küçültme (**yapıldı 2026-11-08**), 9. parola koyma, 10. PDF → Word, 11. Türkçe OCR (dil verisi uygulamaya girer, APK büyür;
 Play yayınından sonraya). Hepsi cihazda çalışır, internet ve yeni izin gerektirmez. Kapalı test sırasında her
 sürüm tek bir araç getirir ve okuma akışına dokunmaz. Kullanıcı ilk üçünü istedi (2026-11-06).
 
@@ -198,6 +198,20 @@ boyutlandırılır, silinir.
 - PDF'e pdf.js'in imza biçimiyle yazılır (çizgi görünümlü damga notu); bu bir **elektronik imza değildir**
   (sertifikalı, e-İmza gibi doğrulanan imza ayrı ve büyük bir iş).
 - **Denenecek:** tahtada ve telefonda parmakla imza.
+
+## PDF küçültme (2026-11-08, kullanıcı kararı: bütün araçlar)
+
+**Yapıldı (2026-11-08), sürüm bekliyor.** "PDF'i Küçült" (dizüstü ekranında ☰ menüsünde, tahtada satırda): Az (baskı
+kalitesi), Orta (ekran, e-posta), Çok (en küçük). Belgedeki fotoğraf ve taranmış sayfa görselleri küçültülüp JPEG
+olarak yeniden yazılır; yazılar, yazı tipleri, içindekiler ve formlar olduğu gibi kalır, yazı seçilir ve aranır.
+Önce eski ve yeni boyut gösterilir, sonra "Farklı Kaydet" ("… (küçültülmüş).pdf"); açık belge değişmez.
+İşaretler ve doldurulmuş alanlar küçük kopyaya girer.
+- Kullanıcının dosyalarında denendi (yalnız yerelde): sınav kâğıdı 543 → 367 KB (%32, 1 sn), kompozisyon
+  158 → 112 KB.
+- Parolalı belgenin küçük kopyası **parolasız** olur (kullanılan kütüphane parola yazamaz); parola koyma aracı
+  gelince küçük kopyaya yeniden parola konabilir.
+- Dokunulmayan görseller: CMYK, 16 bit, maskeli, JBIG2/JPEG 2000 (taranmış siyah-beyaz belgeler çoğunlukla
+  JBIG2/CCITT'tir, onlar zaten küçüktür). Büyük kitapla (70 MB) denenmedi: dosya artık bilgisayarda yok.
 
 ## Görsel ↔ PDF (2026-11-06, kullanıcı isteği)
 

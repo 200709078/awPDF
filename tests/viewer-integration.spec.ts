@@ -82,7 +82,8 @@ test('yakınlaştırma düğmeleri ve kısayolları sayfayı büyütür', async 
   await page.locator('#tool-zoomOut').click();
   await expect.poll(width).toBeLessThan(fitted);
   await page.keyboard.press('Control+0');
-  await expect.poll(width).toBeCloseTo(fitted, 0);
+  // pdf.js rounds the fitted scale: a pixel either way.
+  await expect.poll(async () => Math.abs(await width() - fitted)).toBeLessThanOrEqual(1);
 });
 
 test('iki sayfa görünümünde sayfalar yan yana gelir, düğmeler satır satır gezer', async ({ page }) => {
@@ -285,7 +286,7 @@ test('sayfa paneli düğmeyle ve F4 ile açılıp kapanır, açılınca sayfa ye
   await toggle.click();
   await expect(page.locator('#sidePanel')).toBeHidden();
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
-  await expect.poll(width).toBeCloseTo(full, 0);
+  await expect.poll(async () => Math.abs(await width() - full)).toBeLessThanOrEqual(1);
 
   await page.keyboard.press('F4');
   await expect(page.locator('#sidePanel')).toBeVisible();

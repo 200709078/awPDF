@@ -877,3 +877,96 @@ test.describe('işaretleme (dokunmatik)', () => {
     await expect(page.locator('.inkEditor')).toHaveCount(1);
   });
 });
+
+test.describe('PDF küçültme', () => {
+  /** A tool's button, from the menu (☰) when the row is full. */
+  async function runTool(page: Page, id: string) {
+    if (await page.locator(`#toolbarMenu #tool-${id}`).count()) await page.locator('#toolbarMenuButton').click();
+    await page.locator(`#tool-${id}`).click();
+  }
+
+  /** A two-page PDF with text, a large photo-like JPEG and a PNG, written by pdf-lib. */
+  async function pdfWithPictures(page: Page) {
+    const [jpeg, png] = await page.evaluate(() => {
+      const picture = (width: number, height: number, type: string, quality?: number) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext('2d')!;
+        const gradient = context.createLinearGradient(0, 0, width, height);
+        gradient.addColorStop(0, '#3a6ea5');
+        gradient.addColorStop(1, '#f2c14e');
+        context.fillStyle = gradient;
+        context.fillRect(0, 0, width, height);
+        // Fine detail, as in a photo, so the file is large.
+        for (let index = 0; index < 40000; index += 1) {
+          context.fillStyle = `hsl(${index % 360} 60% ${30 + (index * 7) % 50}%)`;
+          context.fillRect((index * 7919) % width, (index * 104729) % height, 6, 6);
+        }
+        return canvas.toDataURL(type, quality).split(',')[1];
+      };
+      return [picture(3000, 2000, 'image/jpeg', 0.95), picture(1200, 900, 'image/png')];
+    });
+    const { PDFDocument, StandardFonts } = await import('pdf-lib');
+    const document = await PDFDocument.create();
+    const font = await document.embedFont(StandardFonts.Helvetica);
+    const photo = await document.embedJpg(Buffer.from(jpeg, 'base64'));
+    const drawing = await document.embedPng(Buffer.from(png, 'base64'));
+    for (const [index, image] of [photo, drawing].entries()) {
+      const pdfPage = document.addPage([595, 842]);
+      pdfPage.drawText(`Kucult ${index + 1}`, { x: 50, y: 790, size: 24, font });
+      pdfPage.drawImage(image, { x: 50, y: 300, width: 495, height: 330 });
+    }
+    return Buffer.from(await document.save());
+  }
+
+  test('görseller küçülür, yazı yazı olarak kalır; küçük kopya yeni dosyaya kaydedilir', async ({ page }) => {
+    const original = await pdfWithPictures(page);
+    await openPdf(page, original);
+    await runTool(page, 'compress');
+    await expect(page.locator('#compressDialog')).toBeVisible();
+    await page.locator('#compressDialog').getByRole('button', { name: 'Küçült' }).click();
+    const result = page.locator('#compressResultDialog');
+    await expect(result).toBeVisible({ timeout: 20000 });
+    await expect(page.locator('#compressResultMessage')).toContainText('küçüldü');
+    await result.getByRole('button', { name: 'Kaydet' }).click();
+    const saved = await lastSave(page);
+    expect(saved.name).toBe('deneme (küçültülmüş).pdf');
+    expect(saved.bytes.length).toBeLessThan(original.length / 2);
+    expect(await pagesOf(saved.bytes)).toEqual(['Kucult 1@0', 'Kucult 2@0']);
+    // The photo is scaled to the medium level's 1754 px; the PNG keeps its size under its soft mask.
+    const { PDFDocument, PDFName, PDFRawStream, PDFNumber } = await import('pdf-lib');
+    const smaller = await PDFDocument.load(new Uint8Array(saved.bytes));
+    const widths = smaller.context.enumerateIndirectObjects()
+      .flatMap(([, object]) => object instanceof PDFRawStream && object.dict.lookup(PDFName.of('Subtype')) === PDFName.of('Image')
+        && String(object.dict.lookup(PDFName.of('Filter'))) === '/DCTDecode'
+        ? [(object.dict.lookup(PDFName.of('Width')) as InstanceType<typeof PDFNumber>).asNumber()] : [])
+      .sort((a, b) => a - b);
+    expect(widths).toEqual([1200, 1754]);
+  });
+
+  test('küçülmeyen belge için söylenir; parolalı belgenin küçük kopyası parolasız açılır', async ({ page }) => {
+    // Already written tightly (object streams) and without pictures: nothing to gain.
+    const { PDFDocument, StandardFonts } = await import('pdf-lib');
+    const tight = await PDFDocument.create();
+    const font = await tight.embedFont(StandardFonts.Helvetica);
+    tight.addPage([595, 842]).drawText('Sade metin', { x: 50, y: 790, size: 24, font });
+    await openPdf(page, Buffer.from(await tight.save({ useObjectStreams: true })));
+    await runTool(page, 'compress');
+    await page.locator('#compressDialog').getByRole('button', { name: 'Küçült' }).click();
+    await expect(page.locator('#toast')).toHaveText('Bu belgede küçültülecek görsel yok; dosya daha küçük olmuyor.');
+    await expect(page.locator('#compressResultDialog')).toBeHidden();
+
+    await page.locator('#pdfInput').setInputFiles({ name: 'gizli.pdf', mimeType: 'application/pdf', buffer: makePdf({ pages: 2, padding: 20000, password: 'p' }) });
+    await page.locator('#passwordInput').fill('p');
+    await page.locator('#passwordDialog').getByRole('button', { name: 'Aç' }).click();
+    await expect(page.locator('.tab.is-active .tab__title')).toHaveText('gizli.pdf');
+    await runTool(page, 'compress');
+    await page.locator('#compressDialog').getByRole('button', { name: 'Küçült' }).click();
+    await page.locator('#compressResultDialog').getByRole('button', { name: 'Kaydet' }).click();
+    const saved = await lastSave(page);
+    expect(saved.name).toBe('gizli (küçültülmüş).pdf');
+    // pdf-lib cannot write a password: the copy opens without one, with both pages.
+    expect(await pagesOf(saved.bytes)).toEqual(['awPDF sayfa 1@0', 'awPDF sayfa 2@0']);
+  });
+});
