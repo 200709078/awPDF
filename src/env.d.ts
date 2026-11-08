@@ -31,6 +31,12 @@ interface DesktopFiles {
 }
 
 /** Opens the system's on-screen keyboard for a text field. */
+interface DesktopOffice {
+  available(): Promise<boolean>
+  /** Null without LibreOffice. */
+  toPdf(extension: 'docx' | 'doc', data: Uint8Array): Promise<Uint8Array | null>
+}
+
 interface DesktopScreenKeyboard {
   show(requestId: string): Promise<'shown' | 'unavailable' | 'cancelled'>
   hide(requestId: string): void
@@ -48,5 +54,6 @@ interface Window {
     windowControls?: DesktopWindowControls
     files?: DesktopFiles
     screenKeyboard?: DesktopScreenKeyboard
+    office?: DesktopOffice
   }
 }

@@ -30,6 +30,13 @@ export interface Platform {
    * `original` or another open file, which are read while they are on screen.
    */
   saveFile(name: string, data: Uint8Array, original?: PdfFile, type?: FileType): Promise<string | null>
+  /**
+   * A Word document as a PDF made by an office program on the device (LibreOffice on the desktop),
+   * which keeps the text as text and reads the old `.doc` too. Absent, or null, where there is none.
+   */
+  wordToPdf?(name: string, data: Uint8Array): Promise<Uint8Array | null>
+  /** Whether `wordToPdf` can be used now; it also takes `.doc`. */
+  hasOffice?(): Promise<boolean>
   /** Sends the file to another app, a PDF unless `type` says otherwise; absent where that means nothing. */
   share?(file: PdfFile, type?: FileType): Promise<void>
   /** The system's own bars around the app take the interface's colour; absent where it has none. */
@@ -61,7 +68,7 @@ export class SameFileError extends Error {}
 
 export function currentPlatform(): Platform {
   if (Capacitor.getPlatform() === 'android') return androidPlatform()
-  const { windowControls, files, screenKeyboard } = window.awPDFDesktop ?? {}
+  const { windowControls, files, screenKeyboard, office } = window.awPDFDesktop ?? {}
   if (!windowControls || !files) return browserPlatform()
-  return desktopPlatform(windowControls, files, isSmartBoard() ? screenKeyboard : undefined)
+  return desktopPlatform(windowControls, files, isSmartBoard() ? screenKeyboard : undefined, office)
 }

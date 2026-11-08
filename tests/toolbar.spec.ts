@@ -34,7 +34,7 @@ test('geniş ekranda bütün düğmeler sırada, menü düğmesi görünmez', as
   await page.setViewportSize(WIDE);
   await openPdf(page);
   await expect(toggle(page)).toBeHidden();
-  await expect(toolbar(page).locator(':scope > .toolbar__button:visible')).toHaveCount(24);
+  await expect(toolbar(page).locator(':scope > .toolbar__button:visible')).toHaveCount(25);
   await expect(page.locator('.toolbar__label:visible')).toHaveCount(0);
   await expectOneLine(page);
 });
@@ -52,9 +52,14 @@ test('dar ekranda satır kaymaz, sığmayanlar menüde simge ve adıyla durur', 
 
   await expect(menu(page)).toBeHidden();
   await expect(toggle(page)).toHaveAttribute('aria-expanded', 'false');
+  await expect(toggle(page)).toHaveAttribute('aria-label', 'Diğer Araçlar');
+  await expect(toggle(page).locator('path')).toHaveCount(3);
   await toggle(page).click();
   await expect(menu(page)).toBeVisible();
   await expect(toggle(page)).toHaveAttribute('aria-expanded', 'true');
+  // Open, the button is a cross that closes the menu.
+  await expect(toggle(page)).toHaveAttribute('aria-label', 'Menüyü Kapat');
+  await expect(toggle(page).locator('path')).toHaveCount(2);
   const zoomIn = menu(page).locator('#tool-zoomIn');
   await expect(zoomIn.locator('svg')).toBeVisible();
   await expect(zoomIn).toContainText('Yakınlaştır');
@@ -71,6 +76,7 @@ test('menüdeki araç çalışır ve menü kapanır; durumlar menüde de görün
   await expect(menu(page).locator('#tool-singlePage')).toHaveAttribute('aria-pressed', 'false');
   await menu(page).locator('#tool-singlePage').click();
   await expect(menu(page)).toBeHidden();
+  await expect(toggle(page)).toHaveAttribute('aria-label', 'Diğer Araçlar');
   await toggle(page).click();
   await expect(menu(page).locator('#tool-singlePage')).toHaveAttribute('aria-pressed', 'true');
   await expect(menu(page).locator('#tool-twoPages')).toBeEnabled();
@@ -82,13 +88,16 @@ test('menü dışına dokununca ve Esc ile kapanır, açık kalmaz', async ({ pa
   await toggle(page).click();
   await page.locator('#viewerContainer').click({ position: { x: 20, y: 400 } });
   await expect(menu(page)).toBeHidden();
+  await expect(toggle(page).locator('path')).toHaveCount(3);
   await toggle(page).click();
   await page.keyboard.press('Escape');
   await expect(menu(page)).toBeHidden();
   await expect(toggle(page)).toBeFocused();
+  await expect(toggle(page).locator('path')).toHaveCount(3);
   await toggle(page).click();
   await toggle(page).click();
   await expect(menu(page)).toBeHidden();
+  await expect(toggle(page)).toHaveAttribute('aria-label', 'Diğer Araçlar');
 });
 
 test('ekran genişleyince düğmeler sıraya döner, daralınca yine menüye geçer', async ({ page }) => {

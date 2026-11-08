@@ -6,6 +6,8 @@ export interface JpegImage {
   readonly data: Uint8Array
   readonly width: number
   readonly height: number
+  /** For a page of the picture's own size: its resolution, 96 when not given (a screen's). */
+  readonly dpi?: number
 }
 
 const A4 = { short: 595.28, long: 841.89 }
@@ -42,9 +44,9 @@ export function imagesToPdf(images: readonly JpegImage[], size: ImagePageSize): 
   return writer.finish(1)
 }
 
-function layout({ width, height }: JpegImage, size: ImagePageSize) {
+function layout({ width, height, dpi }: JpegImage, size: ImagePageSize) {
   if (size === 'image') {
-    const scale = Math.min(POINTS_PER_PIXEL, MAX_PAGE_SIDE / Math.max(width, height))
+    const scale = Math.min(dpi ? 72 / dpi : POINTS_PER_PIXEL, MAX_PAGE_SIDE / Math.max(width, height))
     const [pageWidth, pageHeight] = [width * scale, height * scale]
     return { pageWidth, pageHeight, x: 0, y: 0, width: pageWidth, height: pageHeight }
   }

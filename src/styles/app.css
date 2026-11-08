@@ -774,9 +774,10 @@ body {
 	overflow-y: auto;
 }
 
-.empty-state h1 {
-	margin: 0;
-	font-size: 32px;
+/* One column as wide as the longest label, so the first screen's buttons are all the same size. */
+.empty-state__actions {
+	display: grid;
+	gap: 16px;
 }
 
 .recent-files {

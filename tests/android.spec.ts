@@ -95,6 +95,7 @@ test.describe('geri düğmesi', () => {
 
     await send(page, 'backButton');
     await expect(page.locator('#toolbarMenu')).toBeHidden();
+    await expect(page.locator('#toolbarMenuButton')).toHaveAttribute('aria-label', 'Diğer Araçlar');
 
     await page.locator('#tool-sidePanel').click();
     await page.locator('#toolbarMenuButton').click();

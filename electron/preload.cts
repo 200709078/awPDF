@@ -22,6 +22,11 @@ contextBridge.exposeInMainWorld('awPDFDesktop', {
     reopen: (source: string): Promise<unknown> => ipcRenderer.invoke('files:reopen', source),
     save: (name: string, data: Uint8Array, nearId: number | undefined, type: { extension: string; description: string }): Promise<unknown> => ipcRenderer.invoke('files:save', name, data, nearId, { extension: type.extension, description: type.description }),
   },
+  // LibreOffice, where it is installed, turns Word documents into PDFs.
+  office: {
+    available: (): Promise<boolean> => ipcRenderer.invoke('office:available'),
+    toPdf: (extension: string, data: Uint8Array): Promise<Uint8Array | null> => ipcRenderer.invoke('office:to-pdf', extension, data),
+  },
   windowControls: {
     minimize: (): void => ipcRenderer.send('window:minimize'),
     toggleMaximize: (): void => ipcRenderer.send('window:toggle-maximize'),

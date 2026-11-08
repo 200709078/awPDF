@@ -19,6 +19,8 @@ Web, masaüstü ve Android için **PDF görüntüleme** uygulaması.
 - Form doldurma: PDF'teki alanlar doldurulur, doldurulmuş hâli yeni bir dosyaya kaydedilir
 - Sayfaları düzenleme: silme, döndürme, taşıma, başka PDF'lerle birleştirme, seçilen sayfaları ayrı kaydetme
 - Görsellerden PDF (fotoğraflar A4 ya da kendi boyutunda sayfalar olur), PDF'e görsel ekleme
+- Word'den PDF: masaüstünde LibreOffice kuruluysa onunla (Word'deki düzen, seçilebilir metin, .doc da olur);
+  telefonda ve web'de kendi çizimiyle (.docx, sayfalar görsel olarak girer). PDF'e Word belgesi ekleme
 - Sayfaları PNG/JPG olarak kaydetme (birden çok sayfa tek ZIP), sayfadan bir bölgeyi görsel olarak alma
   (kaydetme, kopyalama, Android'de paylaşma)
 - Kaydetme her zaman "Farklı Kaydet"tir; açık dosyanın üzerine yazılmaz
@@ -41,4 +43,5 @@ Komutların tamamı `package.json` dosyasındadır.
 
 ## Lisans
 
-[MIT](LICENSE). PDF motoru [pdf.js](https://github.com/mozilla/pdf.js) Apache 2.0 lisanslıdır.
+[MIT](LICENSE). PDF motoru [pdf.js](https://github.com/mozilla/pdf.js) ve Word belgelerini çizen
+[docx-preview](https://github.com/VolodymyrBaydalka/docxjs) Apache 2.0, [JSZip](https://github.com/Stuk/jszip) MIT lisanslıdır.

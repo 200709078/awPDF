@@ -68,6 +68,14 @@ export const imagesToPdfTool: Tool = {
   run: ({ pdfFromImages }) => pdfFromImages(),
 }
 
+/** A Word document (.docx) as a PDF, without a word processor. */
+export const wordToPdfTool: Tool = {
+  id: 'wordToPdf',
+  label: "Word'den PDF",
+  icon: '<path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5"/><path d="M8 12l1.5 5 1.5-4 1.5 4 1.5-5"/>',
+  run: ({ pdfFromWord }) => pdfFromWord(),
+}
+
 /** Pages as PNG or JPG files; several in one ZIP. */
 export const saveImagesTool: Tool = {
   id: 'saveImages',

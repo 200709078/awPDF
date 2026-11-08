@@ -38,10 +38,12 @@
 				<div id="viewer" class="pdfViewer"></div>
 			</div>
 			<section id="emptyState" class="empty-state">
-				<img src="./img/app-icon.png" width="128" height="128" alt="">
-				<h1>awPDF</h1>
-				<button id="emptyOpen" class="primary-button" type="button">PDF Aç</button>
-				<button id="emptyImages" class="secondary-button" type="button">Görsellerden PDF</button>
+				<img src="./img/app-icon.png" width="128" height="128" alt="awPDF">
+				<div class="empty-state__actions">
+					<button id="emptyOpen" class="primary-button" type="button">PDF Aç</button>
+					<button id="emptyImages" class="secondary-button" type="button">Görsellerden PDF</button>
+					<button id="emptyWord" class="secondary-button" type="button">Word'den PDF</button>
+				</div>
 				<div id="recentFiles" class="recent-files" hidden>
 					<h2>Son Dosyalar</h2>
 					<div id="recentFilesList" class="recent-files__list"></div>
@@ -52,6 +54,7 @@
 	</main>
 	<input id="pdfInput" type="file" accept="application/pdf,.pdf" multiple hidden>
 	<input id="imageInput" type="file" multiple hidden>
+	<input id="wordInput" type="file" hidden>
 	<dialog id="pageEditor" class="page-editor" aria-labelledby="pageEditorTitle">
 		<div class="page-editor__header">
 			<div class="page-editor__title">

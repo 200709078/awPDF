@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { _electron as electron } from '@playwright/test'
 import { makePdf } from '../tests/helpers/make-pdf.mjs'
+import { makeDocx } from '../tests/helpers/make-docx.mjs'
 
 const executablePath = process.env.AWPDF_ELECTRON_EXECUTABLE
 const launchEnvironment = { ...process.env, AWPDF_DEV_SERVER_URL: '' }
@@ -45,7 +46,7 @@ try {
   assert.equal(preferences.contextIsolation, true)
   assert.equal(preferences.sandbox, true)
   assert.equal(await page.evaluate(() => typeof window.require), 'undefined')
-  assert.deepEqual(await page.evaluate(() => Object.keys(window.awPDFDesktop ?? {}).sort()), ['files', 'screenKeyboard', 'windowControls'])
+  assert.deepEqual(await page.evaluate(() => Object.keys(window.awPDFDesktop ?? {}).sort()), ['files', 'office', 'screenKeyboard', 'windowControls'])
 
   // Frameless window: the renderer's title bar replaces the system frame.
   const titlebar = page.locator('#titlebar')
@@ -64,6 +65,28 @@ try {
     if (!canvas?.width) return false
     return canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data.some((value, index) => index % 4 !== 3 && value < 128)
   })
+
+  // Where LibreOffice is installed it writes the PDF from a Word document, text and all.
+  if (await page.evaluate(() => window.awPDFDesktop.office.available())) {
+    const made = await page.evaluate(async bytes => {
+      const pdf = await window.awPDFDesktop.office.toPdf('docx', new Uint8Array(bytes))
+      return new TextDecoder('latin1').decode(pdf)
+    }, [...await makeDocx()])
+    assert.ok(made.startsWith('%PDF-') && /LibreOffice/.test(made), 'LibreOffice PDF yazmalı')
+    await assert.rejects(page.evaluate(() => window.awPDFDesktop.office.toPdf('exe', new Uint8Array([1]))))
+  }
+
+  // A Word document is drawn through an SVG picture of each page, which the CSP must allow.
+  await page.locator('#wordInput').setInputFiles({ name: 'odev.docx', mimeType: 'application/octet-stream', buffer: await makeDocx() })
+  await page.waitForFunction(() => document.querySelectorAll('#pageEditorGrid .page-card').length === 2)
+  await page.waitForFunction(() => {
+    const canvas = document.querySelector('#pageEditorGrid .page-card canvas')
+    if (!canvas?.width) return false
+    return canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data.some((value, index) => index % 4 !== 3 && value < 128)
+  })
+  await page.locator('#pageEditorClose').click()
+  await page.locator('#leaveEditorDialog button[value="leave"]').click()
+  await page.locator('#pageEditor').waitFor({ state: 'hidden' })
 
   // A file from the disk is read by the shell; the page gets its name, never its path.
   await page.locator('#pdfInput').setInputFiles(pdfOnDisk('secilen.pdf', 4))

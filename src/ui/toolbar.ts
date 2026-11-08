@@ -6,6 +6,9 @@ export function shortcutOf(event: KeyboardEvent): string {
 
 const MENU_LABEL = 'Diğer Araçlar'
 const MENU_ICON = '<path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/>'
+/** While the menu is open its button shows a cross, which closes it (the user's wish, 2026-11-06). */
+const CLOSE_LABEL = 'Menüyü Kapat'
+const CLOSE_ICON = '<path d="M6 6l12 12"/><path d="M18 6L6 18"/>'
 /** Space left under the open menu, so its shadow and rounded end stay on screen. */
 const MENU_SCREEN_MARGIN_PX = 8
 
@@ -50,9 +53,14 @@ function mountOverflowMenu(root: HTMLElement, buttons: readonly HTMLButtonElemen
   toggle.setAttribute('aria-controls', menu.id)
   root.append(toggle, menu)
 
+  const icon = toggle.querySelector('svg')!
   const setOpen = (open: boolean) => {
     menu.hidden = !open
     toggle.setAttribute('aria-expanded', String(open))
+    const label = open ? CLOSE_LABEL : MENU_LABEL
+    toggle.title = label
+    toggle.setAttribute('aria-label', label)
+    icon.innerHTML = open ? CLOSE_ICON : MENU_ICON
     if (open) menu.style.maxHeight = `${window.innerHeight - root.getBoundingClientRect().bottom - MENU_SCREEN_MARGIN_PX}px`
   }
   const fit = () => {

@@ -11,6 +11,8 @@ import { blankPdf, buildPdf, isEncrypted, nameWithSuffix } from '../src/core/pdf
 import { rotatePages } from '../src/core/pdf-rotate';
 import { imagesToPdf } from '../src/core/images-to-pdf';
 import { crc32, zip } from '../src/core/zip';
+import { isOldWordFile, isWordFile } from '../src/app/word-to-pdf';
+import { cssWithFallbacks, cssWithWordLines, plainBullets, symbolText, withFallback, wordLineHeight } from '../src/core/word-fonts';
 import { crc32 as nodeCrc32 } from 'node:zlib';
 import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { makePdf } from './helpers/make-pdf.mjs';
@@ -231,6 +233,11 @@ test.describe('görsellerden PDF ve ZIP', () => {
     expect(await sizes(imagesToPdf(pictures, 'image'))).toEqual([[300, 225], [225, 375]]);
   });
 
+  test('verilen çözünürlükteki görsel kendi boyutunda sayfada doğru ölçülür', async () => {
+    // A4 drawn at 150 DPI, as a Word page is.
+    expect(await sizes(imagesToPdf([{ ...picture(1240, 1754), dpi: 150 }], 'image'))).toEqual([[595, 842]]);
+  });
+
   test('çok büyük görsel PDF\'in sayfa sınırını aşmaz', async () => {
     const [[width, height]] = await sizes(imagesToPdf([picture(40000, 10000)], 'image'));
     expect(width).toBe(14400);
@@ -258,5 +265,46 @@ test.describe('görsellerden PDF ve ZIP', () => {
     expect(entries[0].data).toEqual([1, 2, 3]);
     // The end record counts both files.
     expect(archive.readUInt16LE(archive.length - 12)).toBe(2);
+  });
+});
+
+test.describe('Word → PDF', () => {
+  test('yalnız .docx dönüştürülür; eski .doc ayrıca tanınır', () => {
+    expect(isWordFile('Ödev 1.DOCX')).toBe(true);
+    expect(isWordFile('eski.doc')).toBe(false);
+    expect(isOldWordFile('eski.doc')).toBe(true);
+    expect(isOldWordFile('belge.docx')).toBe(false);
+  });
+
+  test('Word\'ün Symbol ve Wingdings madde işaretleri sıradan karakter olur', () => {
+    expect(plainBullets('p.a:before { content: "\uf0b7\\9"; font-family: Symbol; }')).toBe('p.a:before { content: "•\\9"; font-family: Symbol; }');
+    expect(plainBullets('"\uf0a7" "\uf0d8" "\uf0fc" "\uf0e1"')).toBe('"▪" "➢" "✓" "•"');
+    expect(plainBullets('"%1." "o"')).toBe('"%1." "o"');
+  });
+
+  test('Symbol ile yazılmış matematik işaretleri ve Wingdings kutuları doğru karaktere döner', () => {
+    // Typed as letters in the Symbol font, and as Word's private code points (w:sym).
+    expect(symbolText('p r2 a\u00b3b', 'Symbol')).toBe('π ρ2 α≥β');
+    expect(symbolText('\uf0b9 \uf0b1 \uf0b4 \uf0b8 \uf0a3 \uf0d6', 'Symbol')).toBe('≠ ± × ÷ ≤ √');
+    expect(symbolText('\uf0fe \uf0a8 \uf0fc', '"Wingdings"')).toBe('☑ □ ✓');
+    expect(symbolText('p ≥ 2', 'Calibri')).toBe('p ≥ 2');
+  });
+
+  test('Word\'ün tek ve katlı satır aralığı yazı tipinin satır yüksekliğiyle ölçülür', () => {
+    expect(wordLineHeight('1.00')).toBe('1.15');
+    expect(wordLineHeight('2')).toBe('2.3');
+    expect(wordLineHeight('12pt')).toBe('12pt');
+    expect(wordLineHeight('calc(100% + 2pt)')).toBe('calc(100% + 2pt)');
+    expect(cssWithWordLines('p { line-height: 1.50; } q { line-height: 14pt }')).toBe('p { line-height: 1.725; } q { line-height: 14pt }');
+  });
+
+  test('cihazda olmayan yazı tipine benzer genel aile eklenir', () => {
+    expect(withFallback('Calibri')).toBe('Calibri, sans-serif');
+    expect(withFallback("'Times New Roman'")).toBe("'Times New Roman', serif");
+    expect(withFallback("'Courier New'")).toBe("'Courier New', monospace");
+    expect(withFallback('Arial, sans-serif')).toBe('Arial, sans-serif');
+    expect(withFallback('var(--docx-minorHAnsi-font)')).toBe('var(--docx-minorHAnsi-font), sans-serif');
+    expect(cssWithFallbacks('.docx { font-family: Cambria; font-size: 11pt; } p { font-family: Arial }'))
+      .toBe('.docx { font-family: Cambria, serif; font-size: 11pt; } p { font-family: Arial, sans-serif}');
   });
 });

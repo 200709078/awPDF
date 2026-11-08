@@ -26,6 +26,7 @@ import { DocumentView } from './document-view'
 import { bindGestures } from './gestures'
 import { IMAGE_ACCEPT, isImageFile, jpegFromFile } from './images'
 import { savePagesAsImages } from './page-images'
+import { OLD_WORD_ACCEPT, OldWordError, WORD_ACCEPT, isOldWordFile, isWordFile, wordToPdf } from './word-to-pdf'
 import { Presentation } from './presentation'
 import { printDocument } from './print'
 
@@ -55,6 +56,15 @@ export function startApp(): void {
     imageInput.value = ''
     if (files.length > 0) void pdfFromImages(files)
   })
+  const wordInput = document.querySelector<HTMLInputElement>('#wordInput')!
+  wordInput.accept = WORD_ACCEPT
+  // With an office program the old .doc can be chosen too.
+  void platform.hasOffice?.().then(has => { if (has) wordInput.accept = `${WORD_ACCEPT},${OLD_WORD_ACCEPT}` })
+  wordInput.addEventListener('change', () => {
+    const file = wordInput.files?.[0]
+    wordInput.value = ''
+    if (file) void pdfFromWord(file)
+  })
   const context: ToolContext = {
     view,
     regionCapture: new RegionCapture(document.querySelector('.document-area')!, view, platform),
@@ -74,6 +84,7 @@ export function startApp(): void {
       if (tabs.active) void pageEditor.open(tabs.active.document, tabs.active.file)
     },
     pdfFromImages: () => imageInput.click(),
+    pdfFromWord: () => wordInput.click(),
     saveImages: () => {
       if (view.pdf && view.file) void savePagesAsImages(view.pdf, view.file, view.page, platform)
     },
@@ -149,6 +160,41 @@ export function startApp(): void {
     }
   }
 
+  /**
+   * A Word document, each page drawn as a picture, opens in the page editor as a new document, as
+   * pictures do. No word processor is needed; the fonts are the device's, so lines may break a
+   * little differently than in Word.
+   */
+  async function pdfFromWord(file: File): Promise<void> {
+    if (!isWordFile(file.name) && !isOldWordFile(file.name)) {
+      showToast('Yalnız Word belgeleri (.docx) dönüştürülebilir.')
+      return
+    }
+    const work = startWork('Word belgesi hazırlanıyor')
+    let bytes: Uint8Array | null
+    try {
+      bytes = await wordToPdf(file, platform, work)
+    } catch (error) {
+      if (!(error instanceof OldWordError)) console.error(error)
+      work.done()
+      showToast(error instanceof OldWordError
+        ? 'Eski Word biçimi (.doc) açılamıyor; belgeyi Word\'de .docx olarak kaydedip yeniden deneyin.'
+        : `Word belgesi okunamadı: ${file.name}`)
+      return
+    }
+    work.done()
+    if (!bytes) return
+    const name = `${file.name.replace(/\.docx?$/i, '')}.pdf`
+    const pdfFile = pdfFileFromBlob(new File([bytes as Uint8Array<ArrayBuffer>], name, { type: 'application/pdf' }))
+    try {
+      const pdf = await loadPdf(pdfFile, () => Promise.resolve(null))
+      await pageEditor.open(pdf, pdfFile, { isNew: true, saveName: name, title: "Word'den PDF" })
+    } catch (error) {
+      console.error(error)
+      showToast('Word belgesinden PDF oluşturulamadı.')
+    }
+  }
+
   async function openLink(url: string): Promise<void> {
     if (!isOpenableLink(url)) showToast('Bu bağlantı açılamıyor.')
     else if (await confirmExternalLink(url)) platform.openExternal(url)
@@ -166,6 +212,13 @@ export function startApp(): void {
       const picture = new File([await file.read(0, file.size) as Uint8Array<ArrayBuffer>], file.name)
       file.close?.()
       await pdfFromImages([picture])
+      return
+    }
+    // So does a Word document.
+    if (isWordFile(file.name) || isOldWordFile(file.name)) {
+      const document_ = new File([await file.read(0, file.size) as Uint8Array<ArrayBuffer>], file.name)
+      file.close?.()
+      await pdfFromWord(document_)
       return
     }
     if (needsLargeFileWarning(file.size) && !await confirmLargeFile(file.name, file.size)) {
@@ -257,4 +310,5 @@ export function startApp(): void {
   colourSystemBars()
   document.querySelector('#emptyOpen')!.addEventListener('click', context.pickFile)
   document.querySelector('#emptyImages')!.addEventListener('click', context.pdfFromImages)
+  document.querySelector('#emptyWord')!.addEventListener('click', context.pdfFromWord)
 }

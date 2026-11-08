@@ -1,5 +1,6 @@
 import type { PDFDocumentProxy } from 'pdfjs-dist/legacy/build/pdf.mjs'
 import { IMAGE_ACCEPT, isImageFile, jpegFromFile } from '../app/images'
+import { OLD_WORD_ACCEPT, WORD_ACCEPT, isOldWordFile, isWordFile, wordToPdf } from '../app/word-to-pdf'
 import { imagesToPdf, type ImagePageSize } from '../core/images-to-pdf'
 import { PagePlan, type PlannedPage } from '../core/page-plan'
 import { blankPdf, buildPdf, isEncrypted, nameWithSuffix } from '../core/pdf-build'
@@ -32,6 +33,8 @@ export interface PageEditorOptions {
   readonly isNew?: boolean
   /** The name offered when saving; by default the open file's with "(düzenlendi)". */
   readonly saveName?: string
+  /** The editor's heading for a new document: what it was made from. */
+  readonly title?: string
   /** How added pictures sit on their pages. */
   readonly imageSize?: ImagePageSize
 }
@@ -95,7 +98,8 @@ export class PageEditor {
     this.status = dialog.querySelector('#pageEditorStatus')!
     this.note = dialog.querySelector('#pageEditorNote')!
     this.input = dialog.querySelector('#pageEditorInput')!
-    this.input.accept = `application/pdf,.pdf,${IMAGE_ACCEPT}`
+    this.input.accept = `application/pdf,.pdf,${IMAGE_ACCEPT},${WORD_ACCEPT}`
+    void host.platform.hasOffice?.().then(has => { if (has) this.input.accept += `,${OLD_WORD_ACCEPT}` })
     this.title = dialog.querySelector('#pageEditorTitle')!
     this.observer = new IntersectionObserver(entries => this.onVisibility(entries), { root: this.grid, rootMargin: VIEW_MARGIN })
     this.buttons = this.actions().map(action => ({ action, button: actionButton(action) }))
@@ -136,7 +140,7 @@ export class PageEditor {
     this.sources = [{ name: file.name, pdf }]
     this.original = file
     this.options = options
-    this.title.textContent = options.isNew ? 'Görsellerden PDF' : 'Sayfaları Düzenle'
+    this.title.textContent = options.title ?? (options.isNew ? 'Görsellerden PDF' : 'Sayfaları Düzenle')
     this.plan = new PagePlan(pdf.numPages)
     this.selected.clear()
     this.render()
@@ -194,7 +198,7 @@ export class PageEditor {
       },
       {
         id: 'add',
-        label: 'PDF / Görsel Ekle',
+        label: 'Dosya Ekle',
         icon: '<path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M12 11v6M9 14h6"/>',
         run: () => this.input.click(),
       },
@@ -244,9 +248,10 @@ export class PageEditor {
     for (const file of files) {
       this.setBusy(true, `${file.name} ekleniyor…`)
       try {
-        const picture = isImageFile(file)
-          ? new File([imagesToPdf([await jpegFromFile(file)], this.options.imageSize ?? 'a4') as Uint8Array<ArrayBuffer>], file.name, { type: 'application/pdf' })
+        const made = isImageFile(file) ? imagesToPdf([await jpegFromFile(file)], this.options.imageSize ?? 'a4')
+          : isWordFile(file.name) || isOldWordFile(file.name) ? await this.wordPdf(file)
           : null
+        const picture = made && new File([made as Uint8Array<ArrayBuffer>], file.name, { type: 'application/pdf' })
         const pdf = await loadPdf(pdfFileFromBlob(picture ?? file), wasWrong => askPassword(file.name, wasWrong))
         // A file given whole to pdf.js cannot carry its password, so a copy without one goes in.
         const bytes = await isEncrypted(pdf)
@@ -265,6 +270,16 @@ export class PageEditor {
     }
     this.render()
     this.cards.get(this.plan.pages.at(-1)?.key ?? -1)?.scrollIntoView({ block: 'nearest' })
+  }
+
+  /** A Word document as a PDF, with the count shown while its pages are drawn. */
+  private async wordPdf(file: File): Promise<Uint8Array> {
+    const made = await wordToPdf(file, this.host.platform, {
+      cancelled: false,
+      progress: text => this.setBusy(true, `${file.name} ekleniyor… ${text}`),
+    })
+    if (!made) throw new Error('Word belgesi dönüştürülemedi.')
+    return made
   }
 
   private async save(onlySelected: boolean): Promise<void> {

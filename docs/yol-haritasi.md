@@ -58,8 +58,8 @@ geçilir. Kullanıcının henüz geliştirici hesabı yok.
    AAB kapalı teste yüklendi (2026-11-06), Google incelemesinde. Üretim başvurusunda "geri bildirimle neyi
    değiştirdiniz" için: menü-bağlantı düzeltmesi, belgeyi kapatma, arama renkleri, görsel ↔ PDF, sayfa işlemleri.
    Kısa açıklama 2026-11-06'da "… koyu tema. Tamamen reklamsız." oldu (kullanıcı isteği; "Sade ve hızlı" → "Sade,
-   hızlı", 80 karakter sınırı için). Mağaza metni sürümden bağımsız: Play Console → Mağazadaki varlık → Ana mağaza
-   girişi'nden değiştirilip incelemeye gönderilir.
+   hızlı", 80 karakter sınırı için). Mağaza metni sürümden bağımsız: Play Console → Kullanıcı sayısını artırın → Play Store'daki varlığı →
+   Mağaza girişleri → Varsayılan girişi düzenle; sonra İleri ve incelemeye gönder.
    Satıcı statüsü (AB Dijital Hizmetler Yasası) 2026-11-07'de "tacir değil" olarak beyan edildi. Reklam, ücretli
    sürüm ya da uygulama içi satın alma gelmeden önce Hesabı yönetme'den "tacir" olarak güncellenmeli; o zaman
    adres, telefon ve e-posta Play'de herkese açık olur.
@@ -130,6 +130,23 @@ grafik ve SmartArt boş, madde işaretleri yok, sayfa bölünmeleri farklı. Ön
 Word dosyasını açıp gösterir, "PDF olarak kaydet" bir düğme olur); masaüstünde LibreOffice kuruluysa onu kullanmak.
 Yazı tipleri için Carlito/Caladea gibi ölçüsü aynı serbest yazı tipleri uygulamaya konabilir.
 
+**Word → PDF yapıldı (2026-11-07, kullanıcı isteği; sürüm bekliyor).** Araç çubuğunda ve ilk ekranda "Word'den PDF";
+pencereye bırakılan Word belgesi de dönüştürülür; Sayfaları Düzenle'deki "Dosya Ekle" Word belgesi de alır. Sonuç
+"Word'den PDF" başlığıyla düzenleyicide açılır, orada sıralanıp kaydedilir.
+- **Masaüstünde LibreOffice kuruluysa (Pardus, tahtalar) PDF'i o yazar:** düzen Word'deki gibi, yazı gerçek metin
+  (seçilir, aranır), eski .doc da olur. Kullanıcının denemesi (2026-11-07): iki sütunlu, metin kutulu sınav kâğıdı
+  Word'deki gibi 2 sayfa, CV.doc ve kompozisyon doğru; süre 1-16 sn. LibreOffice açıkken de çalışır (ayrı profil).
+- **Telefonda, web'de ve LibreOffice olmayan bilgisayarda** belge docx-preview ile çizilir, her sayfa 150 DPI görsel
+  olarak PDF'e girer. Yazı seçilemez, aranamaz. Yazı tipleri cihazınkiler (Calibri, Verdana yoksa benzeri);
+  satır aralığı Word'e göre ayarlandı (LibreOffice'le aynı sayfada %1 fark). Biraz uzayan sayfa küçültülür,
+  sayfa sonu işareti olmayan uzun belge sütun sütun, satır bölünmeden sayfalanır. Symbol ve Wingdings işaretleri
+  (≤ ≥ ≠ ± × ÷ π α, ☑ ✓, madde işaretleri) sıradan karakterlere çevrilir. Eski .doc açılmaz (uyarı çıkar).
+  **Bilinen sınır:** yüzen metin kutuları (sınav başlığındaki kutu, dikey yazılar) Word'deki yerinde durmaz;
+  kullanıcının sınav kâğıdı telefonda 3 sayfa oldu (Word'de 2), sorular doğru sırada ve okunur.
+- **Telefonda denendi (2026-11-07, "awPDF Deneme"):** dosya seçicide yalnız .docx seçilebiliyor (.doc soluk),
+  sınav kâğıdı 4 sn'den kısa, kompozisyon 1 sn; kaydet ekranı PDF'i yazdı.
+- İleride: telefonda metnin seçilebilmesi için sayfaların altına görünmez metin; metin kutularını yerine koymak.
+
 ## Sonraki araçlar (önerilen sıra)
 
 1. İşaretleme, not ve kalem
@@ -145,9 +162,13 @@ kez kaydetme gelir), 3. sayfa işlemleri, 4. görsel ↔ PDF, 5. Word → PDF, 6
 Play yayınından sonraya). Hepsi cihazda çalışır, internet ve yeni izin gerektirmez. Kapalı test sırasında her
 sürüm tek bir araç getirir ve okuma akışına dokunmaz. Kullanıcı ilk üçünü istedi (2026-11-06).
 
+**Karar (2026-11-08, kullanıcı):** sürüm yükseltmeden önce kalan bütün araçlar eklenir (işaretleme/not/kalem,
+imza, küçültme, parola, PDF → Word, OCR). Word → PDF, menü ✕ ve giriş ekranı commit'lenip gönderildi; 0.0.6 araçlar
+bitince çıkar. Bu süreçte her biten adım commit + push edilir (kullanıcı izni); sürüm ve canlıya alma sorulur.
+
 ## Görsel ↔ PDF (2026-11-06, kullanıcı isteği)
 
-**Yapıldı (2026-11-06), sürüm bekliyor.** Telefonda denenecek.
+**Yapıldı (2026-11-06), 0.0.5'te.** Telefonda denendi.
 
 - **Görsellerden PDF** (araç çubuğu ve ilk ekrandaki düğme; pencereye görsel bırakmak da olur): sayfa boyutu
   sorulur (A4 kenar boşluklu, A4 kenarsız, görselin kendi boyutunda). Geniş görselde A4 yan döner. Oluşan PDF
@@ -176,7 +197,7 @@ sürüm tek bir araç getirir ve okuma akışına dokunmaz. Kullanıcı ilk üç
 
 ## Sayfa aralığıyla yazdırma, form doldurma, sayfa işlemleri (2026-11-06, kullanıcı isteği)
 
-**Yapıldı (2026-11-06), sürüm bekliyor.**
+**Yapıldı (2026-11-06), 0.0.5'te.**
 
 - **Yazdırma:** "Yazdır" önce sorar: tüm sayfalar, bu sayfa ya da "1-5, 8, 11-" gibi bir aralık (`core/page-range.ts`).
   Okunamayan aralıkta pencere açık kalır, nedenini söyler. Doldurulmuş form alanları kâğıda çıkar. 410
@@ -202,13 +223,18 @@ sürüm tek bir araç getirir ve okuma akışına dokunmaz. Kullanıcı ilk üç
 
 ## Menü düğmesi açıkken ✕ olsun (2026-11-06, kullanıcı isteği)
 
-**Sonraki sürüm (0.0.6) için.** Araç çubuğundaki ☰ düğmesi menü açıkken ✕'e dönüşsün; menü kapanınca (✕'e
+**Yapıldı (2026-11-07), sürüm bekliyor.** Araç çubuğundaki ☰ düğmesi menü açıkken ✕'e dönüşsün; menü kapanınca (✕'e
 dokunmak, dışarıya dokunmak, Esc, geri düğmesi, bir madde seçmek) yeniden ☰ olsun. Düğmenin adı da
 "Menüyü aç" / "Menüyü kapat" olarak değişsin.
 
+## Giriş ekranında yalnız logo (2026-11-08, kullanıcı isteği)
+
+**Yapıldı (2026-11-08), sürüm bekliyor.** İlk ekranda logonun altındaki "awPDF" yazısı kaldırıldı; logoda ad
+zaten yazıyor. Ekran okuyucular adı logonun alt metninden ("awPDF") okur.
+
 ## Denenmesi gerekenler
 
-- **Menünün altındaki bağlantı (2026-11-04, testçi bildirdi; 2026-11-06 düzeltildi, sürüm bekliyor):** içindekiler
+- **Menünün altındaki bağlantı (2026-11-04, testçi bildirdi; 2026-11-06 düzeltildi, 0.0.5'te):** içindekiler
   sayfası açıkken ☰ menüsündeki bir maddeye dokununca madde değil, altındaki PDF bağlantısı çalışıyordu (video:
   menüden Yakınlaştır seçilince sayfa 27-28'e atladı). Neden: pdf.js her bağlantıya ve form alanına artan bir
   z-index veriyor (o belgede 64'e kadar); belge alanı bunları içine almadığı için saydam bağlantılar menünün

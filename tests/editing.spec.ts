@@ -3,6 +3,7 @@ import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import { makeFormPdf, readForm } from './helpers/make-form-pdf.mjs';
 import { makePdf } from './helpers/make-pdf.mjs';
 import { makePng, pngSize } from './helpers/make-image.mjs';
+import { makeDocx } from './helpers/make-docx.mjs';
 
 interface Saved { name: string; bytes: number[] }
 
@@ -22,7 +23,8 @@ async function captureSaves(page: Page) {
           name: suggestedName,
           isSameEntry: async () => false,
           createWritable: async () => ({
-            write: async (data: Uint8Array) => { bytes.push(...data); },
+            // Item by item: spreading a large file overflows the call stack.
+            write: async (data: Uint8Array) => { for (const byte of data) bytes.push(byte); },
             close: async () => { state.saves.push({ name: suggestedName, bytes }); },
           }),
         };
@@ -33,8 +35,9 @@ async function captureSaves(page: Page) {
 
 const saves = (page: Page) => page.evaluate(() => (window as unknown as { saves: Saved[] }).saves);
 const lastSave = async (page: Page) => {
-  await expect.poll(async () => (await saves(page)).length).toBeGreaterThan(0);
-  return (await saves(page)).at(-1)!;
+  // Counts only: carrying every saved byte over on each poll is slow for a large file.
+  await expect.poll(() => page.evaluate(() => (window as unknown as { saves: Saved[] }).saves.length)).toBeGreaterThan(0);
+  return page.evaluate(() => (window as unknown as { saves: Saved[] }).saves.at(-1)!);
 };
 
 async function openPdf(page: Page, buffer: Buffer, name = 'deneme.pdf') {
@@ -52,6 +55,17 @@ async function pagesOf(bytes: number[]): Promise<string[]> {
     pages.push(`${text}@${page.rotate}`);
   }
   return pages;
+}
+
+/** Page sizes of a saved PDF, in points. */
+async function pageShapes(bytes: number[]) {
+  const pdf = await getDocument({ data: new Uint8Array(bytes), verbosity: 0 }).promise;
+  const shapes: string[] = [];
+  for (let number = 1; number <= pdf.numPages; number += 1) {
+    const page = await pdf.getPage(number);
+    shapes.push(`${Math.round(page.view[2])}x${Math.round(page.view[3])}`);
+  }
+  return shapes;
 }
 
 const status = (page: Page) => page.locator('#pageStatus');
@@ -295,17 +309,6 @@ test.describe('görsel ↔ PDF', () => {
   const red = () => makePng({ width: 400, height: 300, color: [220, 30, 30] });
   const tall = () => makePng({ width: 300, height: 600, color: [30, 30, 220] });
 
-  /** Page sizes of a saved PDF and how many pictures each page draws. */
-  async function pageShapes(bytes: number[]) {
-    const pdf = await getDocument({ data: new Uint8Array(bytes), verbosity: 0 }).promise;
-    const shapes: string[] = [];
-    for (let number = 1; number <= pdf.numPages; number += 1) {
-      const page = await pdf.getPage(number);
-      shapes.push(`${Math.round(page.view[2])}x${Math.round(page.view[3])}`);
-    }
-    return shapes;
-  }
-
   test('seçilen görseller A4 sayfalar olur, düzenleyicide sıralanıp kaydedilir', async ({ page }) => {
     await page.locator('#imageInput').setInputFiles([
       { name: 'kırmızı.png', mimeType: 'image/png', buffer: red() },
@@ -463,5 +466,66 @@ test.describe('görsel ↔ PDF', () => {
     await page.mouse.move(area.x + 80, area.y + area.height - 10, { steps: 3 });
     await page.mouse.up();
     await expect(page.locator('#toast')).toHaveText('Bölgeyi bir sayfanın üstüne çizin.');
+  });
+});
+
+test.describe('Word → PDF', () => {
+  const cards = (page: Page) => page.locator('#pageEditorGrid .page-card');
+  const DOCX_TYPE = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+  test('ilk ekrandaki üç düğme aynı boyuttadır', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 760 });
+    const sizes = await page.locator('#emptyOpen, #emptyImages, #emptyWord')
+      .evaluateAll(buttons => buttons.map(button => `${button.getBoundingClientRect().width}x${button.getBoundingClientRect().height}`));
+    expect(sizes).toHaveLength(3);
+    expect(new Set(sizes).size).toBe(1);
+  });
+
+  test('Word belgesi sayfa sayfa A4 PDF olur, düzenleyicide açılıp kaydedilir', async ({ page }) => {
+    await expect(page.locator('#emptyWord')).toBeVisible();
+    await page.locator('#wordInput').setInputFiles({ name: 'Ödev.docx', mimeType: DOCX_TYPE, buffer: await makeDocx({ lines: 150 }) });
+    await expect(page.locator('#pageEditorTitle')).toHaveText("Word'den PDF");
+    // The title page, the table page, and 150 lines, which no Word has paged, over three pages.
+    await expect(cards(page)).toHaveCount(5);
+    await expect(page.locator('#pageEditor-save')).toBeEnabled();
+    await page.locator('#pageEditor-save').click();
+    const saved = await lastSave(page);
+    expect(saved.name).toBe('Ödev.pdf');
+    expect(await pageShapes(saved.bytes)).toEqual(Array(5).fill('595x842'));
+    await expect(page.locator('#pageEditor')).toBeHidden();
+    await expect(status(page)).toHaveText('1 / 5');
+  });
+
+  test('araç çubuğundaki düğme Word belgesi sorar; bırakılan Word belgesi de dönüştürülür', async ({ page }) => {
+    const chooser = page.waitForEvent('filechooser');
+    await page.locator('#tool-wordToPdf').click();
+    expect((await chooser).isMultiple()).toBe(false);
+    await page.evaluate(bytes => {
+      const transfer = new DataTransfer();
+      transfer.items.add(new File([new Uint8Array(bytes)], 'bırakılan.docx'));
+      window.dispatchEvent(new DragEvent('drop', { dataTransfer: transfer, bubbles: true, cancelable: true }));
+    }, [...await makeDocx()]);
+    await expect(page.locator('#pageEditorTitle')).toHaveText("Word'den PDF");
+    await expect(cards(page)).toHaveCount(2);
+  });
+
+  test('düzenleyicide var olan PDF\'e Word belgesi eklenir', async ({ page }) => {
+    await openPdf(page, makePdf({ pages: 1, text }));
+    await page.locator('#tool-editPages').click();
+    await expect(page.locator('#pageEditor-add')).toContainText('Dosya Ekle');
+    await page.locator('#pageEditorInput').setInputFiles({ name: 'ek.docx', mimeType: DOCX_TYPE, buffer: await makeDocx() });
+    await expect(cards(page)).toHaveCount(3);
+    expect(await page.locator('#pageEditorGrid .page-card__origin').allTextContents()).toEqual(['s. 1', 'ek.docx · s. 1', 'ek.docx · s. 2']);
+    await page.locator('#pageEditor-save').click();
+    expect(await pageShapes((await lastSave(page)).bytes)).toEqual(['612x792', '595x842', '595x842']);
+  });
+
+  test('eski .doc biçimi ve bozuk belge adıyla bildirilir', async ({ page }) => {
+    await page.locator('#wordInput').setInputFiles({ name: 'eski.doc', mimeType: 'application/msword', buffer: Buffer.from('eski') });
+    await expect(page.locator('#toast')).toContainText('.docx olarak kaydedip');
+    await page.locator('#wordInput').setInputFiles({ name: 'bozuk.docx', mimeType: DOCX_TYPE, buffer: Buffer.from('bu bir Word belgesi değil') });
+    await expect(page.locator('#toast')).toHaveText('Word belgesi okunamadı: bozuk.docx');
+    await expect(page.locator('#pageEditor')).toBeHidden();
+    await expect(page.locator('#workDialog')).toBeHidden();
   });
 });

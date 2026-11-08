@@ -25,6 +25,8 @@ export interface ToolContext {
   editPages(): void
   /** Asks for pictures and makes a PDF of them in the page editor. */
   pdfFromImages(): void
+  /** Asks for a Word document and makes a PDF of it. */
+  pdfFromWord(): void
   /** Saves pages of the active document as pictures. */
   saveImages(): void
 }
