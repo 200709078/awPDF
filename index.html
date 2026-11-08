@@ -133,6 +133,31 @@
 			</div>
 		</form>
 	</dialog>
+	<dialog id="protectDialog" class="dialog">
+		<h2 id="protectTitle">Parola koy</h2>
+		<form method="dialog">
+			<fieldset id="protectChoices" class="dialog__choices" hidden>
+				<legend>Bu belge parolalı</legend>
+				<label><input type="radio" name="protectAction" value="change" checked> Yeni parola koy</label>
+				<label><input type="radio" name="protectAction" value="remove"> Parolasız kaydet</label>
+			</fieldset>
+			<div id="protectFields">
+				<p class="dialog__hint">Belge her açılışta bu parolayı sorar. Parolayı unutursanız belge açılamaz; bir yere not edin.</p>
+				<label class="dialog__field">Parola
+					<input id="protectPassword" type="password" autocomplete="new-password" maxlength="100">
+				</label>
+				<label class="dialog__field">Parola (yeniden)
+					<input id="protectRepeat" type="password" autocomplete="new-password" maxlength="100">
+				</label>
+				<label class="signature-dialog__keep"><input id="protectShow" type="checkbox"> Parolayı göster</label>
+			</div>
+			<span id="protectError" class="dialog__error" role="alert" hidden></span>
+			<div class="dialog__actions">
+				<button id="protectSave" value="save" class="primary-button">Kaydet</button>
+				<button value="cancel" class="secondary-button" formnovalidate>Vazgeç</button>
+			</div>
+		</form>
+	</dialog>
 	<dialog id="largeFileDialog" class="dialog">
 		<h2>Bu dosya büyük</h2>
 		<p id="largeFileMessage"></p>

@@ -970,3 +970,71 @@ test.describe('PDF küçültme', () => {
     expect(await pagesOf(saved.bytes)).toEqual(['awPDF sayfa 1@0', 'awPDF sayfa 2@0']);
   });
 });
+
+test.describe('parola', () => {
+  async function runTool(page: Page, id: string) {
+    if (await page.locator(`#toolbarMenu #tool-${id}`).count()) await page.locator('#toolbarMenuButton').click();
+    await page.locator(`#tool-${id}`).click();
+  }
+  const dialog = (page: Page) => page.locator('#protectDialog');
+
+  test('parola iki kez yazılır, kaydedilen kopya yalnız parolayla açılır', async ({ page }) => {
+    await openPdf(page, makePdf({ pages: 2, text }));
+    await runTool(page, 'protect');
+    await expect(dialog(page)).toBeVisible();
+    await expect(page.locator('#protectTitle')).toHaveText('Parola koy');
+    await expect(page.locator('#protectChoices')).toBeHidden();
+    await expect(page.locator('#protectPassword')).toBeFocused();
+    const save = dialog(page).getByRole('button', { name: 'Kaydet' });
+    await save.click();
+    await expect(page.locator('#protectError')).toHaveText('Bir parola yazın.');
+    await page.locator('#protectPassword').fill('abc');
+    await save.click();
+    await expect(page.locator('#protectError')).toHaveText('Parola en az 4 karakter olmalı.');
+    await page.locator('#protectPassword').fill('Işık-2026');
+    await page.locator('#protectRepeat').fill('Isik-2026');
+    await save.click();
+    await expect(page.locator('#protectError')).toHaveText('İki parola aynı değil.');
+    await page.locator('#protectShow').check();
+    await expect(page.locator('#protectPassword')).toHaveAttribute('type', 'text');
+    await page.locator('#protectRepeat').fill('Işık-2026');
+    await save.click();
+    const saved = await lastSave(page);
+    expect(saved.name).toBe('deneme (parolalı).pdf');
+    await expect(getDocument({ data: new Uint8Array(saved.bytes), verbosity: 0 }).promise).rejects.toThrow(/password/i);
+    const pdf = await getDocument({ data: new Uint8Array(saved.bytes), password: 'Işık-2026', verbosity: 0 }).promise;
+    expect(pdf.numPages).toBe(2);
+    expect((await (await pdf.getPage(2)).getTextContent()).items.map(item => ('str' in item ? item.str : '')).join('')).toBe('S2');
+  });
+
+  test('parolalı belgenin parolası kaldırılır ya da değiştirilir; içindekiler korunur', async ({ page }) => {
+    const outline = [{ title: 'Giris', page: 0 }, { title: 'Sonuç', page: 1 }];
+    await page.locator('#pdfInput').setInputFiles({ name: 'gizli.pdf', mimeType: 'application/pdf', buffer: makePdf({ pages: 2, text, outline, password: 'eski' }) });
+    await page.locator('#passwordInput').fill('eski');
+    await page.locator('#passwordDialog').getByRole('button', { name: 'Aç' }).click();
+    await expect(status(page)).toHaveText('1 / 2');
+    await runTool(page, 'protect');
+    await expect(page.locator('#protectTitle')).toHaveText('Parolayı değiştir');
+    await expect(page.locator('#protectChoices')).toBeVisible();
+    await dialog(page).getByLabel('Parolasız kaydet').check();
+    await expect(page.locator('#protectFields')).toBeHidden();
+    await dialog(page).getByRole('button', { name: 'Kaydet' }).click();
+    const plain = await lastSave(page);
+    expect(plain.name).toBe('gizli (parolasız).pdf');
+    expect(await pagesOf(plain.bytes)).toEqual(['S1@0', 'S2@0']);
+    const opened = await getDocument({ data: new Uint8Array(plain.bytes), verbosity: 0 }).promise;
+    expect((await opened.getOutline())?.map(item => item.title)).toEqual(['Giris', 'Sonuç']);
+
+    await runTool(page, 'protect');
+    await expect(page.locator('#protectFields')).toBeVisible();
+    await page.locator('#protectPassword').fill('yeni-parola');
+    await page.locator('#protectRepeat').fill('yeni-parola');
+    await dialog(page).getByRole('button', { name: 'Kaydet' }).click();
+    await expect.poll(() => saves(page).then(list => list.length)).toBe(2);
+    const changed = (await saves(page))[1];
+    expect(changed.name).toBe('gizli (parolalı).pdf');
+    await expect(getDocument({ data: new Uint8Array(changed.bytes), password: 'eski', verbosity: 0 }).promise).rejects.toThrow(/password/i);
+    const pdf = await getDocument({ data: new Uint8Array(changed.bytes), password: 'yeni-parola', verbosity: 0 }).promise;
+    expect(pdf.numPages).toBe(2);
+  });
+});

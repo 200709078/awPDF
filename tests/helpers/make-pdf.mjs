@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto'
 // `links`: { page, toPage } belge içi, { page, url } dış bağlantı (0'dan sayılır); sıraları
 // satırlarını belirler (`row` verilirse o satır), `linkTop` birincisinin yüksekliğidir.
 // `outline`: içindekiler, { title, page, open, items } ya da { title, url } öğeleri.
-// `password`: belgeyi bu parolayla şifreler (RC4, 40 bit).
+// `password`: belgeyi bu parolayla şifreler (RC4, 40 bit); akışlar da yazılar da şifrelenir.
 export const linkTop = 640
 
 const PASSWORD_PADDING = Buffer.from('28BF4E5E4E758A4164004E56FFFA01082E2E00B6D0683E802F0CA9FE6453697A', 'hex')
@@ -42,6 +42,11 @@ function encryption(password) {
       const objectKey = md5(key, Buffer.from([id & 255, id >> 8, 0, 0, 0])).subarray(0, 10)
       return Buffer.from(rc4(objectKey, Buffer.from(text, 'latin1'))).toString('latin1')
     },
+    // Strings are encrypted with their object's key as streams are; written as hex.
+    string: (id, text) => {
+      const objectKey = md5(key, Buffer.from([id & 255, id >> 8, 0, 0, 0])).subarray(0, 10)
+      return `<${hex(rc4(objectKey, Buffer.from(text, 'latin1')))}>`
+    },
   }
 }
 const encoded = text => text.replaceAll('ı', '\xfd').replaceAll('İ', '\xdd')
@@ -62,7 +67,8 @@ export function makePdf({ pages = 3, padding = 0, text = index => `awPDF sayfa $
     const annotations = links.flatMap((link, position) => {
       if (link.page !== index) return []
       const row = link.row ?? position
-      const target = link.url ? `/A << /S /URI /URI (${link.url}) >>` : `/Dest [${pageId(link.toPage)} 0 R /Fit]`
+      const uri = link.url && (secret ? secret.string(pageId(index), link.url) : `(${link.url})`)
+      const target = link.url ? `/A << /S /URI /URI ${uri} >>` : `/Dest [${pageId(link.toPage)} 0 R /Fit]`
       return `<< /Type /Annot /Subtype /Link /Rect [72 ${linkTop - 60 * row - 40} 372 ${linkTop - 60 * row}] /Border [0 0 0] ${target} >>`
     }).join(' ')
     objects.set(pageId(index), '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] '
@@ -76,13 +82,15 @@ export function makePdf({ pages = 3, padding = 0, text = index => `awPDF sayfa $
     const addItems = (items, parentId) => {
       const ids = items.map(() => nextId++)
       items.forEach((item, index) => {
-        const target = item.url ? `/A << /S /URI /URI (${item.url}) >>` : `/Dest [${pageId(item.page)} 0 R /Fit]`
+        const uri = item.url && (secret ? secret.string(ids[index], item.url) : `(${item.url})`)
+        const target = item.url ? `/A << /S /URI /URI ${uri} >>` : `/Dest [${pageId(item.page)} 0 R /Fit]`
         const siblings = `${index > 0 ? `/Prev ${ids[index - 1]} 0 R` : ''} ${index < ids.length - 1 ? `/Next ${ids[index + 1]} 0 R` : ''}`
         const children = item.items ? addItems(item.items, ids[index]) : []
         const family = children.length > 0
           ? `/First ${children[0]} 0 R /Last ${children.at(-1)} 0 R /Count ${item.open ? children.length : -children.length}`
           : ''
-        objects.set(ids[index], `<< /Title (${encoded(item.title)}) /Parent ${parentId} 0 R ${siblings} ${family} ${target} >>`)
+        const title = secret ? secret.string(ids[index], encoded(item.title)) : `(${encoded(item.title)})`
+        objects.set(ids[index], `<< /Title ${title} /Parent ${parentId} 0 R ${siblings} ${family} ${target} >>`)
       })
       return ids
     }

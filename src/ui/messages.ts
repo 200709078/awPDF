@@ -201,3 +201,58 @@ export function formatSize(bytes: number): string {
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toLocaleString('tr-TR', { maximumFractionDigits: 1 })} MB`
   return `${Math.max(1, Math.round(bytes / 1024)).toLocaleString('tr-TR')} KB`
 }
+
+export type ProtectAnswer = { password: string } | { remove: true }
+
+/**
+ * A password to put on the document, asked twice; for a document that has one, a new one or
+ * none. Null when cancelled.
+ */
+export function askProtection(hasPassword: boolean): Promise<ProtectAnswer | null> {
+  const dialog = document.querySelector<HTMLDialogElement>('#protectDialog')!
+  const password = document.querySelector<HTMLInputElement>('#protectPassword')!
+  const repeat = document.querySelector<HTMLInputElement>('#protectRepeat')!
+  const show = document.querySelector<HTMLInputElement>('#protectShow')!
+  const error = document.querySelector<HTMLElement>('#protectError')!
+  const fields = document.querySelector<HTMLElement>('#protectFields')!
+  const choices = document.querySelector<HTMLFieldSetElement>('#protectChoices')!
+  const removing = () => hasPassword && dialog.querySelector<HTMLInputElement>('input[name="protectAction"]:checked')?.value === 'remove'
+  document.querySelector('#protectTitle')!.textContent = hasPassword ? 'Parolayı değiştir' : 'Parola koy'
+  choices.hidden = !hasPassword
+  dialog.querySelector<HTMLInputElement>('input[name="protectAction"][value="change"]')!.checked = true
+  password.value = repeat.value = ''
+  show.checked = false
+  password.type = repeat.type = 'password'
+  error.hidden = true
+  fields.hidden = false
+  const controller = new AbortController()
+  const { signal } = controller
+  show.addEventListener('change', () => { password.type = repeat.type = show.checked ? 'text' : 'password' }, { signal })
+  choices.addEventListener('change', () => {
+    fields.hidden = removing()
+    error.hidden = true
+  }, { signal })
+  // The dialog stays open until the two match.
+  document.querySelector('#protectSave')!.addEventListener('click', event => {
+    if (removing()) return
+    const problem = password.value.length === 0 ? 'Bir parola yazın.'
+      : password.value.length < 4 ? 'Parola en az 4 karakter olmalı.'
+        : password.value !== repeat.value ? 'İki parola aynı değil.' : ''
+    if (!problem) return
+    event.preventDefault()
+    error.textContent = problem
+    error.hidden = false
+    password.focus()
+  }, { signal })
+  dialog.returnValue = ''
+  dialog.showModal()
+  password.focus()
+  return new Promise(resolve => {
+    dialog.addEventListener('close', () => {
+      controller.abort()
+      const answer: ProtectAnswer | null = dialog.returnValue !== 'save' ? null : removing() ? { remove: true } : { password: password.value }
+      password.value = repeat.value = ''
+      resolve(answer)
+    }, { once: true })
+  })
+}

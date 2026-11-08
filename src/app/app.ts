@@ -10,7 +10,7 @@ import { SignatureStore } from '../core/signatures'
 import { currentPlatform, SameFileError } from '../platform/platform'
 import { TOOLS } from '../tools'
 import type { ToolContext } from '../tools/tool'
-import { askCompressLevel, askImagePageSize, askPassword, askPrintPages, askUnsavedChanges, confirmCompressed, confirmExternalLink, confirmLargeFile, showToast, startWork } from '../ui/messages'
+import { askCompressLevel, askProtection, askImagePageSize, askPassword, askPrintPages, askUnsavedChanges, confirmCompressed, confirmExternalLink, confirmLargeFile, showToast, startWork } from '../ui/messages'
 import { OutlineList } from '../ui/outline'
 import { PageEditor } from '../ui/page-editor'
 import { RegionCapture } from '../ui/region-capture'
@@ -33,6 +33,7 @@ import { OLD_WORD_ACCEPT, OldWordError, WORD_ACCEPT, isOldWordFile, isWordFile, 
 import { Presentation } from './presentation'
 import { printDocument } from './print'
 import { COMPRESS_LEVELS, CompressCancelled, compressPdf, type CompressResult } from './pdf-compress'
+import { protectPdf } from '../core/pdf-encrypt'
 
 const APP_TITLE = 'awPDF | mADEMatik'
 
@@ -93,6 +94,7 @@ export function startApp(): void {
     pdfFromImages: () => imageInput.click(),
     pdfFromWord: () => wordInput.click(),
     compress: () => void compress(),
+    protect: () => void protect(),
     saveImages: () => {
       view.finishEditing()
       if (view.pdf && view.file) void savePagesAsImages(view.pdf, view.file, view.page, platform)
@@ -142,9 +144,43 @@ export function startApp(): void {
         : 'Bu belge daha fazla küçülmüyor: görselleri zaten küçük.')
       return
     }
-    if (!await confirmCompressed(before, result.data.length)) return
+    if (await confirmCompressed(before, result.data.length)) await saveCopy(tab, 'küçültülmüş', result.data)
+  }
+
+  /**
+   * A copy with a password (AES-256), or of a document that has one, with another one or none.
+   * Marks and filled fields go in. The open document stays as it is.
+   */
+  async function protect(): Promise<void> {
+    const tab = tabs.active
+    if (!tab) return
+    view.finishEditing()
+    const encrypted = await isEncrypted(tab.document).catch(() => false)
+    const answer = await askProtection(encrypted)
+    if (!answer || tab !== tabs.active) return
+    const wasModified = Boolean(tab.modified)
+    const work = startWork('password' in answer ? 'Parola konuyor' : 'Parola kaldırılıyor')
+    let data: Uint8Array | null = null
     try {
-      const saved = await platform.saveFile(nameWithSuffix(tab.file.name, 'küçültülmüş'), result.data, tab.file)
+      // A document with a password is copied without it first (see `blankPdf`).
+      const source = encrypted
+        ? await tab.document.extractPages([{ document: null }, { document: blankPdf() }])
+        : tab.document.annotationStorage.size > 0 ? await tab.document.saveDocument() : await tab.document.getData()
+      data = await protectPdf(source, 'password' in answer ? answer.password : null, { dropLastPage: encrypted })
+    } catch (error) {
+      console.error(error)
+      showToast('Parola konamadı.')
+    } finally {
+      work.done()
+      if (wasModified) tabs.markUnsaved(tab)
+    }
+    if (data) await saveCopy(tab, 'password' in answer ? 'parolalı' : 'parolasız', data)
+  }
+
+  /** A new file made from the tab's document, named after it; the open one stays as it is. */
+  async function saveCopy(tab: DocumentTab, suffix: string, data: Uint8Array): Promise<void> {
+    try {
+      const saved = await platform.saveFile(nameWithSuffix(tab.file.name, suffix), data, tab.file)
       if (saved !== null) showToast(`Kaydedildi: ${saved}`)
     } catch (error) {
       if (error instanceof SameFileError) showToast('Açık bir belgenin üzerine kaydedilemez; başka bir ad seçin.')

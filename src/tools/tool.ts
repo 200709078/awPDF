@@ -33,6 +33,8 @@ export interface ToolContext {
   saveImages(): void
   /** Saves a smaller copy of the active document. */
   compress(): void
+  /** Saves a copy with a password, another password or none. */
+  protect(): void
 }
 
 /**

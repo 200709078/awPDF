@@ -147,3 +147,11 @@ export const compressTool: Tool = {
   needsDocument: true,
   run: context => context.compress(),
 }
+
+export const protectTool: Tool = {
+  id: 'protect',
+  label: 'Parola Koy',
+  icon: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/><path d="M12 15v2"/>',
+  needsDocument: true,
+  run: context => context.protect(),
+}

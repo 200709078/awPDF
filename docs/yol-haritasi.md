@@ -154,11 +154,11 @@ pencereye bırakılan Word belgesi de dönüştürülür; Sayfaları Düzenle'de
 3. Sayfa işlemleri: birleştirme, bölme, silme, sıralama, kalıcı döndürme — **yapıldı (2026-11-06)**
 4. Görsel ↔ PDF dönüştürme — **yapıldı (2026-11-06)**; küçültme ayrı iş olarak kaldı
 5. Taranmış PDF'ler için Türkçe OCR
-6. İmza ve parola koyma — imza **yapıldı (2026-11-08)**, aşağıda
+6. İmza ve parola koyma — ikisi de **yapıldı (2026-11-08)**, aşağıda
 
 **Kolaydan zora sıra (2026-11-06, kullanıcıya önerildi):** 1. sayfa aralığıyla yazdırma, 2. form doldurma (ilk
 kez kaydetme gelir), 3. sayfa işlemleri, 4. görsel ↔ PDF, 5. Word → PDF, 6. işaretleme/not/kalem, 7. imza,
-8. PDF küçültme (**yapıldı 2026-11-08**), 9. parola koyma, 10. PDF → Word, 11. Türkçe OCR (dil verisi uygulamaya girer, APK büyür;
+8. PDF küçültme (**yapıldı 2026-11-08**), 9. parola koyma (**yapıldı 2026-11-08**), 10. PDF → Word, 11. Türkçe OCR (dil verisi uygulamaya girer, APK büyür;
 Play yayınından sonraya). Hepsi cihazda çalışır, internet ve yeni izin gerektirmez. Kapalı test sırasında her
 sürüm tek bir araç getirir ve okuma akışına dokunmaz. Kullanıcı ilk üçünü istedi (2026-11-06).
 
@@ -198,6 +198,19 @@ boyutlandırılır, silinir.
 - PDF'e pdf.js'in imza biçimiyle yazılır (çizgi görünümlü damga notu); bu bir **elektronik imza değildir**
   (sertifikalı, e-İmza gibi doğrulanan imza ayrı ve büyük bir iş).
 - **Denenecek:** tahtada ve telefonda parmakla imza.
+
+## Parola koyma (2026-11-08, kullanıcı kararı: bütün araçlar)
+
+**Yapıldı (2026-11-08), sürüm bekliyor.** "Parola Koy" (dizüstünde ☰ menüsünde): parola iki kez yazılır (en az 4
+karakter, "Parolayı göster" seçeneği), kopya "… (parolalı).pdf" olarak kaydedilir; açık belge değişmez. Belge
+parolalıysa pencere "Parolayı değiştir" olur: yeni parola ya da **parolasız kaydet** ("… (parolasız).pdf").
+- Şifreleme AES-256 (PDF 2.0'ın en güçlü yöntemi; Adobe Reader, tarayıcılar, telefonlar açar). Türkçe harfli
+  parola olur. Parola yalnız belgeyi açmayı korur; yazdırma/kopyalama yasağı konmaz (okuyucuların çoğu zaten
+  saymaz).
+- pdf.js ve bilgisayardaki poppler (`pdfinfo`) ile doğrulandı: parolasız açılmıyor, parolayla açılıyor.
+- Parolalı belgeden yapılan kopyada (parola değiştirme/kaldırma, küçültme) pdf.js'in sayfa kopyalama yolu
+  kullanılıyor; içindekiler korunuyor (test). Açılırken parola sormayan ama kısıtlı (şifreli) kitaplar da bu yoldan
+  geçer.
 
 ## PDF küçültme (2026-11-08, kullanıcı kararı: bütün araçlar)
 

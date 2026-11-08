@@ -1,4 +1,4 @@
-import { annotateTool, compressTool, captureRegionTool, closeTabTool, editPagesTool, imagesToPdfTool, saveImagesTool, wordToPdfTool, goToPageTool, nextTabTool, printTool, recentTool, saveAsTool, searchTool, shareTool } from './document'
+import { annotateTool, compressTool, protectTool, captureRegionTool, closeTabTool, editPagesTool, imagesToPdfTool, saveImagesTool, wordToPdfTool, goToPageTool, nextTabTool, printTool, recentTool, saveAsTool, searchTool, shareTool } from './document'
 import { openTool } from './open'
 import { nextPageTool, previousPageTool, twoPagesTool } from './pages'
 import { sidePanelTool } from './side-panel'
@@ -40,6 +40,7 @@ export const TOOLS: readonly Tool[] = [
   closeTabTool,
   // Past the close button: on a laptop's screen these are the first to go into the menu (☰).
   compressTool,
+  protectTool,
   goToPageTool,
   nextTabTool,
 ]
