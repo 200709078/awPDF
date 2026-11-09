@@ -69,6 +69,10 @@ geçilir. Kullanıcının henüz geliştirici hesabı yok.
    beyanında "öğeleri etiketleme" seçildi). Web sürümü güncel. GitHub sürümü: etiketin CI'ında OCR testi düştü
    (Vite `public/ocr`'ı sunmadı, bkz. CLAUDE.md); düzeltildi, main'den "Run workflow" ile 0.0.6 sürümü çıkarıldı (apk, deb, AppImage, exe).
    Yeni araçlar telefonda ve tahtada henüz denenmedi; testçi geri bildirimi beklenir.
+   0.0.7 (sürüm kodu 7) 2026-11-09: ilk ekranda PDF → Word / Word → PDF / Görsel → PDF (kalın oklar); telefon
+   testinde bulunan altı hatanın düzeltmesi (metin kutusu, fosforlu kalem, imza kipi, vurgu düğmeleri, OCR, yatay
+   ilk ekran); PDF → Word'de tasarım ağırlıklı sayfalar düzeni korunarak. Web, GitHub sürümü (apk, deb, AppImage,
+   exe) güncel; AAB kapalı teste yüklendi ve incelemeye gönderildi (Claude, kullanıcı yetkisiyle).
 7. Üretim erişimi başvurusu ve yayın
 
 ## Belgeyi kapatıp ilk ekrana dönmek (2026-11-04, kullanıcı isteği)
