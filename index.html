@@ -194,6 +194,29 @@
 			</div>
 		</form>
 	</dialog>
+	<!-- Hakkında (ailenin ortak penceresi: ad, sürüm, mADEMatik Solutions, indirme, lisans, gizlilik, iletişim) -->
+	<dialog id="aboutDialog" class="dialog about-dialog" aria-labelledby="aboutTitle">
+		<form method="dialog" class="about-dialog__header">
+			<h2 id="aboutTitle">awPDF Hakkında</h2>
+			<button value="close" class="about-dialog__close" title="Kapat" aria-label="Kapat">&times;</button>
+		</form>
+		<div class="about-dialog__body">
+			<img class="about-dialog__icon" src="./img/app-icon.png" width="72" height="72" alt="">
+			<p class="about-dialog__name"><strong>awPDF</strong> <span id="aboutVersion"></span></p>
+			<p class="about-dialog__description">PDF görüntüleyici ve araçları</p>
+			<p class="about-dialog__maker"><a href="https://madematik.com"><span class="about-dialog__brand">m<span>ADEM</span>atik Solutions</span><br>madematik.com</a></p>
+			<dl class="about-dialog__facts">
+				<dt>İndir</dt>
+				<dd><a href="https://madematik.com/projelerim/awpdf#indirmeler">Linux · Windows · Android</a></dd>
+				<dt>Lisans</dt>
+				<dd>MIT</dd>
+				<dt>Gizlilik</dt>
+				<dd><a href="https://madematik.com/awPDF/gizlilik.html">Gizlilik politikası</a></dd>
+				<dt>İletişim</dt>
+				<dd class="about-dialog__mail">ademvarol@madematik.com</dd>
+			</dl>
+		</div>
+	</dialog>
 	<dialog id="externalLinkDialog" class="dialog">
 		<h2>Dış bağlantı</h2>
 		<p>Bu bağlantı uygulamanın dışında açılacak:</p>

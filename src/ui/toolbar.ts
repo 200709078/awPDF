@@ -45,7 +45,8 @@ interface OverflowMenu {
  * menu at the row's end, where the styles show their names. They stay the same elements, so their
  * pressed and disabled states and their IDs need no second copy. A resize redoes this by itself.
  */
-function mountOverflowMenu(root: HTMLElement, buttons: readonly HTMLButtonElement[], rowEnd: HTMLElement): OverflowMenu {
+function mountOverflowMenu(root: HTMLElement, buttons: readonly HTMLButtonElement[], rowEnd: HTMLElement,
+  fixed: readonly HTMLButtonElement[] = []): OverflowMenu {
   const toggle = emptyButton('toolbarMenuButton', MENU_LABEL, MENU_ICON)
   const menu = document.createElement('div')
   menu.id = 'toolbarMenu'
@@ -63,10 +64,12 @@ function mountOverflowMenu(root: HTMLElement, buttons: readonly HTMLButtonElemen
     icon.innerHTML = open ? CLOSE_ICON : MENU_ICON
     if (open) menu.style.maxHeight = `${window.innerHeight - root.getBoundingClientRect().bottom - MENU_SCREEN_MARGIN_PX}px`
   }
+  // Items that always live in the menu (Hakkında) sit at its end and keep the button shown.
   const fit = () => {
     setOpen(false)
-    toggle.hidden = true
+    toggle.hidden = fixed.length === 0
     rowEnd.before(...buttons)
+    menu.append(...fixed)
     if (root.scrollWidth <= root.clientWidth) return
     toggle.hidden = false
     for (let index = buttons.length - 1; index >= 0 && root.scrollWidth > root.clientWidth; index--) {
@@ -104,7 +107,8 @@ function mountOverflowMenu(root: HTMLElement, buttons: readonly HTMLButtonElemen
 /** Builds the toolbar and the keyboard shortcuts from the tool list. */
 export function mountToolbar(root: HTMLElement, tools: readonly Tool[], context: ToolContext): Pick<OverflowMenu, 'close'> {
   const supported = tools.filter(tool => tool.isSupported?.(context) ?? true)
-  const buttons = supported.filter(tool => tool.inToolbar !== false).map(tool => ({ tool, button: toolButton(tool, context) }))
+  const buttons = supported.filter(tool => tool.inToolbar !== false && !tool.inMenu).map(tool => ({ tool, button: toolButton(tool, context) }))
+  const menuOnly = supported.filter(tool => tool.inMenu).map(tool => ({ tool, button: toolButton(tool, context) }))
   const status = document.createElement('button')
   status.type = 'button'
   status.id = 'pageStatus'
@@ -112,13 +116,13 @@ export function mountToolbar(root: HTMLElement, tools: readonly Tool[], context:
   status.title = 'Sayfaya Git'
   status.addEventListener('click', () => supported.find(tool => tool.id === 'goToPage')?.run(context))
   root.append(...buttons.map(({ button }) => button), status)
-  const menu = mountOverflowMenu(root, buttons.map(({ button }) => button), status)
+  const menu = mountOverflowMenu(root, buttons.map(({ button }) => button), status, menuOnly.map(({ button }) => button))
 
   const canRun = (tool: Tool) => (!tool.needsDocument || context.view.isOpen) && (tool.isAvailable?.(context.view) ?? true)
 
   const update = () => {
     const { isOpen, pageLabel, pageCount } = context.view
-    for (const { tool, button } of buttons) {
+    for (const { tool, button } of [...buttons, ...menuOnly]) {
       button.disabled = !canRun(tool)
       if (tool.isActive) button.setAttribute('aria-pressed', String(tool.isActive(context)))
     }

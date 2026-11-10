@@ -1,5 +1,7 @@
-import { cpSync, mkdirSync } from 'node:fs'
+import { cpSync, mkdirSync, readFileSync } from 'node:fs'
 import { defineConfig, type Plugin } from 'vite'
+
+const { version } = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version: string }
 
 /**
  * pdf.js reads these at run time; they ship with the app so nothing needs the network. Copied in
@@ -36,6 +38,8 @@ function ocrAssets(): Plugin {
 export default defineConfig({
   // The same output runs on a static web server, in Electron and in the Android WebView.
   base: './',
+  // Hakkında penceresindeki sürüm package.json'dan gelir; elle güncellenmez.
+  define: { __APP_VERSION__: JSON.stringify(version) },
   plugins: [pdfjsAssets(), ocrAssets()],
   build: {
     rolldownOptions: {

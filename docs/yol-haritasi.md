@@ -73,6 +73,8 @@ geçilir. Kullanıcının henüz geliştirici hesabı yok.
    testinde bulunan altı hatanın düzeltmesi (metin kutusu, fosforlu kalem, imza kipi, vurgu düğmeleri, OCR, yatay
    ilk ekran); PDF → Word'de tasarım ağırlıklı sayfalar düzeni korunarak. Web, GitHub sürümü (apk, deb, AppImage,
    exe) güncel; AAB kapalı teste yüklendi ve incelemeye gönderildi (Claude, kullanıcı yetkisiyle).
+   Dahili test 0.0.3'te kalmıştı; aynı paket (7) 2026-11-09'da dahili teste de yayınlandı (inceleme yok,
+   hemen yayında). Her sürümde dahili test de kapalı testle birlikte güncellenir.
 7. Üretim erişimi başvurusu ve yayın
 
 ## Belgeyi kapatıp ilk ekrana dönmek (2026-11-04, kullanıcı isteği)
@@ -350,6 +352,16 @@ Görsellerden PDF için kısa bir ad bulamadı.
 - Ekran okuyucu için düğmelere açık ad ("PDF'i Word'e dönüştür" gibi); "→" "sağa ok" diye okunur.
 - İsteğe bağlı: araç çubuğundaki adlar da aynı kalıba ("Word'e Dönüştür" → "PDF → Word" gibi).
 
+## Araç çubuğunda Tam Ekran ve Belgeyi Kapat'ın yeri (2026-11-09, kullanıcı isteği; sonraki sürüm)
+
+- **Tam Ekran** düğmesi **Ara**'nın hemen önüne gelsin (şimdi Sunum'dan sonra, sırada 17.).
+- **Belgeyi Kapat** en sona gelsin (şimdi Paylaş'tan sonra; arkasında Küçült, Parola, PDF → Word, Yazı Tanıma,
+  Sayfaya Git ve Sonraki Sekme var).
+- Sıra `src/tools/index.ts`'teki `TOOLS` dizisinde. Dikkat: satır dolunca düğmeler sondan başlayarak ☰ menüsüne
+  geçer; Belgeyi Kapat sonda olunca dar ekranda (dizüstü, telefon) menüye ilk o geçer. Kapatma bir sekmede
+  ayrıca sekme çubuğundaki ✕ ile de yapılabilir. Uygularken `tests/toolbar.spec.ts`'teki sıra ve sığma
+  denetimleri güncellenir.
+
 ## Telefon testi: 0.0.6 araçları (2026-11-08, "awPDF Deneme", Xiaomi, Android 13)
 
 Gerçek parmak dokunuşuyla (adb) ve kullanıcının telefonundaki dosyalarla denendi:
@@ -426,3 +438,57 @@ Gerçek parmak dokunuşuyla (adb) ve kullanıcının telefonundaki dosyalarla de
   hazırlanıyor, bellek 1,9 GB'a çıkıyor. Öneri: sayfa aralığı seçerek yazdırma.
 - **Masaüstü yazdırma:** sistem yazdırma penceresi otomatik testle denenemiyor; elle bakılmalı.
 - **Eski tabletler:** en eski WebView'da açılış ve bellek kullanımı.
+
+## Ortak araç çubuğu stili (2026-11-10, kullanıcı isteği; awCELL, awPDF, drAW, drAW2D, drAW3D; kodlanmadı)
+
+Kullanıcı: "Bu menü sistemini awPDF ve drAW kardeşlerde de uygulayabileceğimiz bir şey olmalı. Aynı stile çekebilmek
+için." awCELL'de araç çubuğu 39 düğmeden 13 düğmeye indirilirken kararlaştırıldı.
+
+**Ortak kurallar** (beş projenin yol haritasında aynı; birinde değişirse ötekiler de güncellenir; ayrıntılı not ve
+gerekçeler `awCELL/docs/yol-haritasi.md`'de):
+
+1. **Taşma menüsü ☰ / ✕:** Sığmayan düğmeler sondan başlayarak ☰ menüsüne geçer; açıkken düğme ✕ olur ("Menüyü aç" /
+   "Menüyü kapat"). "⋯" ve kaydırma okları kullanılmaz; pencere boyutu değişince yeniden hesaplanır. Örnek: awPDF
+   `src/ui/toolbar.ts` (`mountOverflowMenu`).
+2. **Kapanma:** ✕, dışarıya dokunma, Esc, Android geri düğmesi, menüden bir iş seçme (art arda seçim yapılan gruplar
+   hariç).
+3. **Gruplar:** Çubukta grup başına tek düğme ve ▾; tıklayınca açılır, üstüne gelince değil; aynı anda tek pencere.
+4. **Son kullanılan:** Grup düğmesi son seçilen aracı/işi gösterir (drAW2D'deki gibi).
+5. **Durum gösterimi:** Grubun içindeki etkin seçim grup düğmesinden de anlaşılır.
+6. **☰ menüsünün içi:** Grup başlıkları simge ve etiketle görünür, yerinde (akordeon gibi) açılır, aynı anda tek grup
+   açık. Herkesin tanıdığı simgeler grup içinde yalnız simge olarak yan yana; yanlış anlaşılabilecekler simge ve
+   etiketle. Tek düğmeler simge ve etiketle, doğrudan iş yapar. Gerekçe: dokunmatikte ipucu (`title`) çıkmaz.
+7. Dokunma alanları çubukta ve menüde aynı büyüklükte kalır.
+
+Ortak kod paketi yok; her proje kendi kopyasını yazar, davranış aynı tutulur. Önce awCELL'de uygulanacak; bu proje
+sonra, kullanıcı onayıyla.
+
+**awPDF'e uyarlama (öneri, açık sorular):**
+- ☰ / ✕ menüsü zaten var (2026-11-07). Eksik olan gruplar: çubukta 33 araç tek tek duruyor.
+- Önerilen gruplar: **Yakınlaştırma ▾** (Uzaklaştır, Yakınlaştır, Genişliğe / Yüksekliğe / Sayfaya Sığdır),
+  **Görünüm ▾** (Tek Sayfa, İki Sayfa, Döndür, Sunum Modu, Tam Ekran, Koyu Tema), **Dönüştür ▾** (Görsellerden PDF,
+  Word → PDF, PDF → Word, Görsel Olarak Kaydet, Bölgeyi Görsel Al, Metni Tanı), **Belge ▾** (Sayfaları Düzenle,
+  Küçült, Parola Koy, Farklı Kaydet, Yazdır, Paylaş). Tek kalacaklar: PDF Aç, Sayfa Paneli, Önceki / Sonraki Sayfa,
+  Metinde Ara, İşaretle, Son Dosyalar, Belgeyi Kapat.
+- Gruplanırsa 2026-11-09'daki "Tam Ekran ve Belgeyi Kapat'ın yeri" notu yeniden düşünülür (Tam Ekran Görünüm grubuna
+  girer). `tests/toolbar.spec.ts`'teki sıra ve sığma denetimleri güncellenir.
+
+## Hakkında penceresi (2026-11-10, kullanıcı kararı; awPDF'te uygulandı)
+
+Kullanıcı: "Hakkında yardım gibi ayrı pencerede açılsa nasıl olur?" → "tamam öyle yapalım. Diğer kardeşlere de bunu not et
+(özellikle hakkında kısmı hepsinde olmalı)." Aile kuralı: drAW, drAW2D, drAW3D, awPDF ve awCELL'in **hepsinde** Hakkında olur.
+
+- **Ayrı küçük pencere:** uygulamanın yardım/diyalog pencereleriyle aynı görünüş (başlık şeridi, ×). Kapanma: ×, dışarıya
+  dokunma, Esc, Android geri tuşu.
+- **İçerik:** uygulamanın simgesi, adı ve sürümü (`package.json`'dan otomatik), bir satırlık açıklama; mADEMatik Solutions ve
+  madematik.com bağlantısı; indirme bağlantısı madematik.com'daki proje sayfasının indirme bölümüne (`https://madematik.com/projelerim/awpdf#indirmeler`; kullanıcı kararı 2026-11-10); lisans MIT; "İletişim: ademvarol@madematik.com" (seçilebilir düz yazı; e-posta bağlantıları tahtada ve telefonda çoğu zaman bir şey açmaz).
+- **Bağlantılar** sistemin tarayıcısında açılır (Electron: `shell.openExternal`; Android: uygulamanın içinde değil, tarayıcıda).
+- **Yer:** Dosya menüsünün en altı (drAW2D kararı); Yardım da hem çubukta hem Dosya menüsünde kalır.
+- **awPDF'e uyarlama (öneri):** Hakkında, ☰ ("Diğer Araçlar") menüsünün en altına girer ya da varsa Dosya menüsünün
+  sonuna; gizlilik politikası bağlantısı (`gizlilik.html`) da Hakkında penceresine eklenir.
+- **Uygulandı (2026-11-10, kullanıcı isteği: "üç çizgidekilerin en sonuna"):** `aboutTool` (`inMenu: true`) ☰ menüsünün hep en
+  sonunda; bu yüzden ☰ geniş ekranda da görünür (içinde yalnız Hakkında). Ayrı küçük pencere (`#aboutDialog`): simge, awPDF ve
+  sürüm (`package.json`'dan, `__APP_VERSION__`), "PDF görüntüleyici ve araçları", mADEMatik Solutions / madematik.com,
+  İndir → madematik.com/projelerim/awpdf#indirmeler, Lisans MIT, Gizlilik politikası, İletişim (seçilebilir yazı). Bağlantılar
+  platformun `openExternal`'ıyla açılır. Kapanma: ×, Esc, dışarıya tıklama, Android geri tuşu. Test: `tests/about.spec.ts`.
+

@@ -63,5 +63,7 @@ export interface Tool {
   isSupported?(context: ToolContext): boolean
   /** False when something else reaches the tool; its shortcuts still work. */
   readonly inToolbar?: boolean
+  /** Always in the ☰ menu, at its end (Hakkında); the menu button then shows on wide screens too. */
+  readonly inMenu?: boolean
   run(context: ToolContext): void
 }

@@ -31,11 +31,15 @@ test.beforeEach(async ({ page }) => {
   await page.goto('/');
 });
 
-test('geniş ekranda bütün düğmeler sırada, menü düğmesi görünmez', async ({ page }) => {
+test('geniş ekranda bütün düğmeler sırada; menüde yalnız Hakkında', async ({ page }) => {
   await page.setViewportSize(WIDE);
   await openPdf(page);
-  await expect(toggle(page)).toBeHidden();
-  await expect(toolbar(page).locator(':scope > .toolbar__button:visible')).toHaveCount(30);
+  // ☰ hep görünür: Hakkında her zaman menünün sonunda (kullanıcı kararı, 2026-11-10).
+  await expect(toggle(page)).toBeVisible();
+  await expect(menu(page).locator(':scope > button')).toHaveCount(1);
+  await expect(menu(page).locator('#tool-about')).toHaveCount(1);
+  // 30 araç ve ☰ düğmesi.
+  await expect(toolbar(page).locator(':scope > .toolbar__button:visible')).toHaveCount(31);
   await expect(page.locator('.toolbar__label:visible')).toHaveCount(0);
   await expectOneLine(page);
 });
@@ -108,7 +112,7 @@ test('ekran genişleyince düğmeler sıraya döner, daralınca yine menüye ge�
   await expect(toggle(page)).toBeVisible();
   await expect(menu(page).locator('#tool-print')).toHaveCount(1);
   await page.setViewportSize(WIDE);
-  await expect(toggle(page)).toBeHidden();
+  await expect(menu(page).locator(':scope > button')).toHaveCount(1);
   await expect(page.locator('#toolbar > #tool-print')).toBeVisible();
   await expectOneLine(page);
 });

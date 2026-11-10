@@ -1,3 +1,4 @@
+import { aboutTool } from './about'
 import { annotateTool, compressTool, protectTool, pdfToWordTool, ocrTool, captureRegionTool, closeTabTool, editPagesTool, imagesToPdfTool, saveImagesTool, wordToPdfTool, goToPageTool, nextTabTool, printTool, recentTool, saveAsTool, searchTool, shareTool } from './document'
 import { openTool } from './open'
 import { nextPageTool, previousPageTool, twoPagesTool } from './pages'
@@ -45,4 +46,6 @@ export const TOOLS: readonly Tool[] = [
   ocrTool,
   goToPageTool,
   nextTabTool,
+  // Always the last item of the ☰ menu.
+  aboutTool,
 ]
