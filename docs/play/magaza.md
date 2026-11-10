@@ -70,6 +70,12 @@ awPDF ücretsiz ve açık kaynaklıdır (MIT lisansı). Öneri ve sorunlar için
 
 Play Console'da sürüm oluşturulurken `<tr-TR>` ile `</tr-TR>` arasına yazılır. En yenisi üstte.
 
+### 0.0.8
+
+<!-- not-0.0.8 -->
+Yeni "Hakkında" penceresi: ☰ menüsünün en altında sürüm, indirme bağlantıları, lisans, gizlilik politikası ve iletişim adresi.
+<!-- /not-0.0.8 -->
+
 ### 0.0.7
 
 <!-- not-0.0.7 -->
