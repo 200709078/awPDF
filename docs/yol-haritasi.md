@@ -492,3 +492,6 @@ Kullanıcı: "Hakkında yardım gibi ayrı pencerede açılsa nasıl olur?" → 
   İndir → madematik.com/projelerim/awpdf#indirmeler, Lisans MIT, Gizlilik politikası, İletişim (seçilebilir yazı). Bağlantılar
   platformun `openExternal`'ıyla açılır. Kapanma: ×, Esc, dışarıya tıklama, Android geri tuşu. Test: `tests/about.spec.ts`.
 
+## Yayın 0.0.8 (2026-11-10, kullanıcı izniyle)
+
+GitHub sürümü v0.0.8 ve madematik.com/awPDF canlıda; içinde Hakkında penceresi. Play için imzalı AAB ve sürüm notu masaüstünde (`awPDF-0.0.8-android.aab`, `awPDF-0.0.8-surum-notu.txt`); bu oturumda tarayıcı aracı olmadığı için Play Console'a yüklemeyi kullanıcı yapar (kapalı test → Yeni sürüm oluştur).
