@@ -494,4 +494,4 @@ Kullanıcı: "Hakkında yardım gibi ayrı pencerede açılsa nasıl olur?" → 
 
 ## Yayın 0.0.8 (2026-11-10, kullanıcı izniyle)
 
-GitHub sürümü v0.0.8 ve madematik.com/awPDF canlıda; içinde Hakkında penceresi. Play için imzalı AAB ve sürüm notu masaüstünde (`awPDF-0.0.8-android.aab`, `awPDF-0.0.8-surum-notu.txt`); bu oturumda tarayıcı aracı olmadığı için Play Console'a yüklemeyi kullanıcı yapar (kapalı test → Yeni sürüm oluştur).
+GitHub sürümü v0.0.8 ve madematik.com/awPDF canlıda; içinde Hakkında penceresi. Play için imzalı AAB ve sürüm notu masaüstünde (`awPDF-0.0.8-android.aab`, `awPDF-0.0.8-surum-notu.txt`); bu oturumda tarayıcı aracı olmadığı için Play Console'a yüklemeyi kullanıcı yaptı (kapalı test → Yeni sürüm oluştur; 2026-11-11, kullanıcı: "play console işleri de tamam").
