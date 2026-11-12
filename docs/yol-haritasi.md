@@ -496,7 +496,7 @@ Kullanıcı: "Hakkında yardım gibi ayrı pencerede açılsa nasıl olur?" → 
 
 GitHub sürümü v0.0.8 ve madematik.com/awPDF canlıda; içinde Hakkında penceresi. Play için imzalı AAB ve sürüm notu masaüstünde (`awPDF-0.0.8-android.aab`, `awPDF-0.0.8-surum-notu.txt`); bu oturumda tarayıcı aracı olmadığı için Play Console'a yüklemeyi kullanıcı yaptı (kapalı test → Yeni sürüm oluştur; 2026-11-11, kullanıcı: "play console işleri de tamam").
 
-## Android'de yazdırma boş sayfa çıkarıyordu (2026-11-12, kullanıcının bildirimi; düzeltildi, sürüm bekliyor)
+## Android'de yazdırma boş sayfa çıkarıyordu (2026-11-12, kullanıcının bildirimi; düzeltildi, 0.0.9)
 
 **Sorun:** Telefonda (Xiaomi, Android 13, Varsayılan Yazdırma Hizmeti, HP Smart Tank 510) önizleme dolu görünüyor,
 kâğıt boş çıkıyordu. Telefonun yazdırma kayıtlarında yazıcıya giden işler 778 baytlık boş PDF'ti.
@@ -508,3 +508,8 @@ renkli yazdırıldı, hepsi doğru çıktı.
 **Telefon tarafı (awPDF dışı):** Bir iş Android'in kuyruğunda takıldı, ardından gelen iş "Yazdırma hizmeti etkin
 değil" diye düştü. Yazdırma kuyruğu ve hizmeti yeniden başlatılınca (`am force-stop com.android.printspooler`,
 `com.android.bips`) düzeldi. Yeniden olursa: Ayarlar → Yazdırma → takılan işi iptal et, olmazsa telefonu yeniden başlat.
+
+## Yayın 0.0.9 (2026-11-12, kullanıcı onayıyla)
+
+Android yazdırma düzeltmesi. GitHub sürümü v0.0.9 (dört paket) ve madematik.com/awPDF canlıda. Play için imzalı AAB ve
+sürüm notu masaüstünde (`awPDF-0.0.9-android.aab`, `awPDF-0.0.9-surum-notu.txt`); Play Console'a yüklemeyi kullanıcı yapar.
