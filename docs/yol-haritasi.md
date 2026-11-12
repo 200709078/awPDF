@@ -512,4 +512,4 @@ değil" diye düştü. Yazdırma kuyruğu ve hizmeti yeniden başlatılınca (`a
 ## Yayın 0.0.9 (2026-11-12, kullanıcı onayıyla)
 
 Android yazdırma düzeltmesi. GitHub sürümü v0.0.9 (dört paket) ve madematik.com/awPDF canlıda. Play için imzalı AAB ve
-sürüm notu masaüstünde (`awPDF-0.0.9-android.aab`, `awPDF-0.0.9-surum-notu.txt`); Play Console'a yüklemeyi kullanıcı yapar.
+sürüm notu masaüstünde (`awPDF-0.0.9-android.aab`, `awPDF-0.0.9-surum-notu.txt`); kullanıcı 2026-11-12'de Play Console'a (kapalı test) yükleyip incelemeye gönderdi. Kullanıcının USB belleğindeki Linux `.deb`'i de 0.0.9 yapıldı.
