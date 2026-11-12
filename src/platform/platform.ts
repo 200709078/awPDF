@@ -20,6 +20,11 @@ export interface Platform {
   openExternal(url: string): void
   /** Prints what the `@media print` styles show. */
   print(): void
+  /**
+   * The print service reads the page again after `afterprint` (Android: the preview, then once
+   * more for the printer), so the printed pages must stay until the next print.
+   */
+  readonly printReadsLater?: boolean
   /** A new document takes the place of the open one: no room for tabs on a phone. */
   readonly singleDocument?: boolean
   /** A smart board has no keys; absent everywhere else, where the system sees to its own keyboard. */

@@ -198,3 +198,24 @@ test.describe('kaydetme ve düzenleme', () => {
     await expect(page.locator('#viewerContainer')).toBeVisible();
   });
 });
+
+test('yazdırılan sayfalar afterprint\'ten sonra da kalır, sonraki yazdırmada yenilenir', async ({ page }) => {
+  // Android'in yazdırma servisi önizlemeden sonra sayfayı yazıcı için yeniden okur; WebView her
+  // geçişte afterprint gönderir. Sayfalar o an silinince kâğıt boş çıkıyordu (2026-11-12, telefonda).
+  const pdf = await start(page);
+  await send(page, 'fileOpened', { id: 1, name: 'gelen.pdf', size: pdf.length });
+  await expect(page.locator('#pageStatus')).toHaveText('1 / 3');
+  const print = async () => {
+    await page.keyboard.press('Control+p');
+    await expect(page.locator('#printRangeDialog')).toBeVisible();
+    await page.keyboard.press('Enter');
+  };
+  await print();
+  await expect.poll(async () => (await calls(page)).filter(call => call === 'print').length).toBe(1);
+  await expect(page.locator('#printContainer img')).toHaveCount(3);
+  await page.evaluate(() => window.dispatchEvent(new Event('afterprint')));
+  await expect(page.locator('#printContainer img')).toHaveCount(3);
+  await print();
+  await expect.poll(async () => (await calls(page)).filter(call => call === 'print').length).toBe(2);
+  await expect(page.locator('#printContainer img')).toHaveCount(3);
+});

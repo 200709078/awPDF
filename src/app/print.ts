@@ -74,7 +74,9 @@ export async function printDocument(pdf: PDFDocumentProxy, platform: Platform, p
     clearPages(root)
     return
   }
-  // Android's print service reads the page later; there it waits for the next print instead.
-  window.addEventListener('afterprint', () => clearPages(root), { once: true })
+  // Android's WebView fires `afterprint` after each pass, the preview's too, and reads the page
+  // again for the printer: cleared then, the paper came out blank (2026-11-12). There the pages
+  // wait for the next print, which clears them first.
+  if (!platform.printReadsLater) window.addEventListener('afterprint', () => clearPages(root), { once: true })
   platform.print()
 }

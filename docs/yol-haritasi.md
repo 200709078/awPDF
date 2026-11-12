@@ -495,3 +495,16 @@ Kullanıcı: "Hakkında yardım gibi ayrı pencerede açılsa nasıl olur?" → 
 ## Yayın 0.0.8 (2026-11-10, kullanıcı izniyle)
 
 GitHub sürümü v0.0.8 ve madematik.com/awPDF canlıda; içinde Hakkında penceresi. Play için imzalı AAB ve sürüm notu masaüstünde (`awPDF-0.0.8-android.aab`, `awPDF-0.0.8-surum-notu.txt`); bu oturumda tarayıcı aracı olmadığı için Play Console'a yüklemeyi kullanıcı yaptı (kapalı test → Yeni sürüm oluştur; 2026-11-11, kullanıcı: "play console işleri de tamam").
+
+## Android'de yazdırma boş sayfa çıkarıyordu (2026-11-12, kullanıcının bildirimi; düzeltildi, sürüm bekliyor)
+
+**Sorun:** Telefonda (Xiaomi, Android 13, Varsayılan Yazdırma Hizmeti, HP Smart Tank 510) önizleme dolu görünüyor,
+kâğıt boş çıkıyordu. Telefonun yazdırma kayıtlarında yazıcıya giden işler 778 baytlık boş PDF'ti.
+**Neden:** awPDF hazırladığı sayfa görsellerini `afterprint`'te siliyordu. Android'in WebView'i bu olayı önizleme
+geçişinden sonra da gönderiyor; yazdırma servisi "Yazdır"a basınca sayfayı yeniden okuyunca boş buluyordu.
+**Düzeltme:** Android'de görseller bir sonraki yazdırmaya kadar kalır (`Platform.printReadsLater`); bilgisayar ve
+web aynı. Test: `tests/android.spec.ts`. "awPDF Deneme" ile aynı belge (10 sayfa) 1-2, 3-4, 5-6, 7-9, 10 olarak
+renkli yazdırıldı, hepsi doğru çıktı.
+**Telefon tarafı (awPDF dışı):** Bir iş Android'in kuyruğunda takıldı, ardından gelen iş "Yazdırma hizmeti etkin
+değil" diye düştü. Yazdırma kuyruğu ve hizmeti yeniden başlatılınca (`am force-stop com.android.printspooler`,
+`com.android.bips`) düzeldi. Yeniden olursa: Ayarlar → Yazdırma → takılan işi iptal et, olmazsa telefonu yeniden başlat.

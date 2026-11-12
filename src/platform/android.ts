@@ -90,6 +90,7 @@ export function androidPlatform(): Platform {
     // The WebView hands a page it may not open itself over to the system.
     openExternal: url => { window.location.href = url },
     print: () => { void native.print({ name: 'awPDF' }).catch(console.error) },
+    printReadsLater: true,
     share,
     saveFile,
     setSystemBars: ({ color, dark }) => { void native.setSystemBars({ color: sixDigitHex(color), dark }).catch(console.error) },
