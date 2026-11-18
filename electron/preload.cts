@@ -41,5 +41,10 @@ contextBridge.exposeInMainWorld('awPDFDesktop', {
     onFullscreenChanged: (callback: (fullscreen: boolean) => void): void => {
       ipcRenderer.on('window:fullscreen-changed', (_event, fullscreen: boolean) => callback(fullscreen === true))
     },
+    /** The window is to close with unsaved changes: the page asks, then calls closeNow. */
+    onCloseRequested: (callback: () => void): void => {
+      ipcRenderer.on('window:close-requested', () => callback())
+    },
+    closeNow: (): void => ipcRenderer.send('window:close-now'),
   },
 })

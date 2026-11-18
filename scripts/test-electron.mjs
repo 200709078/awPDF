@@ -160,8 +160,32 @@ try {
   const unexpected = errors.filter(error => !error.includes('file:///etc/hostname') && !error.includes('https://example.com/'))
   assert.deepEqual(unexpected, [], 'Electron içinde JavaScript veya varlık yükleme hatası olmamalı')
   await page.screenshot({ path: path.join('test-results', 'electron.png') })
+
+  // Closing with unsaved changes: the page's own window asks (as a tab's ✕ does), not the shell.
+  await page.locator('#tool-annotate').click()
+  const sheet = await page.locator('.page').first().boundingBox()
+  await page.mouse.move(sheet.x + 100, sheet.y + 200)
+  await page.mouse.down()
+  await page.mouse.move(sheet.x + 220, sheet.y + 240, { steps: 8 })
+  await page.mouse.up()
+  // Leaving the pen puts the stroke in the document.
+  await page.locator('#tool-annotate').click()
+  await page.waitForFunction(() => document.querySelectorAll('.tab.is-modified').length === 1)
+  const unsaved = page.locator('#unsavedDialog')
+  await application.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].close())
+  await unsaved.waitFor()
+  // A second click on ✕ meanwhile does not ask twice.
+  await application.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].close())
+  assert.deepEqual(await unsaved.locator('button').evaluateAll(buttons => buttons.sort((a, b) => a.getBoundingClientRect().x - b.getBoundingClientRect().x).map(b => b.textContent)), ['Vazgeç', 'Kaydetme', 'Kaydet'])
+  await unsaved.getByRole('button', { name: 'Vazgeç' }).click()
+  await page.waitForTimeout(500)
+  assert.equal(application.windows().length, 1, 'Vazgeç pencereyi açık tutmalı')
+  const closed = application.waitForEvent('close')
+  await application.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].close())
+  await unsaved.getByRole('button', { name: 'Kaydetme', exact: true }).click()
+  await closed
 } finally {
-  await application.close()
+  await application.close().catch(() => {})
 }
 
 // "Open with" while the app is closed: the file waits for the page to load.

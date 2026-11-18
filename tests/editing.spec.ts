@@ -108,7 +108,7 @@ test.describe('form doldurma', () => {
     expect((await lastSave(page)).name).toBe('deneme (kopya).pdf');
   });
 
-  test('kaydedilmemiş değişiklikle kapatırken sorulur: vazgeç, kaydet ya da kaydetmeden kapat', async ({ page }) => {
+  test('kaydedilmemiş değişiklikle kapatırken sorulur: vazgeç, kaydet ya da kaydetme', async ({ page }) => {
     await openPdf(page, await makeFormPdf(), 'form.pdf');
     await fillForm(page);
     const dialog = page.locator('#unsavedDialog');
@@ -127,7 +127,7 @@ test.describe('form doldurma', () => {
     await openPdf(page, await makeFormPdf(), 'form.pdf');
     await page.locator('input[name="ad"]').fill('Ali');
     await page.locator('#tool-closeTab').click();
-    await dialog.getByRole('button', { name: 'Kaydetmeden kapat' }).click();
+    await dialog.getByRole('button', { name: 'Kaydetme', exact: true }).click();
     await expect(page.locator('#emptyOpen')).toBeVisible();
     expect(await saves(page)).toHaveLength(1);
   });

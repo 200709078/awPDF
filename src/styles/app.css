@@ -1347,6 +1347,66 @@ body {
 	order: -1;
 }
 
+/* Kaydedilmemiş değişiklikler: small and plain as in awCELL (the same window in awCELL, awDOC, awPDF):
+   the message, then one row Vazgeç · Kaydetme · Kaydet. */
+.dialog--unsaved {
+	padding: 18px 20px 16px;
+	border-radius: 8px;
+}
+
+.dialog--unsaved h2 {
+	margin: 0 0 12px;
+	font-size: 17px;
+	font-weight: 600;
+}
+
+.dialog--unsaved p {
+	margin: 0 0 16px;
+	font-size: 14px;
+	line-height: 1.55;
+}
+
+.dialog__actions--row {
+	flex-wrap: nowrap;
+}
+
+.dialog__actions--row > button {
+	min-width: 84px;
+	min-height: 36px;
+	padding: 0 14px;
+	border-radius: 6px;
+	font-size: 14px;
+}
+
+@media (max-width: 480px) {
+	.dialog__actions--row > button {
+		flex: 1 1 0;
+		min-width: 0;
+		padding: 0 6px;
+	}
+}
+
+/* Kaydetme: reddish, lighter than a danger button (the user's choice, 2026-11-18). */
+.soft-danger-button.secondary-button {
+	border-color: #f3b8b4;
+	background: #fdecea;
+	color: #b3261e;
+}
+
+:root[data-theme="dark"] .soft-danger-button.secondary-button {
+	border-color: rgb(248 113 113 / 45%);
+	background: rgb(220 38 38 / 18%);
+	color: #fca5a5;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root:not([data-theme="light"]) .soft-danger-button.secondary-button {
+		border-color: rgb(248 113 113 / 45%);
+		background: rgb(220 38 38 / 18%);
+		color: #fca5a5;
+	}
+}
+
 .toast {
 	position: fixed;
 	/* As a popover it would be centred on the screen by the browser's own `inset: 0`. */

@@ -320,13 +320,13 @@
 			<button value="cancel" class="secondary-button">Vazgeç</button>
 		</form>
 	</dialog>
-	<dialog id="unsavedDialog" class="dialog">
+	<dialog id="unsavedDialog" class="dialog dialog--unsaved">
 		<h2>Kaydedilmemiş değişiklikler</h2>
 		<p id="unsavedMessage"></p>
-		<form method="dialog" class="dialog__actions">
+		<form method="dialog" class="dialog__actions dialog__actions--row">
 			<button value="save" class="primary-button">Kaydet</button>
-			<button value="discard" class="secondary-button danger-button">Kaydetmeden kapat</button>
 			<button value="cancel" class="secondary-button">Vazgeç</button>
+			<button value="discard" class="secondary-button soft-danger-button">Kaydetme</button>
 		</form>
 	</dialog>
 	<dialog id="leaveEditorDialog" class="dialog">

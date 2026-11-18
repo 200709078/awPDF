@@ -12,6 +12,9 @@ interface DesktopWindowControls {
   isFullscreen(): Promise<boolean>
   onMaximizeChanged(callback: (maximized: boolean) => void): void
   onFullscreenChanged(callback: (fullscreen: boolean) => void): void
+  /** The window is to close with unsaved changes: the page asks with its own window, then calls closeNow. */
+  onCloseRequested?(callback: () => void): void
+  closeNow?(): void
 }
 
 /** A file on disk, opened by the Electron shell; `source` finds it again later. */

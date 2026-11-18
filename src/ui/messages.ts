@@ -163,7 +163,7 @@ export type UnsavedAnswer = 'save' | 'discard' | 'cancel'
 /** What to do with a document whose changes are not saved yet. */
 export function askUnsavedChanges(name: string): Promise<UnsavedAnswer> {
   const dialog = document.querySelector<HTMLDialogElement>('#unsavedDialog')!
-  document.querySelector('#unsavedMessage')!.textContent = `${name} belgesinde kaydedilmemiş değişiklikler var. Kapatırsanız kaybolur.`
+  document.querySelector('#unsavedMessage')!.textContent = `"${name}" içinde kaydedilmemiş değişiklikler var.`
   dialog.returnValue = ''
   dialog.showModal()
   return new Promise(resolve => {

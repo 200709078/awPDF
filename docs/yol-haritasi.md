@@ -513,3 +513,11 @@ değil" diye düştü. Yazdırma kuyruğu ve hizmeti yeniden başlatılınca (`a
 
 Android yazdırma düzeltmesi. GitHub sürümü v0.0.9 (dört paket) ve madematik.com/awPDF canlıda. Play için imzalı AAB ve
 sürüm notu masaüstünde (`awPDF-0.0.9-android.aab`, `awPDF-0.0.9-surum-notu.txt`); kullanıcı 2026-11-12'de Play Console'a (kapalı test) yükleyip incelemeye gönderdi. Kullanıcının USB belleğindeki Linux `.deb`'i de 0.0.9 yapıldı.
+
+## Kaydedilmemiş değişiklikler penceresi her yerde aynı (2026-11-18, kullanıcı isteği)
+
+Kullanıcı: "kaydedilmemiş değişiklikler var ekranı hepsinde farklı farklı sanırım. bütün hepsinde awCELL deki gibi çıksın bu ekran", "sadece Kaydetme butonu hafif kırmızı olsun" (kırmızımsı). awCELL, awDOC ve awPDF'te uygulandı (drAW ailesinde bu pencere yok, otomatik kaydederler):
+
+- Pencere awCELL'deki gibi küçük ve sade: başlık "Kaydedilmemiş değişiklikler", ileti `"<ad>" içinde kaydedilmemiş değişiklikler var.`, tek satırda **Vazgeç · Kaydetme · Kaydet** (Kaydet uygulamanın ana rengiyle, Kaydetme açık kırmızı; telefonda da tek satır).
+- Masaüstünde (Electron) pencere kapatılırken artık sistemin kendi soru kutusu değil, uygulamanın bu penceresi çıkar (`will-prevent-unload` → `window:close-requested`; sayfa sorar, sonra `window:close-now`). awPDF'te kapanışta Kaydet seçeneği de böylece geldi; birden çok kaydedilmemiş sekme varsa her biri sırayla gösterilip sorulur.
+- Tarayıcıda sekme/pencere kapatılırken tarayıcının kendi uyarısı çıkar; o değiştirilemez.

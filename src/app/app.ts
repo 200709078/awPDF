@@ -497,11 +497,30 @@ export function startApp(): void {
     annotateBar.close()
     if (!name && sidePanel.isOpen) sidePanel.toggle()
   })
-  tabs.setCloseGuard(async tab => {
+  const mayCloseUnsaved = async (tab: DocumentTab) => {
     const answer = await askUnsavedChanges(tab.file.name)
     return answer === 'discard' || (answer === 'save' && await saveTab(tab))
+  }
+  tabs.setCloseGuard(mayCloseUnsaved)
+  // Closing the desktop window: each document with unsaved changes is shown and asked about with
+  // the same window as a tab's ✕; Vazgeç (or a save given up) keeps the window open.
+  const windowControls = window.awPDFDesktop?.windowControls
+  let askingToClose = false
+  windowControls?.onCloseRequested?.(() => {
+    if (askingToClose || document.querySelector<HTMLDialogElement>('#unsavedDialog')!.open) return
+    askingToClose = true
+    void (async () => {
+      if (!tabs.hasUnsaved) return true
+      for (const tab of tabs.list.filter(item => item.modified)) {
+        tabs.show(tab)
+        if (!await mayCloseUnsaved(tab)) return false
+      }
+      return true
+    })()
+      .then(close => { if (close) windowControls.closeNow?.() })
+      .finally(() => { askingToClose = false })
   })
-  // The browser asks, and Electron's shell shows its own question (electron/main.ts).
+  // The browser asks with its own question; Electron's page asks above.
   window.addEventListener('beforeunload', event => {
     if (tabs.hasUnsaved) event.preventDefault()
   })
