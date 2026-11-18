@@ -521,3 +521,8 @@ Kullanıcı: "kaydedilmemiş değişiklikler var ekranı hepsinde farklı farkl�
 - Pencere awCELL'deki gibi küçük ve sade: başlık "Kaydedilmemiş değişiklikler", ileti `"<ad>" içinde kaydedilmemiş değişiklikler var.`, tek satırda **Vazgeç · Kaydetme · Kaydet** (Kaydet uygulamanın ana rengiyle, Kaydetme açık kırmızı; telefonda da tek satır).
 - Masaüstünde (Electron) pencere kapatılırken artık sistemin kendi soru kutusu değil, uygulamanın bu penceresi çıkar (`will-prevent-unload` → `window:close-requested`; sayfa sorar, sonra `window:close-now`). awPDF'te kapanışta Kaydet seçeneği de böylece geldi; birden çok kaydedilmemiş sekme varsa her biri sırayla gösterilip sorulur.
 - Tarayıcıda sekme/pencere kapatılırken tarayıcının kendi uyarısı çıkar; o değiştirilemez.
+
+## Yayın 0.0.10 (2026-11-18, kullanıcı isteği)
+
+Kullanıcı: "değişen uygulamaların hepsini github a gönder, yeni versiyon yayınla, play consola da yeni sürümle yükle." GitHub sürümü v0.0.10 (apk, deb, AppImage, exe; imza 84:F7:8D:F0… denetlendi). Play için imzalı AAB ve sürüm notu `~/Belgeler/Play/awPDF/0.0.10/`; bu oturumda tarayıcı aracı olmadığı için Play Console'a yüklemeyi kullanıcı yapar. Site indirme kayıtları için SQL: `~/Masaüstü/madematik_indirmeler_2026-11-18.sql` (yerel veritabanında iki kez denendi). Web sürümü madematik.com'a bu yayınla yüklenmedi; kullanıcıya soruldu.
+
