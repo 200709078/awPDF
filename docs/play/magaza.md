@@ -70,6 +70,14 @@ awPDF ücretsiz ve açık kaynaklıdır (MIT lisansı). Öneri ve sorunlar için
 
 Play Console'da sürüm oluşturulurken `<tr-TR>` ile `</tr-TR>` arasına yazılır. En yenisi üstte.
 
+### 0.0.11
+
+0.0.10 Play'e yüklenmeden yerine geçti (aynı yenilikler; ek düzeltme yalnız bilgisayar sürümünde).
+
+<!-- not-0.0.11 -->
+Kaydedilmemiş değişiklikler penceresi yenilendi: Vazgeç, Kaydetme ve Kaydet tek satırda, diğer mADEMatik uygulamalarıyla aynı.
+<!-- /not-0.0.11 -->
+
 ### 0.0.10
 
 <!-- not-0.0.10 -->
