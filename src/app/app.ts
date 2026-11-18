@@ -506,8 +506,15 @@ export function startApp(): void {
   // the same window as a tab's ✕; Vazgeç (or a save given up) keeps the window open.
   const windowControls = window.awPDFDesktop?.windowControls
   let askingToClose = false
-  windowControls?.onCloseRequested?.(() => {
-    if (askingToClose || document.querySelector<HTMLDialogElement>('#unsavedDialog')!.open) return
+  /** ✕ again just after an answer, before it was taken: asked again once that is done (awDOC's fix). */
+  let askAgain = false
+  const askToClose = () => {
+    // Being asked now (the question is on screen): that answer decides.
+    if (document.querySelector<HTMLDialogElement>('#unsavedDialog')!.open) return
+    if (askingToClose) {
+      askAgain = true
+      return
+    }
     askingToClose = true
     void (async () => {
       if (!tabs.hasUnsaved) return true
@@ -517,9 +524,16 @@ export function startApp(): void {
       }
       return true
     })()
-      .then(close => { if (close) windowControls.closeNow?.() })
-      .finally(() => { askingToClose = false })
-  })
+      .then(close => { if (close) windowControls?.closeNow?.() })
+      .finally(() => {
+        askingToClose = false
+        if (askAgain) {
+          askAgain = false
+          askToClose()
+        }
+      })
+  }
+  windowControls?.onCloseRequested?.(askToClose)
   // The browser asks with its own question; Electron's page asks above.
   window.addEventListener('beforeunload', event => {
     if (tabs.hasUnsaved) event.preventDefault()
